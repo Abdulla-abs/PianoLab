@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 平板端GridView列数：3列（更适合宽屏） -->
+    <integer name="feature_grid_columns">3</integer>
+</resources>

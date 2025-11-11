@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">PianoLab</string>
+    <string name="label_current_beat">拍: %1$d</string>
+</resources>
