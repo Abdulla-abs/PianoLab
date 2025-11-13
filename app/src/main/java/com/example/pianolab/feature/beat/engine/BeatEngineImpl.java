@@ -1,7 +1,13 @@
 package com.example.pianolab.feature.beat.engine;
 
+import android.content.Context;
+import android.media.AudioAttributes;
+import android.media.AudioManager;
+import android.media.SoundPool;
+import android.os.Build;
 import android.util.Log;
 
+import com.example.pianolab.R;
 import com.example.pianolab.feature.beat.model.BeatSettings;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -20,6 +26,48 @@ public class BeatEngineImpl implements BeatEngine {
     private volatile int bpm = 120;
     private volatile int beatsPerMeasure = 4;
     private final AtomicInteger beatIndex = new AtomicInteger(0);
+
+    // 音频相关
+    private final Context appContext;
+    private SoundPool soundPool;
+    private int soundClickId = 0;
+    private int soundBeatId = 0;
+    private volatile boolean soundsLoaded = false;
+
+    public BeatEngineImpl(Context context) {
+        this.appContext = context.getApplicationContext();
+        initSoundPool();
+    }
+
+    private void initSoundPool() {
+        try {
+            if (soundPool != null) return;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                AudioAttributes attrs = new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build();
+                soundPool = new SoundPool.Builder()
+                        .setMaxStreams(2)
+                        .setAudioAttributes(attrs)
+                        .build();
+            } else {
+                soundPool = new SoundPool(2, AudioManager.STREAM_MUSIC, 0);
+            }
+
+            soundPool.setOnLoadCompleteListener((sp, sampleId, status) -> {
+                if (status == 0) {
+                    soundsLoaded = true;
+                }
+            });
+
+            // 加载资源（假设资源已放入 res/raw）
+            soundClickId = soundPool.load(appContext, R.raw.metronome_click, 1);
+            soundBeatId = soundPool.load(appContext, R.raw.metronome_beat, 1);
+        } catch (Throwable t) {
+            Log.e("BeatEngineImpl", "initSoundPool error", t);
+        }
+    }
 
     @Override
     public void start(BeatSettings settings) {
@@ -56,6 +104,19 @@ public class BeatEngineImpl implements BeatEngine {
                             l.onMeasureStart(ts);
                         }
                     }
+
+                    // 播放音效：重拍用 metronome_beat，其他拍用 metronome_click
+                    try {
+                        if (soundsLoaded && soundPool != null) {
+                            int playId = (idx == 0) ? soundBeatId : soundClickId;
+                            if (playId != 0) {
+                                soundPool.play(playId, 1f, 1f, 1, 0, 1f);
+                            }
+                        }
+                    } catch (Throwable t) {
+                        Log.w("BeatEngineImpl", "sound play failed", t);
+                    }
+
                 } catch (Throwable t) {
                     // 使用 Log 记录异常，避免直接 printStackTrace
                     Log.e("BeatEngineImpl", "Unexpected error in beat task", t);
@@ -116,5 +177,12 @@ public class BeatEngineImpl implements BeatEngine {
     public void release() {
         stop();
         listener = null;
+        try {
+            if (soundPool != null) {
+                soundPool.release();
+                soundPool = null;
+            }
+        } catch (Throwable ignored) {
+    }
     }
 }

@@ -6,7 +6,9 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.pianolab.R;
 import com.example.pianolab.feature.home.model.FeatureItem;
+import com.example.pianolab.feature.beat.view.BeatActivity;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,25 +26,13 @@ public class HomeViewModel extends ViewModel {
     private void initFeatureItems() {
         List<FeatureItem> items = new ArrayList<>();
 
-        //TODO 完成对应模块后须添加相应代码
-//        // 添加节拍器（已实现）
-//        items.add(new FeatureItem(
-//                "节拍器",
-//                com.example.pianolab.R.drawable.ic_metronome, // 图标资源
-//                BeatActivity.class
-//        ));
-//        // 添加频率分析（后期实现）
-//        items.add(new FeatureItem(
-//                "频率分析",
-//                com.example.pianolab.R.drawable.ic_frequency,
-//                FrequencyActivity.class
-//        ));
-//        // 添加和弦训练（后期实现）
-//        items.add(new FeatureItem(
-//                "和弦训练",
-//                com.example.pianolab.R.drawable.ic_chord,
-//                ChordActivity.class
-//        ));
+        // 简化的 demo：仅添加节拍器功能（第一个item）
+        items.add(new FeatureItem(
+                R.mipmap.ic_launcher, // 临时使用 launcher 图标，后续替换为专业图标
+                "节拍器",
+                BeatActivity.class
+        ));
+
         featureItems.setValue(items);
     }
 

@@ -25,6 +25,10 @@ public class BeatActivity extends AppCompatActivity {
     private Button btnIncreaseBeats;
     private ToggleButton togglePlay;
     private TextView tvCurrentBeat;
+    private Button btnBack; // 返回按钮
+
+    // 新增：可视化控件
+    private RadialPulseView radialPulseView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -33,6 +37,9 @@ public class BeatActivity extends AppCompatActivity {
 
         viewModel = new ViewModelProvider(this).get(BeatViewModel.class);
 
+        // 绑定视图
+        radialPulseView = findViewById(R.id.radial_pulse_view);
+        btnBack = findViewById(R.id.btn_back);
         tvBpmValue = findViewById(R.id.tv_bpm_value);
         seekbarBpm = findViewById(R.id.seekbar_bpm);
         tvBeatsValue = findViewById(R.id.tv_beats_value);
@@ -40,6 +47,9 @@ public class BeatActivity extends AppCompatActivity {
         btnIncreaseBeats = findViewById(R.id.btn_increase_beats);
         togglePlay = findViewById(R.id.toggle_play);
         tvCurrentBeat = findViewById(R.id.tv_current_beat);
+
+        // 返回按钮行为：结束当前 Activity，返回上一个（Home）
+        btnBack.setOnClickListener(v -> finish());
 
         // 初始化 SeekBar 范围映射：progress 0..270 -> BPM 30..300
         seekbarBpm.setMax(270);
@@ -58,6 +68,8 @@ public class BeatActivity extends AppCompatActivity {
         viewModel.getCurrentBeatIndex().observe(this, idx -> {
             if (idx == null) return;
             tvCurrentBeat.setText(getString(R.string.label_current_beat, idx + 1));
+            // 触发可视化脉冲：强拍（重拍）为 idx==0
+            if (radialPulseView != null) radialPulseView.pulse(idx == 0);
         });
 
         // 观察运行状态

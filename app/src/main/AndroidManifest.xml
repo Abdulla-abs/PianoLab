@@ -21,6 +21,19 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name="com.example.pianolab.feature.beat.view.BeatActivity"
+            android:exported="false"
+        android:parentActivityName="com.example.pianolab.feature.home.view.HomeActivity">
+        <!-- 可选：指定父Activity（按返回键时回到HomeActivity） -->
+        <meta-data
+            android:name="android.support.PARENT_ACTIVITY"
+            android:value="com.example.pianolab.feature.home.view.HomeActivity" />
+    </activity>
+
+
+
+
         <!-- //TODO 后续功能模块添加后记得更新配置文件-->
 
 
