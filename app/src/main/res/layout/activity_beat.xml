@@ -72,35 +72,20 @@
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="16dp" />
 
-    <LinearLayout
-        android:id="@+id/ll_beats_controls"
+    <TextView
+        android:id="@+id/tv_beats_value"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:layout_height="48dp"
+        android:gravity="center"
+        android:text="4/4"
+        android:textStyle="bold"
+        android:padding="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
         app:layout_constraintTop_toBottomOf="@id/seekbar_bpm"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="12dp">
-
-        <Button
-            android:id="@+id/btn_decrease_beats"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:text="-" />
-
-        <TextView
-            android:id="@+id/tv_beats_value"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:gravity="center"
-            android:text="4"
-            android:textStyle="bold" />
-
-        <Button
-            android:id="@+id/btn_increase_beats"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:text="+" />
-    </LinearLayout>
+        android:layout_marginTop="12dp" />
 
     <ToggleButton
         android:id="@+id/toggle_play"
@@ -108,7 +93,7 @@
         android:layout_height="wrap_content"
         android:textOn="停止"
         android:textOff="开始"
-        app:layout_constraintTop_toBottomOf="@id/ll_beats_controls"
+        app:layout_constraintTop_toBottomOf="@id/tv_beats_value"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="24dp" />
 
@@ -117,7 +102,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="拍: -"
-        app:layout_constraintTop_toBottomOf="@id/ll_beats_controls"
+        app:layout_constraintTop_toBottomOf="@id/tv_beats_value"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="24dp" />
 

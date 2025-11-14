@@ -15,7 +15,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
+// 声音音量超参数：强拍比弱拍更响
+//strongBeatVolume，weakBeatVolume
 public class BeatEngineImpl implements BeatEngine {
 
     private final Object lock = new Object();
@@ -33,6 +34,11 @@ public class BeatEngineImpl implements BeatEngine {
     private int soundClickId = 0;
     private int soundBeatId = 0;
     private volatile boolean soundsLoaded = false;
+
+    private float strongBeatVolume = 1.0f;
+    private float weakBeatVolume = 0.60f;
+    // 可调的主增益（<=1.0），用于整体放大采样较小的声音，可按需调整
+    private float masterGain = 1.0f;
 
     public BeatEngineImpl(Context context) {
         this.appContext = context.getApplicationContext();
@@ -61,7 +67,7 @@ public class BeatEngineImpl implements BeatEngine {
                 }
             });
 
-            // 加载资源（假设资源已放入 res/raw）
+
             soundClickId = soundPool.load(appContext, R.raw.metronome_click, 1);
             soundBeatId = soundPool.load(appContext, R.raw.metronome_beat, 1);
         } catch (Throwable t) {
@@ -91,6 +97,7 @@ public class BeatEngineImpl implements BeatEngine {
 
             running = true;
 
+            // Schedule first beat immediately; ViewModel handles countdown to delay actual start
             scheduler.scheduleWithFixedDelay(() -> {
                 try {
                     //此处为匿名类的语法糖
@@ -98,6 +105,22 @@ public class BeatEngineImpl implements BeatEngine {
 
                     long ts = System.nanoTime();
                     BeatListener l = listener;
+
+                    // 播放音效：重拍用 metronome_beat，其他拍用 metronome_click
+                    try {
+                        if (soundsLoaded && soundPool != null) {
+                            float vol = (idx == 0) ? strongBeatVolume : weakBeatVolume;
+                            vol = Math.max(0f, Math.min(1f, vol * masterGain));
+                            if (idx == 0) {
+                                if (soundBeatId != 0) soundPool.play(soundBeatId, vol, vol, 1, 0, 1f);
+                            } else {
+                                if (soundClickId != 0) soundPool.play(soundClickId, vol, vol, 1, 0, 1f);
+                            }
+                        }
+                    } catch (Throwable t) {
+                        Log.w("BeatEngineImpl", "sound play failed", t);
+                    }
+
                     if (l != null) {
                         l.onBeat(idx, ts);
                         if (idx == 0) {
@@ -105,23 +128,11 @@ public class BeatEngineImpl implements BeatEngine {
                         }
                     }
 
-                    // 播放音效：重拍用 metronome_beat，其他拍用 metronome_click
-                    try {
-                        if (soundsLoaded && soundPool != null) {
-                            int playId = (idx == 0) ? soundBeatId : soundClickId;
-                            if (playId != 0) {
-                                soundPool.play(playId, 1f, 1f, 1, 0, 1f);
-                            }
-                        }
-                    } catch (Throwable t) {
-                        Log.w("BeatEngineImpl", "sound play failed", t);
-                    }
-
                 } catch (Throwable t) {
                     // 使用 Log 记录异常，避免直接 printStackTrace
                     Log.e("BeatEngineImpl", "Unexpected error in beat task", t);
                 }
-            }, 0, periodNs, TimeUnit.NANOSECONDS); // 初始延迟0，任务结束后延迟periodNs再执行
+            }, 0, periodNs, TimeUnit.NANOSECONDS); // 初始延迟为0，首次执行将立即触发（beatIndex初始为 -1）
         }
     }
 
