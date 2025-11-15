@@ -1,6 +1,8 @@
 package com.example.pianolab.feature.beat.view;
 
+import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -33,6 +35,10 @@ public class BeatActivity extends AppCompatActivity {
     // 新增：可视化控件
     private RadialPulseView radialPulseView;
 
+    // 倒计时音效与计时器
+    private MediaPlayer countdownPlayer;
+    private CountDownTimer countdownTimer;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,6 +48,12 @@ public class BeatActivity extends AppCompatActivity {
 
         // 绑定视图
         radialPulseView = findViewById(R.id.radial_pulse_view);
+        // 将中心文本字体设置为更大（超参数，方便调整）
+        radialPulseView.setCenterTextSizeFactor(0.7f);
+        // 初始化倒计时音效（确保 res/raw/countdown.wav 存在）
+        try {
+            countdownPlayer = MediaPlayer.create(this, R.raw.countdown);
+        } catch (Exception ignored) { countdownPlayer = null; }
         btnBack = findViewById(R.id.btn_back);
         tvBpmValue = findViewById(R.id.tv_bpm_value);
         seekbarBpm = findViewById(R.id.seekbar_bpm);
@@ -98,10 +110,18 @@ public class BeatActivity extends AppCompatActivity {
         viewModel.getCurrentBeatIndex().observe(this, idx -> {
             if (idx == null) return;
             tvCurrentBeat.setText(getString(R.string.label_current_beat, idx + 1));
-            // 触发可视化脉冲：仅在引擎实际运行后触发（避免倒计时或初始化时触发）
-            Boolean engineRunning = viewModel.getEngineRunning().getValue();
-            if (engineRunning != null && engineRunning) {
-                if (radialPulseView != null) radialPulseView.pulse(idx == 0);
+            // 触发可视化脉冲与更新中心文本：使用 post 确保在 UI 线程执行
+            if (radialPulseView != null) {
+                radialPulseView.post(() -> {
+                    radialPulseView.pulse(idx == 0);
+                    radialPulseView.setCenterText(String.valueOf(idx + 1));
+                    // 停止倒计时（防止 race）
+                    if (countdownTimer != null) {
+                        countdownTimer.cancel();
+                        countdownTimer = null;
+                    }
+                    radialPulseView.stopCountdown();
+                });
             }
         });
 
@@ -109,6 +129,62 @@ public class BeatActivity extends AppCompatActivity {
         viewModel.getIsRunning().observe(this, running -> {
             if (running == null) return;
             togglePlay.setChecked(running);
+            // 当用户点击开始（running==true）时，显示 3 秒倒计时；当停止时，取消倒计时并恢复中心显示
+            if (running) {
+                radialPulseView.startCountdown(3);
+                // 同步中心文本为拍号（如 4/4）在倒计时阶段显示倒计时数字，startCountdown 会覆盖文本
+                radialPulseView.setCenterText(tvBeatsValue.getText().toString());
+                // 启动每秒一次的倒计时音效，3 次（3,2,1）
+                if (countdownTimer != null) {
+                    countdownTimer.cancel();
+                }
+                countdownTimer = new CountDownTimer(3000, 1000) {
+                    @Override
+                    public void onTick(long millisUntilFinished) {
+                        int secLeft = (int) Math.ceil(millisUntilFinished / 1000.0);
+                        // 播放倒计时音效
+                        try {
+                            if (countdownPlayer != null) {
+                                countdownPlayer.start();
+                                // reset for next play
+                                countdownPlayer.seekTo(0);
+                            }
+                        } catch (Exception ignored) {}
+                        // 更新中心文本（radialPulseView 也会更新，但我们主动设置以保证同步）
+                        if (radialPulseView != null) radialPulseView.setCenterText(String.valueOf(secLeft));
+                    }
+
+                    @Override
+                    public void onFinish() {
+                        // 倒计时结束，等待引擎实际启动（ViewModel 会在 3s 后调用 engine.start）
+                    }
+                };
+                countdownTimer.start();
+            } else {
+                if (countdownTimer != null) {
+                    countdownTimer.cancel();
+                    countdownTimer = null;
+                }
+                radialPulseView.stopCountdown();
+                radialPulseView.setCenterText(tvBeatsValue.getText().toString());
+                // 停止引擎时确保当前拍显示回默认
+                tvCurrentBeat.setText(tvBeatsValue.getText().toString());
+            }
+        });
+
+        // 观察引擎实际运行状态：当 engine 实际开始运行时，停止倒计时并由 currentBeatIndex 更新中心显示与脉冲
+        viewModel.getEngineRunning().observe(this, engineRunning -> {
+            if (engineRunning == null) return;
+            if (engineRunning) {
+                radialPulseView.stopCountdown();
+                Integer idx = viewModel.getCurrentBeatIndex().getValue();
+                if (idx != null) {
+                    String center = String.valueOf(idx + 1);
+                    radialPulseView.setCenterText(center);
+                    radialPulseView.pulse(idx == 0);
+                    tvCurrentBeat.setText(getString(R.string.label_current_beat, idx + 1));
+                }
+            }
         });
 
         // SeekBar 交互
@@ -173,5 +249,20 @@ public class BeatActivity extends AppCompatActivity {
             }
             viewModel.setBeatsPerMeasure(beats);
         } catch (Exception ignored) { }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (countdownTimer != null) {
+            countdownTimer.cancel();
+            countdownTimer = null;
+        }
+        try {
+            if (countdownPlayer != null) {
+                countdownPlayer.release();
+                countdownPlayer = null;
+            }
+        } catch (Exception ignored) {}
     }
 }

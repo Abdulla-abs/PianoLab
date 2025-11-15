@@ -21,7 +21,10 @@ import java.util.Random;
 // innerRadius: 中心黑圆半径
 // ringBaseRadius: 绳圈基础距离（相对于 innerRadius)
 // pulseEnergy/pulseDuration: 冲击强度与持续时间（在 pulse() 中设置）
-// 预分配的颜色/Shader，避免在 onDraw 中分配对象
+// 中心文本大小因子（相对于 innerRadius）
+
+
+
 
 
 
@@ -53,12 +56,24 @@ public class RadialPulseView extends View {
     private volatile long pulseStart = 0L;
     private long pulseDuration = 900L; // ms，整体缓冲衰减
     private boolean lastStrong = false;
+    // 专门用于环形波纹的脉冲状态，和中心文本/倒计时状态解耦
+    private volatile float ringPulseEnergy = 0f;
+    private volatile long ringPulseStart = 0L;
+    private long ringPulseDuration = 900L; // ms，整体缓冲衰减
 
 
     private int[] colorsIdle, colorsWeak, colorsStrong;
     private Shader shaderIdle, shaderWeak, shaderStrong;
     // 绳圈上峰值数量（控制环上峰的数量，较小值使峰值更少、更平滑）
     private int bumpCount = 8;
+
+    // 倒计时状态
+    private boolean countingDown = false;
+    private int beatCount = 4; // 倒计时拍数
+    private long countdownStartMs = 0L; // 倒计时开始时间
+    private long countdownDurationMs = 0L; // 倒计时总时长
+
+    private float centerTextSizeFactor = 0.6f;
 
     public RadialPulseView(Context context) {
         this(context, null);
@@ -70,8 +85,8 @@ public class RadialPulseView extends View {
     }
 
     private void init(Context context) {
-        // 超参数初始值（可按需调整）
-        innerRadius = dpToPx(48); // 中间黑圆半径
+
+        innerRadius = dpToPx(65); // 中间黑圆半径
         ringBaseRadius = dpToPx(7); // 更贴近黑实心圆（减小距离）
 
         centerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -104,7 +119,7 @@ public class RadialPulseView extends View {
             // lazy startTime
             if (startTime == 0L) startTime = SystemClock.uptimeMillis();
         });
-        // 立即启动帧动画（轻量级，只做 invalidate）
+        // 立即启动帧动���（轻量级，只做 invalidate）
         frameAnimator.start();
     }
 
@@ -127,6 +142,9 @@ public class RadialPulseView extends View {
         shaderStrong = new SweepGradient(cx, cy, colorsStrong, null);
         shaderWeak = new SweepGradient(cx, cy, colorsWeak, null);
         shaderIdle = new SweepGradient(cx, cy, colorsIdle, null);
+
+        // 根据 innerRadius 设置中心文本大小
+        textPaint.setTextSize(innerRadius * centerTextSizeFactor);
     }
 
     @Override
@@ -138,27 +156,31 @@ public class RadialPulseView extends View {
         float cx = w / 2f;
         float cy = h / 2f;
 
-        // 中心圆与文字
-        canvas.drawCircle(cx, cy, innerRadius, centerPaint);
-        Paint.FontMetrics fm = textPaint.getFontMetrics();
-        float textY = cy - (fm.ascent + fm.descent) / 2f;
-        canvas.drawText(centerText, cx, textY, textPaint);
-
-        // 计算时间与 pulse 状态
+        // 计算时间与 pulse 状态（在绘制前计算文本内容）
         long now = SystemClock.uptimeMillis();
         float t = (startTime == 0L) ? 0f : (now - startTime) / 1000f; // 秒
 
         float pulseFactor = 0f;
         boolean active = false;
-        if (pulseStart > 0) {
-            float dt = (now - pulseStart) / (float) pulseDuration;
+        // 使用 ringPulse 状态驱动环形波纹动画，避免与中心文本/倒计时互相影响
+        if (ringPulseStart > 0) {
+            float dt = (now - ringPulseStart) / (float) ringPulseDuration;
             if (dt < 1f) {
                 active = true;
-                pulseFactor = pulseEnergy * (float) Math.pow(1f - dt, 2);
+                pulseFactor = ringPulseEnergy * (float) Math.pow(1f - dt, 2);
             } else {
-                pulseStart = 0L;
-                pulseEnergy = 0f;
+                ringPulseStart = 0L;
+                ringPulseEnergy = 0f;
             }
+        }
+
+        // 统一先计算中心文本（倒计时/普通文本），确保在倒计时阶段也能显示
+        int textColor = 0xFFFFFFFF;
+        if (countingDown) {
+            textColor = 0xFF00BFFF; // 浅蓝
+            long nowMs = SystemClock.uptimeMillis();
+            int remaining = (int) Math.max(0, (long) Math.ceil((countdownDurationMs - (nowMs - countdownStartMs)) / 1000.0));
+            centerText = String.valueOf(Math.max(remaining, 0));
         }
 
         // 根据状态选择预生成的渐变 Shader，并设置合适的线宽（避免在 onDraw 中分配对象）
@@ -178,6 +200,12 @@ public class RadialPulseView extends View {
             float radius = innerRadius + ringBaseRadius;
             ringPath.addCircle(cx, cy, radius, Path.Direction.CW);
             canvas.drawPath(ringPath, ringPaint);
+            // 中心圆与文字（停止/倒计时时按当前 centerText 显示）
+            canvas.drawCircle(cx, cy, innerRadius, centerPaint);
+            textPaint.setColor(textColor);
+            Paint.FontMetrics fm0 = textPaint.getFontMetrics();
+            float textY0 = cy - (fm0.ascent + fm0.descent) / 2f;
+            canvas.drawText(centerText, cx, textY0, textPaint);
             return;
         }
 
@@ -220,6 +248,13 @@ public class RadialPulseView extends View {
         ringPath.close();
 
         canvas.drawPath(ringPath, ringPaint);
+
+        // 绘制中心圆与文本（活跃时）
+        canvas.drawCircle(cx, cy, innerRadius, centerPaint);
+        textPaint.setColor(textColor);
+        Paint.FontMetrics fm = textPaint.getFontMetrics();
+        float textY = cy - (fm.ascent + fm.descent) / 2f;
+        canvas.drawText(centerText, cx, textY, textPaint);
     }
 
     /**
@@ -228,14 +263,73 @@ public class RadialPulseView extends View {
     public void pulse(boolean strong) {
         lastStrong = strong;
         // 设置 pulse 能量，强拍更强
-        pulseEnergy = strong ? 1.25f : 0.6f;
-        pulseStart = SystemClock.uptimeMillis();
-        pulseDuration = strong ? 900L : 600L;
+        ringPulseEnergy = strong ? 1.25f : 0.6f;
+        ringPulseStart = SystemClock.uptimeMillis();
+        ringPulseDuration = strong ? 900L : 600L;
 
         // 给相位带一点抖动，但幅度更小以保持自然
         for (int i = 0; i < ringSegments; i++) {
             phases[i] += (rnd.nextFloat() - 0.5f) * 0.45f;
         }
+        // 立即请求重绘，确保视觉在本帧或下一帧更新
+        try {
+            postInvalidateOnAnimation();
+        } catch (Throwable ignored) {
+            // 回退
+            postInvalidate();
+        }
+    }
+
+    /**
+     * 开始倒计时状态，更新拍数
+     */
+    public void startCountdown(int beats) {
+        countingDown = true;
+        beatCount = beats;
+        countdownStartMs = SystemClock.uptimeMillis();
+        countdownDurationMs = 1000L * beats; // 每拍 600ms
+        invalidate(); // 立即重绘以更新显示
+    }
+
+    /**
+     * 结束倒计时状态
+     */
+    public void stopCountdown() {
+        countingDown = false;
+        // 不影响 ringPulse 状态，确保倒计时结束不会重置波纹动画
+        // 保持 ringPulseEnergy / ringPulseStart 不变
+
+        invalidate(); // 立即重绘以更新显示
+    }
+
+    /**
+     * 设置当前拍数索引，供外部调用
+     */
+    public void setCenterBeatIndex(int index) {
+        beatCount = index;
+        if (!countingDown) {
+            centerText = String.valueOf(index);
+        }
+        invalidate(); // 立即重绘以更新显示
+    }
+
+    /**
+     * 设置中心显示文本（用于在空闲时显示拍号，或外部直接设置文本）
+     */
+    public void setCenterText(String text) {
+        if (text == null) return;
+        this.centerText = text;
+        invalidate();
+    }
+
+    /**
+     * 设置中心文本大小因子（相对于 innerRadius），例如 0.6f
+     */
+    public void setCenterTextSizeFactor(float factor) {
+        if (factor <= 0) return;
+        this.centerTextSizeFactor = factor;
+        textPaint.setTextSize(innerRadius * centerTextSizeFactor);
+        invalidate();
     }
 
     @Override
@@ -245,5 +339,27 @@ public class RadialPulseView extends View {
             frameAnimator.cancel();
             frameAnimator = null;
         }
+    }
+
+    /**
+     * 在两个颜色之间进行线性插值
+     */
+    private float evaluateColor(float fraction, int startColor, int endColor) {
+        int startA = (startColor >> 24) & 0xff;
+        int startR = (startColor >> 16) & 0xff;
+        int startG = (startColor >> 8) & 0xff;
+        int startB = startColor & 0xff;
+
+        int endA = (endColor >> 24) & 0xff;
+        int endR = (endColor >> 16) & 0xff;
+        int endG = (endColor >> 8) & 0xff;
+        int endB = endColor & 0xff;
+
+        int a = (int) (startA + fraction * (endA - startA));
+        int r = (int) (startR + fraction * (endR - startR));
+        int g = (int) (startG + fraction * (endG - startG));
+        int b = (int) (startB + fraction * (endB - startB));
+
+        return (a << 24) | (r << 16) | (g << 8) | b;
     }
 }

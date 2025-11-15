@@ -34,11 +34,12 @@ public class BeatEngineImpl implements BeatEngine {
     private int soundClickId = 0;
     private int soundBeatId = 0;
     private volatile boolean soundsLoaded = false;
+    private final java.util.concurrent.atomic.AtomicInteger loadCount = new java.util.concurrent.atomic.AtomicInteger(0);
 
     private float strongBeatVolume = 1.0f;
     private float weakBeatVolume = 0.60f;
     // 可调的主增益（<=1.0），用于整体放大采样较小的声音，可按需调整
-    private float masterGain = 1.0f;
+    private float masterGain = 1.25f; // 提升整体音量以补偿低音样本
 
     public BeatEngineImpl(Context context) {
         this.appContext = context.getApplicationContext();
