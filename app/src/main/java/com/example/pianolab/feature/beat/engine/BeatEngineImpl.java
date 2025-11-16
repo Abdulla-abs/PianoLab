@@ -52,7 +52,13 @@ public class BeatEngineImpl implements BeatEngine {
     private volatile long startTimeNs = 0L;
 
     // 音频路径的延迟补偿（纳秒），可通过 setAudioLatencyMs 调整，默认为 0
-    private volatile long audioLatencyNs = 0L;
+    private volatile long audioLatencyNs = 65_000_000L;
+
+    private volatile double driftEmaMs = 0.0; // 指数移动平均的漂移，单位 ms
+    private static final double DRIFT_EMA_ALPHA = 0.25; // EMA 平滑系数，越大响应越快但噪声更多
+    private static final double LATENCY_ADJUST_ALPHA = 0.12;
+    private static final double BASE_LATENCY_MS = 65.0; // 基础目标提前量（可调整或通过 setAudioLatencyMs 覆盖）
+    private static final long MAX_LATENCY_MS = 300L; // 限制上限，避免过度调整
 
     // 已简化：不再使用 streaming 混音线程和事件队列，使用静态 AudioTrack 池 + scheduler
 
@@ -271,7 +277,35 @@ public class BeatEngineImpl implements BeatEngine {
                             long driftNs = nowNsForDrift - expectedTs;
                             double driftMs = driftNs / 1_000_000.0;
                             Log.d("BeatEngineImpl", "Beat drift idx=" + idx + " expectedNs=" + expectedTs + " nowNs=" + nowNsForDrift + " driftMs=" + String.format("%.3f", driftMs));
-                             lastPlayedBeat.set(b);
+
+// 1) 过滤极端异常值（例如系统休眠/唤醒导致的大偏差）
+                            if (Math.abs(driftMs) < 1000.0) { // 忽略超过 1s 的异常点
+                                // 2) 更新 EMA（首次直接设置）
+                                if (driftEmaMs == 0.0) {
+                                    driftEmaMs = driftMs;
+                                } else {
+                                    driftEmaMs = DRIFT_EMA_ALPHA * driftMs + (1.0 - DRIFT_EMA_ALPHA) * driftEmaMs;
+                                }
+
+                                // 3) 计算期望的 latency：基础值 + EMA 漂移（正漂移 -> 实际晚于预期，需要增加提前量）
+                                double desiredLatencyMs = BASE_LATENCY_MS + driftEmaMs;
+
+                                // 4) 限制范围并平滑地把 desiredLatency 合并到 audioLatencyNs 上，避免突变
+                                desiredLatencyMs = Math.max(0.0, Math.min((double) MAX_LATENCY_MS, desiredLatencyMs));
+                                long desiredLatencyNs = (long) (desiredLatencyMs * 1_000_000.0);
+
+                                // 平滑更新 audioLatencyNs（audioLatencyNs 是纳秒）
+                                long currentLatencyNs = audioLatencyNs;
+                                long newLatencyNs = (long) ((1.0 - LATENCY_ADJUST_ALPHA) * currentLatencyNs + LATENCY_ADJUST_ALPHA * desiredLatencyNs);
+                                // 防止负值
+                                audioLatencyNs = Math.max(0L, newLatencyNs);
+
+                                Log.d("BeatEngineImpl", "driftEmaMs=" + String.format("%.3f", driftEmaMs)
+                                        + " desiredLatencyMs=" + String.format("%.3f", desiredLatencyMs)
+                                        + " audioLatencyMs=" + String.format("%.3f", audioLatencyNs / 1_000_000.0));
+                            }
+
+                            lastPlayedBeat.set(b);
                              // 使计数器跳到下一拍
                              beatCounter.set(b + 1);
                          }
@@ -444,3 +478,4 @@ public class BeatEngineImpl implements BeatEngine {
         return this.running;
     }
 }
+
