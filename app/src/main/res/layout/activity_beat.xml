@@ -6,15 +6,17 @@
     android:padding="16dp">
 
     <!-- 顶部：放射波形视图 -->
+
+    <!-- 返回按钮：用于 demo 返回主界面 -->
     <com.example.pianolab.feature.beat.view.RadialPulseView
         android:id="@+id/radial_pulse_view"
         android:layout_width="0dp"
         android:layout_height="220dp"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- 返回按钮：用于 demo 返回主界面 -->
     <Button
         android:id="@+id/btn_back"
         android:layout_width="wrap_content"

@@ -110,18 +110,28 @@ public class BeatActivity extends AppCompatActivity {
         viewModel.getCurrentBeatIndex().observe(this, idx -> {
             if (idx == null) return;
             tvCurrentBeat.setText(getString(R.string.label_current_beat, idx + 1));
-            // 触发可视化脉冲与更新中心文本：使用 post 确保在 UI 线程执行
-            if (radialPulseView != null) {
-                radialPulseView.post(() -> {
-                    radialPulseView.pulse(idx == 0);
-                    radialPulseView.setCenterText(String.valueOf(idx + 1));
-                    // 停止倒计时（防止 race）
-                    if (countdownTimer != null) {
-                        countdownTimer.cancel();
-                        countdownTimer = null;
-                    }
-                    radialPulseView.stopCountdown();
-                });
+            // 修复：避免在首次注册 observer（Activity 进入时）触发一次不必要的脉冲。
+            // 只有在引擎实际运行时才触发可视化脉冲与停止倒计时动作。
+            Boolean engineRunningNow = viewModel.getEngineRunning().getValue();
+            if (engineRunningNow != null && engineRunningNow) {
+                // 触发可视化脉冲与更新中心文本：使用 post 确保在 UI 线程执行
+                if (radialPulseView != null) {
+                    radialPulseView.post(() -> {
+                        radialPulseView.pulse(idx == 0);
+                        radialPulseView.setCenterText(String.valueOf(idx + 1));
+                        // 停止倒计时（防止 race）
+                        if (countdownTimer != null) {
+                            countdownTimer.cancel();
+                            countdownTimer = null;
+                        }
+                        radialPulseView.stopCountdown();
+                    });
+                }
+            } else {
+                // 引擎未运行时仅更新 UI 文本（例如进入页面或处于倒计时阶段），但不触发脉冲
+                if (radialPulseView != null) {
+                    radialPulseView.post(() -> radialPulseView.setCenterText(String.valueOf(idx + 1)));
+                }
             }
         });
 
