@@ -52,7 +52,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:orientation="horizontal"
-            android:layout_weight="1"
+            android:layout_weight="2"
             android:gravity="center">
 
             <TextView
@@ -68,6 +68,15 @@
                 android:text="120"
                 android:textStyle="bold"
                 android:layout_marginStart="4dp"/>
+            <TextView
+                android:id="@+id/tv_tempo_marking"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Allegro(快板)"
+                android:layout_marginStart="8dp"
+                android:textStyle="italic"
+                android:importantForAccessibility="no" />
+
         </LinearLayout>
 
         <!-- 中间竖直分割线，作为视觉间隔 -->

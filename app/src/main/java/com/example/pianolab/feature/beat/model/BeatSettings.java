@@ -6,8 +6,8 @@ public class BeatSettings {
     private int beatsPerMeasure; // 每小节拍数，例如 4 表示 4/4
     private int baseBeat;  //以几分音符为一拍
 
-    public static final int MIN_BPM = 30;
-    public static final int MAX_BPM = 300;
+    public static final int MIN_BPM = 20;
+    public static final int MAX_BPM = 240;
 
     public int getBaseBeat() {
         return baseBeat;
@@ -54,4 +54,7 @@ public class BeatSettings {
         if (beatsPerMeasure <= 0) beatsPerMeasure = 4;
         this.beatsPerMeasure = beatsPerMeasure;
     }
+
+
+
 }

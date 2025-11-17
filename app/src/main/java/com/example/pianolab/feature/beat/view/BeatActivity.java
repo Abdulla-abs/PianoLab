@@ -30,6 +30,7 @@ public class BeatActivity extends AppCompatActivity {
     private TextView tvBpmValue;
     private TextView tvCrochetValue; // 新增：四分音符数值显示
     private SeekBar seekbarBpm;
+    private TextView tvTempoMarking;
     private TextView tvBeatsValue;
     private ToggleButton togglePlay;
 
@@ -61,7 +62,7 @@ public class BeatActivity extends AppCompatActivity {
         btnBack = findViewById(R.id.btn_back);
         tvBpmValue = findViewById(R.id.tv_bpm_value);
         tvCrochetValue = findViewById(R.id.tv_crochet_value);
-        // 新绑定 base-beat 图标
+        tvTempoMarking = findViewById(R.id.tv_tempo_marking);
 
         seekbarBpm = findViewById(R.id.seekbar_bpm);
         tvBeatsValue = findViewById(R.id.tv_beats_value);
@@ -70,8 +71,8 @@ public class BeatActivity extends AppCompatActivity {
         // 返回按钮行为：结束当前 Activity，返回上一个（Home）
         btnBack.setOnClickListener(v -> finish());
 
-        // 初始化 SeekBar 范围映射：progress 0..270 -> BPM 30..300
-        seekbarBpm.setMax(270);
+        // 初始化 SeekBar 范围映射
+        seekbarBpm.setMax(BeatSettings.MAX_BPM-BeatSettings.MIN_BPM);
 
         // 观察 BPM
         viewModel.getBpm().observe(this, value -> {
@@ -81,10 +82,11 @@ public class BeatActivity extends AppCompatActivity {
             if (base == null) base = 4;
 
             tvBpmValue.setText(String.valueOf(value));
+            tvTempoMarking.setText(BeatHelper.getBpmDescription(value));
 
             int cpm = BeatHelper.BPM_TO_CPM(value,base);
             tvCrochetValue.setText(String.valueOf(cpm));
-            int progress = Math.max(0, Math.min(270, value - 30));
+            int progress = Math.max(0, Math.min(BeatSettings.MAX_BPM, value -BeatSettings.MIN_BPM));
             if (seekbarBpm.getProgress() != progress) {
                 seekbarBpm.setProgress(progress);
             }
@@ -98,6 +100,7 @@ public class BeatActivity extends AppCompatActivity {
             if (curBpm != null) {
                 int curCpm = BeatHelper.BPM_TO_CPM(curBpm,b);
                 tvBpmValue.setText(String.valueOf(curBpm));
+                tvTempoMarking.setText(BeatHelper.getBpmDescription(curBpm));
                 tvCrochetValue.setText(String.valueOf(curCpm));
             }
         });
@@ -259,7 +262,7 @@ public class BeatActivity extends AppCompatActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (!fromUser) return;
-                int newBpm = progress + 30;
+                int newBpm = progress + BeatSettings.MIN_BPM;
                 viewModel.setBpm(newBpm);
             }
 
@@ -308,6 +311,7 @@ public class BeatActivity extends AppCompatActivity {
         if (initBpm != null) {
             Integer base = viewModel.getBaseBeat().getValue() != null ? viewModel.getBaseBeat().getValue() : 4;
             int initCpm = BeatHelper.BPM_TO_CPM(initBpm,base);
+            tvTempoMarking.setText(BeatHelper.getBpmDescription(initBpm));
             tvBpmValue.setText(String.valueOf(initBpm));
             tvCrochetValue.setText(String.valueOf(initCpm));
         }
