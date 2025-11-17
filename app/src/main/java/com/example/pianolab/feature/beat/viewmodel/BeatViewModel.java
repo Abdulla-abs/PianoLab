@@ -10,6 +10,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.example.pianolab.feature.beat.engine.BeatEngine;
 import com.example.pianolab.feature.beat.engine.BeatEngineImpl;
 import com.example.pianolab.feature.beat.model.BeatSettings;
+import com.example.pianolab.utils.BeatHelper;
 
 /**
  * 简单的 ViewModel：无 UI 要求时用于控制节拍器引擎并暴露状态
@@ -76,11 +77,14 @@ public class BeatViewModel extends AndroidViewModel {
     public LiveData<Integer> getBaseBeat() { return baseBeat; }
 
     public void setBpm(int value) {
-        if (value < 1) value = 1;
+
+        value = BeatHelper.clampBPM(value);
+
         bpm.setValue(value);
         engine.setBpm(value);
     }
 
+    //measure 小节，表示每小节几拍
     public void setBeatsPerMeasure(int value) {
         if (value <= 0) value = 4;
         beatsPerMeasure.setValue(value);

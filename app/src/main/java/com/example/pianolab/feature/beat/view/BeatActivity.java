@@ -11,6 +11,7 @@ import android.widget.EditText;
 import android.text.InputFilter;
 import android.text.InputType;
 import android.text.method.DigitsKeyListener;
+import android.widget.ImageView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,6 +20,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.pianolab.R;
 import com.example.pianolab.feature.beat.viewmodel.BeatViewModel;
 import com.example.pianolab.feature.beat.model.BeatSettings;
+import com.example.pianolab.utils.BeatHelper;
 
 
 public class BeatActivity extends AppCompatActivity {
@@ -26,14 +28,16 @@ public class BeatActivity extends AppCompatActivity {
     private BeatViewModel viewModel;
 
     private TextView tvBpmValue;
+    private TextView tvCrochetValue; // 新增：四分音符数值显示
     private SeekBar seekbarBpm;
     private TextView tvBeatsValue;
     private ToggleButton togglePlay;
-    private TextView tvCurrentBeat;
+
     private Button btnBack; // 返回按钮
 
     // 新增：可视化控件
     private RadialPulseView radialPulseView;
+    
 
     // 倒计时音效与计时器
     private MediaPlayer countdownPlayer;
@@ -56,10 +60,12 @@ public class BeatActivity extends AppCompatActivity {
         } catch (Exception ignored) { countdownPlayer = null; }
         btnBack = findViewById(R.id.btn_back);
         tvBpmValue = findViewById(R.id.tv_bpm_value);
+        tvCrochetValue = findViewById(R.id.tv_crochet_value);
+        // 新绑定 base-beat 图标
+
         seekbarBpm = findViewById(R.id.seekbar_bpm);
         tvBeatsValue = findViewById(R.id.tv_beats_value);
         togglePlay = findViewById(R.id.toggle_play);
-        tvCurrentBeat = findViewById(R.id.tv_current_beat);
 
         // 返回按钮行为：结束当前 Activity，返回上一个（Home）
         btnBack.setOnClickListener(v -> finish());
@@ -70,35 +76,55 @@ public class BeatActivity extends AppCompatActivity {
         // 观察 BPM
         viewModel.getBpm().observe(this, value -> {
             if (value == null) return;
+
+            Integer base = viewModel.getBaseBeat().getValue();
+            if (base == null) base = 4;
+
             tvBpmValue.setText(String.valueOf(value));
+
+            int cpm = BeatHelper.BPM_TO_CPM(value,base);
+            tvCrochetValue.setText(String.valueOf(cpm));
             int progress = Math.max(0, Math.min(270, value - 30));
             if (seekbarBpm.getProgress() != progress) {
                 seekbarBpm.setProgress(progress);
             }
         });
 
-        // 点击 bpm 文本可以手动输入 BPM（仅数字，最多 3 位，范围 30..300）
+        // 观察 baseBeat，
+        viewModel.getBaseBeat().observe(this, b -> {
+            if (b == null) return;
+            // 更新显示的 bpm 标记：触发一次对 bpm 的重新计算（如果已有 bpm 会被 observer更新）
+            Integer curBpm = viewModel.getBpm().getValue();
+            if (curBpm != null) {
+                int curCpm = BeatHelper.BPM_TO_CPM(curBpm,b);
+                tvBpmValue.setText(String.valueOf(curBpm));
+                tvCrochetValue.setText(String.valueOf(curCpm));
+            }
+        });
+
+        // 点击 bpm 文本可以手动输入 BPM
         tvBpmValue.setClickable(true);
         tvBpmValue.setOnClickListener(v -> {
             EditText et = new EditText(this);
             et.setInputType(InputType.TYPE_CLASS_NUMBER);
             et.setKeyListener(DigitsKeyListener.getInstance("0123456789"));
-            et.setFilters(new InputFilter[]{new InputFilter.LengthFilter(3)});
-            // 预填当前 BPM
-            Integer cur = viewModel.getBpm().getValue();
-            et.setText(cur != null ? String.valueOf(cur) : "120");
+            et.setFilters(new InputFilter[]{new InputFilter.LengthFilter(4)});
+
+            Integer curQuarterBpm = viewModel.getBpm().getValue();
+            Integer base = viewModel.getBaseBeat().getValue();
+            if (base == null) base = 4;
+            int prefill = curQuarterBpm != null ? curQuarterBpm : 120;
+            et.setText(String.valueOf(prefill));
 
             new androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("设置 BPM")
+                    .setTitle("设置BPM(每分钟X拍)")
                     .setView(et)
                     .setPositiveButton("确定", (dialog, which) -> {
                         try {
                             String s = et.getText().toString().trim();
                             if (s.isEmpty()) return;
-                            int bpmVal = Integer.parseInt(s);
-                            // clamp 到 BeatSettings 定义的范围
-                            if (bpmVal < BeatSettings.MIN_BPM) bpmVal = BeatSettings.MIN_BPM;
-                            if (bpmVal > BeatSettings.MAX_BPM) bpmVal = BeatSettings.MAX_BPM;
+                            int ori_bpm = Integer.parseInt(s);
+                            int bpmVal = BeatHelper.clampBPM(ori_bpm);
                             viewModel.setBpm(bpmVal);
                         } catch (Exception ignored) { }
                     })
@@ -106,10 +132,41 @@ public class BeatActivity extends AppCompatActivity {
                     .show();
         });
 
+        tvCrochetValue.setClickable(true);
+        tvCrochetValue.setOnClickListener(v -> {
+            EditText et = new EditText(this);
+            et.setInputType(InputType.TYPE_CLASS_NUMBER);
+            et.setKeyListener(DigitsKeyListener.getInstance("0123456789"));
+            et.setFilters(new InputFilter[]{new InputFilter.LengthFilter(4)});
+
+            Integer curQuarterBpm = viewModel.getBpm().getValue();
+            Integer base = viewModel.getBaseBeat().getValue();
+            if (base == null) base = 4;
+            int pre = curQuarterBpm != null ? BeatHelper.BPM_TO_CPM(curQuarterBpm,base) : BeatHelper.BPM_TO_CPM(120,base);
+            et.setText(String.valueOf(pre));
+
+            new androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("设置四分音符每分钟 (♪ = ?)")
+                    .setView(et)
+                    .setPositiveButton("确定", (dialog, which) -> {
+                        try {
+                            String s = et.getText().toString().trim();
+                            if (s.isEmpty()) return;
+                            int q = Integer.parseInt(s);
+                            int bpm = BeatHelper.CPM_TO_BPM(q,viewModel.getBaseBeat().getValue());
+                            bpm = BeatHelper.clampBPM(bpm);
+                            viewModel.setBpm(bpm);
+                        } catch (Exception ignored) { }
+                    })
+                    .setNegativeButton("取消", null)
+                    .show();
+        });
+
+
         // 观察当前拍
         viewModel.getCurrentBeatIndex().observe(this, idx -> {
             if (idx == null) return;
-            tvCurrentBeat.setText(getString(R.string.label_current_beat, idx + 1));
+
             // 修复：避免在首次注册 observer（Activity 进入时）触发一次不必要的脉冲。
             // 只有在引擎实际运行时才触发可视化脉冲与停止倒计时动作。
             Boolean engineRunningNow = viewModel.getEngineRunning().getValue();
@@ -178,7 +235,7 @@ public class BeatActivity extends AppCompatActivity {
                 radialPulseView.stopCountdown();
                 radialPulseView.setCenterText(tvBeatsValue.getText().toString());
                 // 停止引擎时确保当前拍显示回默认
-                tvCurrentBeat.setText(tvBeatsValue.getText().toString());
+
             }
         });
 
@@ -192,7 +249,7 @@ public class BeatActivity extends AppCompatActivity {
                     String center = String.valueOf(idx + 1);
                     radialPulseView.setCenterText(center);
                     radialPulseView.pulse(idx == 0);
-                    tvCurrentBeat.setText(getString(R.string.label_current_beat, idx + 1));
+
                 }
             }
         });
@@ -248,7 +305,12 @@ public class BeatActivity extends AppCompatActivity {
 
         // 将初始 UI 与 ViewModel 对齐
         Integer initBpm = viewModel.getBpm().getValue();
-        if (initBpm != null) tvBpmValue.setText(String.valueOf(initBpm));
+        if (initBpm != null) {
+            Integer base = viewModel.getBaseBeat().getValue() != null ? viewModel.getBaseBeat().getValue() : 4;
+            int initCpm = BeatHelper.BPM_TO_CPM(initBpm,base);
+            tvBpmValue.setText(String.valueOf(initBpm));
+            tvCrochetValue.setText(String.valueOf(initCpm));
+        }
         // beats 初始值来自布局的 tv_beats_value（默认为 4），同步到 viewModel
         try {
             int beats = Integer.parseInt(tvBeatsValue.getText().toString());
