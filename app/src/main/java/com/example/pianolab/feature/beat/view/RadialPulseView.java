@@ -33,7 +33,7 @@ public class RadialPulseView extends View {
     // 中心圆和文本
     private Paint centerPaint;
     private Paint textPaint;
-    private String centerText = "4"; // 固定显示当前拍数（简化）
+    private String centerText = "4/4"; // 固定显示当前拍数（简化）
 
     // 绳圈样式
     private Paint ringPaint;

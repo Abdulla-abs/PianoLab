@@ -38,11 +38,16 @@ public class BeatActivity extends AppCompatActivity {
 
     // 新增：可视化控件
     private RadialPulseView radialPulseView;
+
+    private androidx.appcompat.widget.SwitchCompat switchAccent;
+
     
 
     // 倒计时音效与计时器
     private MediaPlayer countdownPlayer;
     private CountDownTimer countdownTimer;
+
+    private boolean accentProgrammatic = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -56,9 +61,9 @@ public class BeatActivity extends AppCompatActivity {
         // 将中心文本字体设置为更大（超参数，方便调整）
         radialPulseView.setCenterTextSizeFactor(0.7f);
         // 初始化倒计时音效（确保 res/raw/countdown.wav 存在）
-        try {
-            countdownPlayer = MediaPlayer.create(this, R.raw.countdown);
-        } catch (Exception ignored) { countdownPlayer = null; }
+//        try {
+//            countdownPlayer = MediaPlayer.create(this, R.raw.countdown);
+//        } catch (Exception ignored) { countdownPlayer = null; }
         btnBack = findViewById(R.id.btn_back);
         tvBpmValue = findViewById(R.id.tv_bpm_value);
         tvCrochetValue = findViewById(R.id.tv_crochet_value);
@@ -67,6 +72,7 @@ public class BeatActivity extends AppCompatActivity {
         seekbarBpm = findViewById(R.id.seekbar_bpm);
         tvBeatsValue = findViewById(R.id.tv_beats_value);
         togglePlay = findViewById(R.id.toggle_play);
+        switchAccent = findViewById(R.id.switch_accent);
 
         // 返回按钮行为：结束当前 Activity，返回上一个（Home）
         btnBack.setOnClickListener(v -> finish());
@@ -104,6 +110,62 @@ public class BeatActivity extends AppCompatActivity {
                 tvCrochetValue.setText(String.valueOf(curCpm));
             }
         });
+
+        viewModel.getAccentEnabled().observe(this, enabled -> {
+            boolean e = enabled == null ? true : enabled;
+//            if (switchAccent != null && switchAccent.isChecked() != e) switchAccent.setChecked(e);
+            if (switchAccent != null && switchAccent.isChecked() != e) {
+                // 标记为程序性更新，避免触发 listener 中的重启逻辑
+                accentProgrammatic = true;
+                switchAccent.setChecked(e);
+            }
+
+        });
+
+
+        if (switchAccent != null) {
+            switchAccent.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                // 如果是程序性设置，清标记并直接返回（已由 observer 同步过 ViewModel）
+                if (accentProgrammatic) {
+                    accentProgrammatic = false;
+                    return;
+                }
+
+                // 用户真实交互：更新 ViewModel 并在正在运行时重启倒计时/引擎
+                try { viewModel.setAccentEnabled(isChecked); } catch (Exception ignored) {}
+
+                Boolean isRunning = viewModel.getIsRunning().getValue();
+                if (isRunning != null && isRunning) {
+                    viewModel.stop();
+                    viewModel.start();
+                }
+            });
+        }
+
+//        if (switchAccent != null) {
+////            switchAccent.setOnCheckedChangeListener((buttonView, isChecked) -> {
+////                try { viewModel.setAccentEnabled(isChecked); } catch (Exception ignored) {}
+////            });
+//            switchAccent.setOnCheckedChangeListener((buttonView, isChecked) -> {
+//                try {
+//                    viewModel.setAccentEnabled(isChecked);
+//                } catch (Exception ignored) {}
+//
+//                // 仅在用户真实按下切换时重启；避免程序性更新触发（buttonView 为 CompoundButton）
+//                boolean userInitiated = false;
+//                if (buttonView instanceof android.widget.CompoundButton) {
+//                    userInitiated = ((android.widget.CompoundButton) buttonView).isPressed();
+//                }
+//                if (userInitiated) {
+//                    Boolean isRunning = viewModel.getIsRunning().getValue();
+//                    if (isRunning != null && isRunning) {
+//                        viewModel.stop();
+//                        viewModel.start();
+//                    }
+//                }
+//            });
+//        }
+
 
         // 点击 bpm 文本可以手动输入 BPM
         tvBpmValue.setClickable(true);
@@ -187,12 +249,13 @@ public class BeatActivity extends AppCompatActivity {
                         radialPulseView.stopCountdown();
                     });
                 }
-            } else {
-                // 引擎未运行时仅更新 UI 文本（例如进入页面或处于倒计时阶段），但不触发脉冲
-                if (radialPulseView != null) {
-                    radialPulseView.post(() -> radialPulseView.setCenterText(String.valueOf(idx + 1)));
-                }
             }
+//            else {
+//                // 引擎未运行时仅更新 UI 文本（例如进入页面或处于倒计时阶段），但不触发脉冲
+//                if (radialPulseView != null) {
+//                    radialPulseView.post(() -> radialPulseView.setCenterText(String.valueOf(idx + 1)));
+//                }
+//            }
         });
 
         // 观察运行状态
@@ -213,14 +276,17 @@ public class BeatActivity extends AppCompatActivity {
                     public void onTick(long millisUntilFinished) {
                         int secLeft = (int) Math.ceil(millisUntilFinished / 1000.0);
                         // 播放倒计时音效
+//                        try {
+//                            if (countdownPlayer != null) {
+//                                countdownPlayer.start();
+//                                // reset for next play
+//                                countdownPlayer.seekTo(0);
+//                            }
+//                        } catch (Exception ignored) {}
+//                        // 更新中心文本（radialPulseView 也会更新，但我们主动设置以保证同步）
                         try {
-                            if (countdownPlayer != null) {
-                                countdownPlayer.start();
-                                // reset for next play
-                                countdownPlayer.seekTo(0);
-                            }
+                            viewModel.playCountdown();
                         } catch (Exception ignored) {}
-                        // 更新中心文本（radialPulseView 也会更新，但我们主动设置以保证同步）
                         if (radialPulseView != null) radialPulseView.setCenterText(String.valueOf(secLeft));
                     }
 
@@ -270,7 +336,18 @@ public class BeatActivity extends AppCompatActivity {
             public void onStartTrackingTouch(SeekBar seekBar) { }
 
             @Override
-            public void onStopTrackingTouch(SeekBar seekBar) { }
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                int newBpm = seekBar.getProgress() + BeatSettings.MIN_BPM;
+                viewModel.setBpm(newBpm);
+
+                Boolean isRunning = viewModel.getIsRunning().getValue();
+                if (isRunning != null && isRunning) {
+                    viewModel.stop();
+                    viewModel.start();
+                }
+
+
+            }
         });
 
 
@@ -296,6 +373,7 @@ public class BeatActivity extends AppCompatActivity {
                             // 同步 baseBeat 到 viewModel（若支持）
                             viewModel.setBaseBeat(b);
                             tvBeatsValue.setText(sel);
+                            if (radialPulseView != null) radialPulseView.setCenterText(sel);
                         } catch (Exception ignored) { }
                     })
                     .show();
@@ -325,6 +403,9 @@ public class BeatActivity extends AppCompatActivity {
             }
             viewModel.setBeatsPerMeasure(beats);
         } catch (Exception ignored) { }
+        if (radialPulseView != null) {
+            radialPulseView.setCenterText(tvBeatsValue.getText().toString());
+        }
     }
 
     @Override
@@ -334,11 +415,11 @@ public class BeatActivity extends AppCompatActivity {
             countdownTimer.cancel();
             countdownTimer = null;
         }
-        try {
-            if (countdownPlayer != null) {
-                countdownPlayer.release();
-                countdownPlayer = null;
-            }
-        } catch (Exception ignored) {}
+//        try {
+//            if (countdownPlayer != null) {
+//                countdownPlayer.release();
+//                countdownPlayer = null;
+//            }
+//        } catch (Exception ignored) {}
     }
 }

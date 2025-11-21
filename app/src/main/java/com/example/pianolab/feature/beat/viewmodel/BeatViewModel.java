@@ -22,6 +22,7 @@ public class BeatViewModel extends AndroidViewModel {
     private final MutableLiveData<Integer> beatsPerMeasure = new MutableLiveData<>();
     private final MutableLiveData<Boolean> running = new MutableLiveData<>(false);
     private final MutableLiveData<String> status = new MutableLiveData<>("stopped");
+    private final MutableLiveData<Boolean> accentEnabled = new MutableLiveData<>(true);
 
     // 新增：当前拍索引（0-based）
     private final MutableLiveData<Integer> currentBeatIndex = new MutableLiveData<>(0);
@@ -76,6 +77,14 @@ public class BeatViewModel extends AndroidViewModel {
 
     public LiveData<Integer> getBaseBeat() { return baseBeat; }
 
+    public LiveData<Boolean> getAccentEnabled() { return accentEnabled; }
+
+    public void setAccentEnabled(boolean enabled) {
+        accentEnabled.setValue(enabled);
+        if (engine != null) {
+            engine.setAccentEnabled(enabled);
+        }
+    }
     public void setBpm(int value) {
 
         value = BeatHelper.clampBPM(value);
@@ -115,13 +124,14 @@ public class BeatViewModel extends AndroidViewModel {
         // 取消前一个可能存在的 runnable
         if (startRunnable != null) handler.removeCallbacks(startRunnable);
         startRunnable = () -> {
+            engineRunning.setValue(true);
             engine.start(s);
-            engineRunning.postValue(true);
             status.postValue("running");
         };
         // 倒计时 3 秒
         handler.postDelayed(startRunnable, 3000L);
     }
+
 
     public void stop() {
         // 取消未执行的启动任务
@@ -136,6 +146,12 @@ public class BeatViewModel extends AndroidViewModel {
         engineRunning.setValue(false);
         running.setValue(false);
         status.setValue("stopped");
+    }
+
+    public void playCountdown() {
+        try {
+            if (engine != null) engine.playCountdown();
+        } catch (Throwable ignored) {}
     }
 
     @Override
