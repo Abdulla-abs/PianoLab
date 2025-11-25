@@ -14,7 +14,9 @@ import android.graphics.Region;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.View;
+import com.example.pianolab.utils.VirtualPianoHelper;
 
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.PathParser;
@@ -24,7 +26,11 @@ import com.example.pianolab.R;
 import org.xmlpull.v1.XmlPullParser;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class PianoView extends View {
     private static final String TAG = "PianoView";
@@ -34,7 +40,10 @@ public class PianoView extends View {
     private int octaveCount = 7; // 7 个八度
     private int contentWidthPx = 0;
     private int contentHeightPx = 0;
-    private String pressedKeyName = null;
+
+    private SparseArray<String> pointerKeyMap = new SparseArray<>(); // pointerId -> key name
+    private Map<String, Integer> keyRefCount = new HashMap<>();     // key name -> ref count
+    private Set<String> activeKeys = new HashSet<>();
 
     // 保存测量得到的像素宽度，确保 onDraw 与 onMeasure 一致
     private int swStart = 0;
@@ -59,7 +68,7 @@ public class PianoView extends View {
     // 按键识别用的数据结构
     private Path keyPathWhite1, keyPathWhite2;
     private Paint keyHighlightWhitePaint, keyHighlightBlackPaint;
-    private int pressedKey = 0; // 0=none, 1=white1,2=white2,3=black
+
     private Path keyPathBlackPart2;
     private Path keyPathBlackPart2Transformed;
     private Region keyRegionBlackPart2;
@@ -153,12 +162,12 @@ public class PianoView extends View {
         int availableH = MeasureSpec.getSize(heightMeasureSpec);
         contentHeightPx = availableH;
 
-        int wStart = (dStart != null) ? safeIntrinsicWidth(dStart) : (DEFAULT_OCTAVE_W / 6);
-        int hStart = (dStart != null) ? safeIntrinsicHeight(dStart) : DEFAULT_OCTAVE_H;
-        int wOct = (dOctave != null) ? safeIntrinsicWidth(dOctave) : DEFAULT_OCTAVE_W;
-        int hOct = (dOctave != null) ? safeIntrinsicHeight(dOctave) : DEFAULT_OCTAVE_H;
-        int wEnd = (dEnd != null) ? safeIntrinsicWidth(dEnd) : (DEFAULT_OCTAVE_W / 6);
-        int hEnd = (dEnd != null) ? safeIntrinsicHeight(dEnd) : DEFAULT_OCTAVE_H;
+        int wStart = (dStart != null) ? VirtualPianoHelper.safeIntrinsicWidth(dStart,DEFAULT_OCTAVE_W) : (DEFAULT_OCTAVE_W / 6);
+        int hStart = (dStart != null) ? VirtualPianoHelper.safeIntrinsicHeight(dStart,DEFAULT_OCTAVE_H) : DEFAULT_OCTAVE_H;
+        int wOct = (dOctave != null) ? VirtualPianoHelper.safeIntrinsicWidth(dOctave,DEFAULT_OCTAVE_W) : DEFAULT_OCTAVE_W;
+        int hOct = (dOctave != null) ? VirtualPianoHelper.safeIntrinsicHeight(dOctave,DEFAULT_OCTAVE_H) : DEFAULT_OCTAVE_H;
+        int wEnd = (dEnd != null) ? VirtualPianoHelper.safeIntrinsicWidth(dEnd,DEFAULT_OCTAVE_W) : (DEFAULT_OCTAVE_W / 6);
+        int hEnd = (dEnd != null) ? VirtualPianoHelper.safeIntrinsicHeight(dEnd,DEFAULT_OCTAVE_H) : DEFAULT_OCTAVE_H;
 
         float scaleStart = (float) contentHeightPx / (float) Math.max(hStart, 1);
         float scaleOct = (float) contentHeightPx / (float) Math.max(hOct, 1);
@@ -185,24 +194,41 @@ public class PianoView extends View {
         }
     }
 
-    private int safeIntrinsicWidth(Drawable d) {
-        try {
-            int w = d.getIntrinsicWidth();
-            return (w > 0) ? w : DEFAULT_OCTAVE_W;
-        } catch (Exception e) {
-            Log.w(TAG, "safeIntrinsicWidth failed", e);
-            return DEFAULT_OCTAVE_W;
+
+
+    private void removePressedKey(String name) {
+        if (name == null) return;
+        Integer c = keyRefCount.get(name);
+        if (c == null) return;
+        if (c <= 1) {
+            keyRefCount.remove(name);
+            activeKeys.remove(name);
+        } else {
+            keyRefCount.put(name, c - 1);
         }
     }
 
-    private int safeIntrinsicHeight(Drawable d) {
-        try {
-            int h = d.getIntrinsicHeight();
-            return (h > 0) ? h : DEFAULT_OCTAVE_H;
-        } catch (Exception e) {
-            Log.w(TAG, "safeIntrinsicHeight failed", e);
-            return DEFAULT_OCTAVE_H;
+    private void addPressedKey(String name) {
+        if (name == null) return;
+        int c = keyRefCount.getOrDefault(name, 0);
+        keyRefCount.put(name, c + 1);
+        activeKeys.add(name);
+    }
+
+    private String hitTestKeyAt(int x, int y) {
+        if (keyRegionBlack != null && keyRegionBlack.contains(x, y)) {
+            return "key2_black";
         }
+        if (keyRegionBlackPart2 != null && keyRegionBlackPart2.contains(x, y)) {
+            return "key2_black_part2";
+        }
+        if (keyRegionWhite1 != null && keyRegionWhite1.contains(x, y)) {
+            return "key1_white";
+        }
+        if (keyRegionWhite2 != null && keyRegionWhite2.contains(x, y)) {
+            return "key3_white";
+        }
+        return null;
     }
 
     @Override
@@ -242,25 +268,35 @@ public class PianoView extends View {
             canvas.drawRect(x, 0, x + swEnd, h, fallbackPaintEnd);
         }
 
-        // 绘制按下高亮：白键先绘制抠掉黑键重叠部分；黑键在上方直接绘制
-        if (pressedKey != 0) {
+        if (!activeKeys.isEmpty()) {
             try {
-                if (pressedKey == 1 && keyPathWhite1Transformed != null) {
-                    // 如果有黑键区域，从白键 path 中抠掉
-                    Path drawPath = new Path(keyPathWhite1Transformed);
+                // 合并白键路径
+                Path whiteCombined = new Path();
+                boolean hasWhite = false;
+                if (activeKeys.contains("key1_white") && keyPathWhite1Transformed != null) {
+                    whiteCombined.addPath(keyPathWhite1Transformed);
+                    hasWhite = true;
+                }
+                if (activeKeys.contains("key3_white") && keyPathWhite2Transformed != null) {
+                    whiteCombined.addPath(keyPathWhite2Transformed);
+                    hasWhite = true;
+                }
+                if (hasWhite) {
                     if (keyPathBlackTransformed != null) {
+                        Path drawPath = new Path(whiteCombined);
                         drawPath.op(keyPathBlackTransformed, Path.Op.DIFFERENCE);
+                        canvas.drawPath(drawPath, keyHighlightWhitePaint);
+                    } else {
+                        canvas.drawPath(whiteCombined, keyHighlightWhitePaint);
                     }
-                    canvas.drawPath(drawPath, keyHighlightWhitePaint);
-                } else if (pressedKey == 2 && keyPathWhite2Transformed != null) {
-                    Path drawPath = new Path(keyPathWhite2Transformed);
-                    if (keyPathBlackTransformed != null) {
-                        drawPath.op(keyPathBlackTransformed, Path.Op.DIFFERENCE);
-                    }
-                    canvas.drawPath(drawPath, keyHighlightWhitePaint);
-                } else if (pressedKey == 3 && keyPathBlackTransformed != null) {
-                    // 黑键按下高亮在最上面绘制
+                }
+
+                // 黑键在上层绘制
+                if (activeKeys.contains("key2_black") && keyPathBlackTransformed != null) {
                     canvas.drawPath(keyPathBlackTransformed, keyHighlightBlackPaint);
+                }
+                if (activeKeys.contains("key2_black_test") && keyPathBlackPart2Transformed != null) {
+                    canvas.drawPath(keyPathBlackPart2Transformed, keyHighlightBlackPaint);
                 }
             } catch (Exception e) {
                 Log.w(TAG, "highlight draw failed", e);
@@ -286,11 +322,8 @@ public class PianoView extends View {
             keyPathWhite1Transformed.addPath(keyPathWhite1, m);
             android.graphics.RectF rf = new android.graphics.RectF();
             keyPathWhite1Transformed.computeBounds(rf, true);
-            int left = (int) Math.floor(rf.left) - REGION_PAD_PX;
-            int top = (int) Math.floor(rf.top) - REGION_PAD_PX;
-            int right = (int) Math.ceil(rf.right) + REGION_PAD_PX;
-            int bottom = (int) Math.ceil(rf.bottom) + REGION_PAD_PX;
-            keyRegionWhite1.setPath(keyPathWhite1Transformed, new Region(left, top, right, bottom));
+            int[] dirs = VirtualPianoHelper.calculate_4_direction(rf.left,rf.top,rf.right,rf.bottom,REGION_PAD_PX);
+            keyRegionWhite1.setPath(keyPathWhite1Transformed, new Region(dirs[0], dirs[1], dirs[2], dirs[3]));
         }
 
         // transform white2
@@ -299,11 +332,8 @@ public class PianoView extends View {
             keyPathWhite2Transformed.addPath(keyPathWhite2, m);
             android.graphics.RectF rf = new android.graphics.RectF();
             keyPathWhite2Transformed.computeBounds(rf, true);
-            int left = (int) Math.floor(rf.left) - REGION_PAD_PX;
-            int top = (int) Math.floor(rf.top) - REGION_PAD_PX;
-            int right = (int) Math.ceil(rf.right) + REGION_PAD_PX;
-            int bottom = (int) Math.ceil(rf.bottom) + REGION_PAD_PX;
-            keyRegionWhite2.setPath(keyPathWhite2Transformed, new Region(left, top, right, bottom));
+            int[] dirs = VirtualPianoHelper.calculate_4_direction(rf.left,rf.top,rf.right,rf.bottom,REGION_PAD_PX);
+            keyRegionWhite2.setPath(keyPathWhite2Transformed, new Region(dirs[0], dirs[1], dirs[2], dirs[3]));
         }
 
         // transform black parts -> build combined transformed path + combined Region (use full-clip then validate/fallback)
@@ -337,18 +367,16 @@ public class PianoView extends View {
                 if (!ok) {
                     android.graphics.RectF rf = new android.graphics.RectF();
                     tmp.computeBounds(rf, true);
-                    int left = Math.max(0, (int) Math.floor(rf.left) - REGION_PAD_PX);
-                    int top = Math.max(0, (int) Math.floor(rf.top) - REGION_PAD_PX);
-                    int right = Math.min(Math.max(1, contentWidthPx), (int) Math.ceil(rf.right) + REGION_PAD_PX);
-                    int bottom = Math.min(Math.max(1, contentHeightPx), (int) Math.ceil(rf.bottom) + REGION_PAD_PX);
-                    Region boundsClip = new Region(left, top, right, bottom);
+
+                    int[] dirs = VirtualPianoHelper.calculate_4_direction(rf.left,rf.top,rf.right,rf.bottom,REGION_PAD_PX);
+                    Region boundsClip = new Region(Math.max(0,dirs[0]),Math.max(0,dirs[1]) , Math.min(Math.max(1,contentWidthPx),dirs[2]), Math.min(Math.max(1, contentHeightPx),dirs[3]));
                     try {
                         partRegion.setPath(tmp, boundsClip);
                         // 如果仍为空，尝试扩大 bounds 再试一次
                         if (partRegion.isEmpty()) {
                             int pad = Math.max(1, REGION_PAD_PX * 4);
-                            boundsClip.set(Math.max(0, left - pad), Math.max(0, top - pad),
-                                    Math.min(contentWidthPx, right + pad), Math.min(contentHeightPx, bottom + pad));
+                            boundsClip.set(Math.max(0, dirs[0] - pad), Math.max(0, dirs[1] - pad),
+                                    Math.min(contentWidthPx, dirs[2] + pad), Math.min(contentHeightPx, dirs[3] + pad));
                             partRegion.setPath(tmp, boundsClip);
                         }
                     } catch (Exception e2) {
@@ -363,7 +391,6 @@ public class PianoView extends View {
             }
         }
 
-        // transform test black path（key2_black_test）
         if (keyPathBlackPart2 != null && keyPathBlackPart2Transformed != null) {
             keyPathBlackPart2Transformed.reset();
             keyPathBlackPart2Transformed.addPath(keyPathBlackPart2, m);
@@ -375,17 +402,14 @@ public class PianoView extends View {
                 if (keyRegionBlackPart2.isEmpty()) {
                     android.graphics.RectF rf = new android.graphics.RectF();
                     keyPathBlackPart2Transformed.computeBounds(rf, true);
-                    int left = Math.max(0, (int) Math.floor(rf.left) - REGION_PAD_PX);
-                    int top = Math.max(0, (int) Math.floor(rf.top) - REGION_PAD_PX);
-                    int right = Math.min(Math.max(1, contentWidthPx), (int) Math.ceil(rf.right) + REGION_PAD_PX);
-                    int bottom = Math.min(Math.max(1, contentHeightPx), (int) Math.ceil(rf.bottom) + REGION_PAD_PX);
-                    Region fallback = new Region(left, top, right, bottom);
+                    int[] dirs = VirtualPianoHelper.calculate_4_direction(rf.left,rf.top,rf.right,rf.bottom,REGION_PAD_PX);
+                    Region fallback = new Region(Math.max(0,dirs[0]),Math.max(0,dirs[1]) , Math.min(Math.max(1,contentWidthPx),dirs[2]), Math.min(Math.max(1, contentHeightPx),dirs[3]));
                     try {
                         keyRegionBlackPart2.setPath(keyPathBlackPart2Transformed, fallback);
                         if (keyRegionBlackPart2.isEmpty()) {
                             int pad = Math.max(1, REGION_PAD_PX * 4);
-                            fallback.set(Math.max(0, left - pad), Math.max(0, top - pad),
-                                    Math.min(contentWidthPx, right + pad), Math.min(contentHeightPx, bottom + pad));
+                            fallback.set(Math.max(0, dirs[0]- pad), Math.max(0, dirs[1] - pad),
+                                    Math.min(contentWidthPx, dirs[2] + pad), Math.min(contentHeightPx, dirs[3] + pad));
                             keyRegionBlackPart2.setPath(keyPathBlackPart2Transformed, fallback);
                         }
                     } catch (Exception e2) {
@@ -397,11 +421,8 @@ public class PianoView extends View {
                 Log.w(TAG, "setPath with fullClip failed for key2_black_test, fallback to bound-based region", e);
                 android.graphics.RectF rf = new android.graphics.RectF();
                 keyPathBlackPart2Transformed.computeBounds(rf, true);
-                int left = Math.max(0, (int) Math.floor(rf.left) - REGION_PAD_PX);
-                int top = Math.max(0, (int) Math.floor(rf.top) - REGION_PAD_PX);
-                int right = Math.min(Math.max(1, contentWidthPx), (int) Math.ceil(rf.right) + REGION_PAD_PX);
-                int bottom = Math.min(Math.max(1, contentHeightPx), (int) Math.ceil(rf.bottom) + REGION_PAD_PX);
-                Region fallback = new Region(left, top, right, bottom);
+                int[] dirs = VirtualPianoHelper.calculate_4_direction(rf.left,rf.top,rf.right,rf.bottom,REGION_PAD_PX);
+                Region fallback = new Region(Math.max(0,dirs[0]),Math.max(0,dirs[1]) , Math.min(Math.max(1,contentWidthPx),dirs[2]), Math.min(Math.max(1, contentHeightPx),dirs[3]));
                 try {
                     keyRegionBlackPart2.setPath(keyPathBlackPart2Transformed, fallback);
                 } catch (Exception e2) {
@@ -414,47 +435,74 @@ public class PianoView extends View {
 
     @Override
     public boolean onTouchEvent(android.view.MotionEvent ev) {
-        int x = Math.round(ev.getX());
-        int y = Math.round(ev.getY());
-        switch (ev.getActionMasked()) {
+        int action = ev.getActionMasked();
+        int index = ev.getActionIndex();
+
+        switch (action) {
             case android.view.MotionEvent.ACTION_DOWN:
-            case android.view.MotionEvent.ACTION_POINTER_DOWN:
-                // 黑键优先
-                if (keyRegionBlack != null && keyRegionBlack.contains(x, y)) {
-                    pressedKey = 3;
-                    pressedKeyName = "key2_black";
-                    Log.i(TAG, "key pressed: " + pressedKeyName);
+            case android.view.MotionEvent.ACTION_POINTER_DOWN: {
+                int pid = ev.getPointerId(index);
+                int px = Math.round(ev.getX(index));
+                int py = Math.round(ev.getY(index));
+                String hit = hitTestKeyAt(px, py);
+                if (hit != null) {
+                    pointerKeyMap.put(pid, hit);
+                    addPressedKey(hit);
+                    Log.i(TAG, "key pressed (down): " + hit + " pid=" + pid);
                     invalidate();
-                    // 回调播放黑键声音（自行实现）
-                    return true;
-                } else if (keyRegionWhite1 != null && keyRegionWhite1.contains(x, y)) {
-                    pressedKey = 1;
-                    pressedKeyName = "key1_white";
-                    Log.i(TAG, "key pressed: " + pressedKeyName);
-                    invalidate();
-                    return true;
-                } else if (keyRegionWhite2 != null && keyRegionWhite2.contains(x, y)) {
-                    pressedKey = 2;
-                    pressedKeyName = "key3_white";
-                    Log.i(TAG, "key pressed: " + pressedKeyName);
+                    return true; // 捕获事件以便接收后续 MOVE/UP
+                }
+                break;
+            }
+            case android.view.MotionEvent.ACTION_MOVE: {
+                boolean changed = false;
+                for (int i = 0; i < ev.getPointerCount(); i++) {
+                    int pid = ev.getPointerId(i);
+                    int px = Math.round(ev.getX(i));
+                    int py = Math.round(ev.getY(i));
+                    String prev = pointerKeyMap.get(pid);
+                    String now = hitTestKeyAt(px, py);
+                    if ((prev == null && now == null) || (prev != null && prev.equals(now))) {
+                        continue;
+                    }
+                    // 发生变化：释放之前的，登记现在的
+                    if (prev != null) {
+                        removePressedKey(prev);
+                        pointerKeyMap.remove(pid);
+                    }
+                    if (now != null) {
+                        pointerKeyMap.put(pid, now);
+                        addPressedKey(now);
+                    }
+                    changed = true;
+                }
+                if (changed) {
                     invalidate();
                     return true;
                 }
                 break;
+            }
             case android.view.MotionEvent.ACTION_UP:
-            case android.view.MotionEvent.ACTION_CANCEL:
-            case android.view.MotionEvent.ACTION_POINTER_UP:
-                // 松手取消
-                if (pressedKey != 0) {
-                    // 可以在这里回调停止声音
-                    pressedKey = 0;
-                    pressedKeyName = null;
+            case android.view.MotionEvent.ACTION_POINTER_UP: {
+                int pid = ev.getPointerId(index);
+                String prev = pointerKeyMap.get(pid);
+                if (prev != null) {
+                    removePressedKey(prev);
+                    pointerKeyMap.remove(pid);
+                    Log.i(TAG, "key released (up): " + prev + " pid=" + pid);
                     invalidate();
+                    return true;
                 }
                 break;
-            case android.view.MotionEvent.ACTION_MOVE:
-                // 可选：实现拖动切换按键（此处保持简单）
-                break;
+            }
+            case android.view.MotionEvent.ACTION_CANCEL: {
+                // 清理所有按键
+                pointerKeyMap.clear();
+                keyRefCount.clear();
+                activeKeys.clear();
+                invalidate();
+                return true;
+            }
         }
         return super.onTouchEvent(ev);
     }
