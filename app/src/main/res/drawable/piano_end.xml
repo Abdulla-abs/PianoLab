@@ -8,7 +8,7 @@
     <path
         android:pathData="m2.66,323.5c-1.37,0 -2.66,-2.05 -2.66,-2.82L-0,0h50.72v320.68c0,0.77 -1.29,2.82 -2.65,2.82z">
       <aapt:attr name="android:fillColor">
-        <gradient 
+        <gradient
             android:startX="0"
             android:startY="0"
             android:endX="50.72"
@@ -21,9 +21,10 @@
       </aapt:attr>
     </path>
     <path
-        android:pathData="m2.43,322.24c-0.91,0 -1.93,-1.67 -1.94,-2.1L0.49,0h49.2v320.14c-0.01,0.43 -1.02,2.1 -1.93,2.1z">
+        android:pathData="m2.43,322.24c-0.91,0 -1.93,-1.67 -1.94,-2.1L0.49,0h49.2v320.14c-0.01,0.43 -1.02,2.1 -1.93,2.1z"
+        android:name="key88_white">
       <aapt:attr name="android:fillColor">
-        <gradient 
+        <gradient
             android:startX="0.49"
             android:startY="0"
             android:endX="49.69"
