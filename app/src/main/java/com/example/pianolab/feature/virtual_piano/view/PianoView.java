@@ -54,6 +54,11 @@ public class PianoView extends View {
     private static final int DEFAULT_OCTAVE_W = 375;
     private static final int DEFAULT_OCTAVE_H = 323;
 
+
+    private Map<String, Path> keyPrototypeMap = new HashMap<>();
+    private Map<String, Path> keyTransformedMap = new HashMap<>();
+    private Map<String, Region> keyRegionMap = new HashMap<>();
+    private List<String> allKeyNames = new ArrayList<>();
     private Paint fallbackPaintStart;
     private Paint fallbackPaintOctave;
     private Paint fallbackPaintEnd;
@@ -104,8 +109,12 @@ public class PianoView extends View {
         keyHighlightBlackPaint.setStyle(Paint.Style.FILL);
         keyHighlightBlackPaint.setColor(0x995400FF); // 半透明紫色
 
-
         // 清理旧数据（防止多次调用叠加）
+        keyPrototypeMap.clear();
+        keyTransformedMap.clear();
+        keyRegionMap.clear();
+        allKeyNames.clear();
+
         keyPathWhite1 = null;
         keyPathWhite2 = null;
         keyPathBlackParts.clear();
@@ -116,36 +125,161 @@ public class PianoView extends View {
         keyPathBlackTransformed = null;
         keyPathBlackPart2Transformed = null;
 
-        // 解析 vector xml 中指定名字的 pathData（你在 piano_start.xml 已添加 android:name）
+        Map<String, Path> namedStart = new HashMap<>();
+        Map<String, Path> namedKeys = new HashMap<>();
+        Map<String, Path> namedEnd = new HashMap<>();
+
+        XmlResourceParser parser = null;
         try {
-            XmlResourceParser parser = getResources().getXml(R.drawable.piano_start);
-            int eventType = parser.getEventType();
-            while (eventType != XmlPullParser.END_DOCUMENT) {
-                if (eventType == XmlPullParser.START_TAG && "path".equals(parser.getName())) {
-                    String name = parser.getAttributeValue(ANDROID_NS, "name"); // android:name
-                    String pathData = parser.getAttributeValue(ANDROID_NS, "pathData"); // android:pathData
-                    if (pathData != null && name != null) {
-                        if ("key1_white".equals(name)) {
-                            keyPathWhite1 = PathParser.createPathFromPathData(pathData);
-                        } else if ("key3_white".equals(name)) {
-                            keyPathWhite2 = PathParser.createPathFromPathData(pathData);
-                        } else if ("key2_black".equals(name)) {
+            parser = getResources().getXml(R.drawable.piano_start);
+            int et = parser.getEventType();
+            while (et != XmlPullParser.END_DOCUMENT) {
+                if (et == XmlPullParser.START_TAG && "path".equals(parser.getName())) {
+                    String name = parser.getAttributeValue(ANDROID_NS, "name");
+                    String pathData = parser.getAttributeValue(ANDROID_NS, "pathData");
+                    if (name != null && pathData != null && !namedStart.containsKey(name)) {
+                        try {
                             Path p = PathParser.createPathFromPathData(pathData);
-                            keyPathBlackParts.add(p);
-                        } else if ("key2_black_part2".equals(name)) {
-                            // 测试用单独路径
-                            keyPathBlackPart2 = PathParser.createPathFromPathData(pathData);
+                            if (p != null) namedStart.put(name, p);
+                        } catch (Exception e) {
+                            Log.w(TAG, "parse piano_start path failed name=" + name, e);
                         }
                     }
                 }
-                eventType = parser.next();
+                et = parser.next();
             }
-            parser.close();
         } catch (Exception e) {
-            Log.e(TAG, "parse piano_start paths failed", e);
+            Log.w(TAG, "parse piano_start failed", e);
+        } finally {
+            if (parser != null) parser.close();
+        }
+        Log.i(TAG, "parsed piano_start names: " + namedStart.keySet());
+
+        try {
+            parser = getResources().getXml(R.drawable.piano_keys);
+            int et = parser.getEventType();
+            while (et != XmlPullParser.END_DOCUMENT) {
+                if (et == XmlPullParser.START_TAG && "path".equals(parser.getName())) {
+                    String name = parser.getAttributeValue(ANDROID_NS, "name");
+                    String pathData = parser.getAttributeValue(ANDROID_NS, "pathData");
+                    if (name != null && pathData != null) {
+                        try {
+                            Path p = PathParser.createPathFromPathData(pathData);
+                            if (p != null) {
+                                // 保存原名
+                                if (!namedKeys.containsKey(name)) namedKeys.put(name, p);
+                                // 若 name 带有 ocN_ 前缀，归一化为模板名 keyX_XXX 并保存（便于扩展）
+                                String normalized = name.replaceFirst("^oc\\d+_", "");
+                                if (!normalized.equals(name) && !namedKeys.containsKey(normalized)) {
+                                    Path copy = new Path();
+                                    copy.addPath(p);
+                                    namedKeys.put(normalized, copy);
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.w(TAG, "parse piano_keys path failed name=" + name, e);
+                        }
+                    }
+                }
+                et = parser.next();
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "parse piano_keys failed", e);
+        } finally {
+            if (parser != null) parser.close();
+        }
+        Log.i(TAG, "parsed piano_keys names (sample): " + namedKeys.keySet());
+
+        try {
+            parser = getResources().getXml(R.drawable.piano_end);
+            int et = parser.getEventType();
+            while (et != XmlPullParser.END_DOCUMENT) {
+                if (et == XmlPullParser.START_TAG && "path".equals(parser.getName())) {
+                    String name = parser.getAttributeValue(ANDROID_NS, "name");
+                    String pathData = parser.getAttributeValue(ANDROID_NS, "pathData");
+                    if (name != null && pathData != null && !namedEnd.containsKey(name)) {
+                        try {
+                            Path p = PathParser.createPathFromPathData(pathData);
+                            if (p != null) namedEnd.put(name, p);
+                        } catch (Exception e) {
+                            Log.w(TAG, "parse piano_end path failed name=" + name, e);
+                        }
+                    }
+                }
+                et = parser.next();
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "parse piano_end failed", e);
+        } finally {
+            if (parser != null) parser.close();
+        }
+        Log.i(TAG, "parsed piano_end names: " + namedEnd.keySet());
+
+        // 后续逻辑保持不变（把 namedStart/namedKeys/namedEnd 合并并生成 keyPrototypeMap...）
+        // 把 piano_start 的绝对命名先放入原型 map（优先）
+        for (Map.Entry<String, Path> e : namedStart.entrySet()) {
+            Path copy = new Path();
+            copy.addPath(e.getValue());
+            keyPrototypeMap.put(e.getKey(), copy);
         }
 
-        // 初始化 transformed paths / regions（即使某个 key 是 null 也创建 Region，避免后续空指针）
+        // piano_keys 模板扩展逻辑（不变）
+        for (int oct = 0; oct < 7; oct++) {
+            for (int k = 1; k <= 12; k++) {
+                String relName = "key" + k;
+                String[] suffs = new String[] { "_white", "_black", "_black_part2" };
+                for (String s : suffs) {
+                    String relFull = relName + s;
+                    Path tmpl = namedKeys.get(relFull);
+                    if (tmpl == null) continue;
+                    int globalIdx = 3 + oct * 12 + k;
+                    String absName = "key" + globalIdx + s;
+                    if (!keyPrototypeMap.containsKey(absName)) {
+                        Path copy = new Path();
+                        copy.addPath(tmpl);
+                        keyPrototypeMap.put(absName, copy);
+                    }
+                }
+            }
+        }
+
+        for (Map.Entry<String, Path> e : namedEnd.entrySet()) {
+            Path copy = new Path();
+            copy.addPath(e.getValue());
+            keyPrototypeMap.put(e.getKey(), copy);
+        }
+
+        // 创建 transformed/region 占位（保持原实现）
+        for (int i = 1; i <= 88; i++) {
+            String whiteName = "key" + i + "_white";
+            String blackName = "key" + i + "_black";
+            String blackPart2Name = "key" + i + "_black_part2";
+
+            if (keyPrototypeMap.containsKey(whiteName)) {
+                allKeyNames.add(whiteName);
+                keyTransformedMap.put(whiteName, new Path());
+                keyRegionMap.put(whiteName, new Region());
+            }
+            if (keyPrototypeMap.containsKey(blackName)) {
+                allKeyNames.add(blackName);
+                keyTransformedMap.put(blackName, new Path());
+                keyRegionMap.put(blackName, new Region());
+            }
+            if (keyPrototypeMap.containsKey(blackPart2Name)) {
+                allKeyNames.add(blackPart2Name);
+                keyTransformedMap.put(blackPart2Name, new Path());
+                keyRegionMap.put(blackPart2Name, new Region());
+            }
+        }
+
+        // 兼容旧字段
+        keyPathWhite1 = keyPrototypeMap.get("key1_white");
+        keyPathWhite2 = keyPrototypeMap.get("key3_white");
+        keyPathBlackParts.clear();
+        Path startBlack = keyPrototypeMap.get("key2_black");
+        if (startBlack != null) keyPathBlackParts.add(startBlack);
+        keyPathBlackPart2 = keyPrototypeMap.get("key2_black_part2");
+
         keyPathWhite1Transformed = (keyPathWhite1 != null) ? new Path() : null;
         keyPathWhite2Transformed = (keyPathWhite2 != null) ? new Path() : null;
         keyPathBlackTransformed = (!keyPathBlackParts.isEmpty()) ? new Path() : null;
@@ -216,6 +350,38 @@ public class PianoView extends View {
     }
 
     private String hitTestKeyAt(int x, int y) {
+        // 优先使用为 88 键构建的 region 映射进行精确命中（黑键优先）
+        if (allKeyNames != null && keyRegionMap != null && !allKeyNames.isEmpty()) {
+            // 先查普通黑键（_black，排除 _black_part2）
+            for (String name : allKeyNames) {
+                if (name.endsWith("_black") && !name.endsWith("_black_part2")) {
+                    Region r = keyRegionMap.get(name);
+                    if (r != null && r.contains(x, y)) {
+                        return name;
+                    }
+                }
+            }
+            // 再查黑键的 part2（若有）
+            for (String name : allKeyNames) {
+                if (name.endsWith("_black_part2")) {
+                    Region r = keyRegionMap.get(name);
+                    if (r != null && r.contains(x, y)) {
+                        return name;
+                    }
+                }
+            }
+            // 最后查白键
+            for (String name : allKeyNames) {
+                if (name.endsWith("_white")) {
+                    Region r = keyRegionMap.get(name);
+                    if (r != null && r.contains(x, y)) {
+                        return name;
+                    }
+                }
+            }
+        }
+
+        // 回退兼容：如果上面没有填充 map（或未命中），保留原有单一字段检测以避免回归
         if (keyRegionBlack != null && keyRegionBlack.contains(x, y)) {
             return "key2_black";
         }
@@ -270,167 +436,249 @@ public class PianoView extends View {
 
         if (!activeKeys.isEmpty()) {
             try {
-                // 合并白键路径
+                // 合并所有活跃白键与黑键路径（用于一次性差集）
                 Path whiteCombined = new Path();
                 boolean hasWhite = false;
-                if (activeKeys.contains("key1_white") && keyPathWhite1Transformed != null) {
-                    whiteCombined.addPath(keyPathWhite1Transformed);
-                    hasWhite = true;
+                Path blackCombined = new Path();
+                boolean hasBlack = false;
+
+                for (String name : activeKeys) {
+                    if (name == null) continue;
+                    if (name.endsWith("_white")) {
+                        Path p = keyTransformedMap.get(name);
+                        if (p != null) {
+                            whiteCombined.addPath(p);
+                            hasWhite = true;
+                        } else {
+                            // 兼容旧字段回退
+                            if ("key1_white".equals(name) && keyPathWhite1Transformed != null) {
+                                whiteCombined.addPath(keyPathWhite1Transformed);
+                                hasWhite = true;
+                            } else if ("key3_white".equals(name) && keyPathWhite2Transformed != null) {
+                                whiteCombined.addPath(keyPathWhite2Transformed);
+                                hasWhite = true;
+                            }
+                        }
+                    } else if (name.endsWith("_black") || name.endsWith("_black_part2")) {
+                        Path p = keyTransformedMap.get(name);
+                        if (p != null) {
+                            blackCombined.addPath(p);
+                            hasBlack = true;
+                        } else {
+                            // 兼容旧字段回退（聚合黑键、part2）
+                            if (!name.endsWith("_black_part2") && keyPathBlackTransformed != null) {
+                                blackCombined.addPath(keyPathBlackTransformed);
+                                hasBlack = true;
+                            } else if (name.endsWith("_black_part2") && keyPathBlackPart2Transformed != null) {
+                                blackCombined.addPath(keyPathBlackPart2Transformed);
+                                hasBlack = true;
+                            }
+                        }
+                    }
                 }
-                if (activeKeys.contains("key3_white") && keyPathWhite2Transformed != null) {
-                    whiteCombined.addPath(keyPathWhite2Transformed);
-                    hasWhite = true;
-                }
+
+                // 白键高亮：一次性做差集（whiteCombined - blackCombined）
                 if (hasWhite) {
-                    if (keyPathBlackTransformed != null) {
+                    if (hasBlack) {
                         Path drawPath = new Path(whiteCombined);
-                        drawPath.op(keyPathBlackTransformed, Path.Op.DIFFERENCE);
-                        canvas.drawPath(drawPath, keyHighlightWhitePaint);
+                        try {
+                            drawPath.op(blackCombined, Path.Op.DIFFERENCE);
+                            canvas.drawPath(drawPath, keyHighlightWhitePaint);
+                        } catch (Exception e) {
+                            // 差集出错时回退：直接绘制白键合并路径（总比不可见好）
+                            Log.w(TAG, "aggregate white-black op failed, fallback to whiteCombined", e);
+                            try {
+                                canvas.drawPath(whiteCombined, keyHighlightWhitePaint);
+                            } catch (Exception e2) {
+                                Log.w(TAG, "fallback draw whiteCombined failed", e2);
+                            }
+                        }
                     } else {
-                        canvas.drawPath(whiteCombined, keyHighlightWhitePaint);
+                        try {
+                            canvas.drawPath(whiteCombined, keyHighlightWhitePaint);
+                        } catch (Exception e) {
+                            Log.w(TAG, "draw whiteCombined failed", e);
+                        }
                     }
                 }
 
                 // 黑键在上层绘制
-                if (activeKeys.contains("key2_black") && keyPathBlackTransformed != null) {
-                    canvas.drawPath(keyPathBlackTransformed, keyHighlightBlackPaint);
+                if (hasBlack) {
+                    try {
+                        canvas.drawPath(blackCombined, keyHighlightBlackPaint);
+                    } catch (Exception e) {
+                        Log.w(TAG, "draw blackCombined failed", e);
+                    }
                 }
-                if (activeKeys.contains("key2_black_test") && keyPathBlackPart2Transformed != null) {
-                    canvas.drawPath(keyPathBlackPart2Transformed, keyHighlightBlackPaint);
-                }
+
             } catch (Exception e) {
                 Log.w(TAG, "highlight draw failed", e);
             }
         }
-
     }
 
     // java
     private void updateKeyTransforms(int offsetXForStartDrawable, int destWidth, int destHeight) {
-        // destWidth = swStart, destHeight = contentHeightPx (drawable bounds for piano_start)
-        if (keyPathWhite1 == null && keyPathWhite2 == null && keyPathBlackParts.isEmpty() && keyPathBlackPart2 == null) return;
+        if (keyPrototypeMap.isEmpty()) return;
 
-        float sx = (float) destWidth / PIANO_START_VIEWPORT_W;
-        float sy = (float) destHeight / PIANO_START_VIEWPORT_H;
-        Matrix m = new Matrix();
-        m.setScale(sx, sy);
-        m.postTranslate(offsetXForStartDrawable, 0); // 假设 start drawable 放置在 x = offsetXForStartDrawable
+        // 模板 viewport 近似值（若需精确可从 vector xml 中读取）
+        final float startVW = PIANO_START_VIEWPORT_W;
+        final float startVH = PIANO_START_VIEWPORT_H;
+        final float octaveVW = DEFAULT_OCTAVE_W;
+        final float octaveVH = DEFAULT_OCTAVE_H;
+        final float endVW = PIANO_START_VIEWPORT_W;
+        final float endVH = PIANO_START_VIEWPORT_H;
 
-        // transform white1
-        if (keyPathWhite1 != null && keyPathWhite1Transformed != null) {
-            keyPathWhite1Transformed.reset();
-            keyPathWhite1Transformed.addPath(keyPathWhite1, m);
-            android.graphics.RectF rf = new android.graphics.RectF();
-            keyPathWhite1Transformed.computeBounds(rf, true);
-            int[] dirs = VirtualPianoHelper.calculate_4_direction(rf.left,rf.top,rf.right,rf.bottom,REGION_PAD_PX);
-            keyRegionWhite1.setPath(keyPathWhite1Transformed, new Region(dirs[0], dirs[1], dirs[2], dirs[3]));
-        }
+        // 准备全局 clip 与清理/重建聚合路径与 region
+        Region fullClip = new Region(0, 0, Math.max(1, contentWidthPx), Math.max(1, contentHeightPx));
 
-        // transform white2
-        if (keyPathWhite2 != null && keyPathWhite2Transformed != null) {
-            keyPathWhite2Transformed.reset();
-            keyPathWhite2Transformed.addPath(keyPathWhite2, m);
-            android.graphics.RectF rf = new android.graphics.RectF();
-            keyPathWhite2Transformed.computeBounds(rf, true);
-            int[] dirs = VirtualPianoHelper.calculate_4_direction(rf.left,rf.top,rf.right,rf.bottom,REGION_PAD_PX);
-            keyRegionWhite2.setPath(keyPathWhite2Transformed, new Region(dirs[0], dirs[1], dirs[2], dirs[3]));
-        }
+        // reset aggregated black path/region
+        if (keyPathBlackTransformed == null) keyPathBlackTransformed = new Path();
+        keyPathBlackTransformed.reset();
+        if (keyRegionBlack == null) keyRegionBlack = new Region();
+        keyRegionBlack.setEmpty();
 
-        // transform black parts -> build combined transformed path + combined Region (use full-clip then validate/fallback)
-        if (!keyPathBlackParts.isEmpty() && keyPathBlackTransformed != null) {
-            keyPathBlackTransformed.reset();
-            keyRegionBlack.setEmpty();
+        // 清理特殊兼容字段
+        keyPathWhite1Transformed = (keyPathWhite1 != null) ? new Path() : null;
+        keyPathWhite2Transformed = (keyPathWhite2 != null) ? new Path() : null;
+        keyPathBlackPart2Transformed = (keyPathBlackPart2 != null) ? new Path() : null;
+        if (keyRegionWhite1 == null) keyRegionWhite1 = new Region();
+        else keyRegionWhite1.setEmpty();
+        if (keyRegionWhite2 == null) keyRegionWhite2 = new Region();
+        else keyRegionWhite2.setEmpty();
+        if (keyRegionBlackPart2 == null) keyRegionBlackPart2 = new Region();
+        else keyRegionBlackPart2.setEmpty();
 
-            Region fullClip = new Region(0, 0, Math.max(1, contentWidthPx), Math.max(1, contentHeightPx));
+        // 遍历所有已解析的 prototype，按编号分配到 start / octave / end，并计算 transform
+        for (Map.Entry<String, Path> entry : keyPrototypeMap.entrySet()) {
+            String name = entry.getKey();
+            Path proto = entry.getValue();
+            if (proto == null) continue;
 
-            for (Path part : keyPathBlackParts) {
-                Path tmp = new Path();
-                tmp.addPath(part, m);
-                // add tmp to combined path for drawing
-                keyPathBlackTransformed.addPath(tmp);
-
-                Region partRegion = new Region();
-                boolean ok = false;
-
-                // 1) 尝试用 fullClip 直接构造
-                try {
-                    partRegion.setPath(tmp, fullClip);
-                    if (!partRegion.isEmpty()) {
-                        ok = true;
-                    }
-                } catch (Exception e) {
-                    Log.w(TAG, "setPath with fullClip threw, will fallback to bounds", e);
-                    ok = false;
-                }
-
-                // 2) 若用 fullClip 得到的 region 为空（或失败），回退到 bounds-based region（带 padding）
-                if (!ok) {
-                    android.graphics.RectF rf = new android.graphics.RectF();
-                    tmp.computeBounds(rf, true);
-
-                    int[] dirs = VirtualPianoHelper.calculate_4_direction(rf.left,rf.top,rf.right,rf.bottom,REGION_PAD_PX);
-                    Region boundsClip = new Region(Math.max(0,dirs[0]),Math.max(0,dirs[1]) , Math.min(Math.max(1,contentWidthPx),dirs[2]), Math.min(Math.max(1, contentHeightPx),dirs[3]));
-                    try {
-                        partRegion.setPath(tmp, boundsClip);
-                        // 如果仍为空，尝试扩大 bounds 再试一次
-                        if (partRegion.isEmpty()) {
-                            int pad = Math.max(1, REGION_PAD_PX * 4);
-                            boundsClip.set(Math.max(0, dirs[0] - pad), Math.max(0, dirs[1] - pad),
-                                    Math.min(contentWidthPx, dirs[2] + pad), Math.min(contentHeightPx, dirs[3] + pad));
-                            partRegion.setPath(tmp, boundsClip);
-                        }
-                    } catch (Exception e2) {
-                        Log.w(TAG, "fallback setPath failed for black part, using bounds as region", e2);
-                        // 最后保底：把部分 bounds 直接作为 Region（避免遗漏）
-                        partRegion.set(boundsClip);
-                    }
-                }
-
-                // union into black region
-                keyRegionBlack.op(partRegion, Region.Op.UNION);
-            }
-        }
-
-        if (keyPathBlackPart2 != null && keyPathBlackPart2Transformed != null) {
-            keyPathBlackPart2Transformed.reset();
-            keyPathBlackPart2Transformed.addPath(keyPathBlackPart2, m);
-
-            Region fullClip = new Region(0, 0, Math.max(1, contentWidthPx), Math.max(1, contentHeightPx));
+            // 解析 key index：keyNN_suffix
+            int idx = -1;
             try {
-                keyRegionBlackPart2.setPath(keyPathBlackPart2Transformed, fullClip);
-                // 若为空则执行同样的回退逻辑
-                if (keyRegionBlackPart2.isEmpty()) {
-                    android.graphics.RectF rf = new android.graphics.RectF();
-                    keyPathBlackPart2Transformed.computeBounds(rf, true);
-                    int[] dirs = VirtualPianoHelper.calculate_4_direction(rf.left,rf.top,rf.right,rf.bottom,REGION_PAD_PX);
-                    Region fallback = new Region(Math.max(0,dirs[0]),Math.max(0,dirs[1]) , Math.min(Math.max(1,contentWidthPx),dirs[2]), Math.min(Math.max(1, contentHeightPx),dirs[3]));
-                    try {
-                        keyRegionBlackPart2.setPath(keyPathBlackPart2Transformed, fallback);
-                        if (keyRegionBlackPart2.isEmpty()) {
-                            int pad = Math.max(1, REGION_PAD_PX * 4);
-                            fallback.set(Math.max(0, dirs[0]- pad), Math.max(0, dirs[1] - pad),
-                                    Math.min(contentWidthPx, dirs[2] + pad), Math.min(contentHeightPx, dirs[3] + pad));
-                            keyRegionBlackPart2.setPath(keyPathBlackPart2Transformed, fallback);
-                        }
-                    } catch (Exception e2) {
-                        Log.w(TAG, "fallback setPath failed for key2_black_test, using bounds as region", e2);
-                        keyRegionBlackPart2.set(fallback);
-                    }
+                int us = name.indexOf('_');
+                if (name.startsWith("key") && us > 3) {
+                    idx = Integer.parseInt(name.substring(3, us));
+                } else if (name.startsWith("key") && us > 0) {
+                    // 防护
+                    idx = Integer.parseInt(name.substring(3, us));
                 }
+            } catch (Exception ignore) {
+                idx = -1;
+            }
+            // 选择区段与目标宽度/viewport
+            int section = 1; // 1=start, 2=octave, 3=end, fallback->octave
+            int absOffsetX = 0;
+            int destW = swOct;
+            float vw = octaveVW, vh = octaveVH;
+            if (idx > 0 && idx <= 3) {
+                section = 1;
+                absOffsetX = offsetXForStartDrawable;
+                destW = swStart;
+                vw = startVW; vh = startVH;
+            } else if (idx == 88) {
+                section = 3;
+                absOffsetX = swStart + swOct * octaveCount;
+                destW = swEnd;
+                vw = endVW; vh = endVH;
+            } else if (idx > 3 && idx <= 87) {
+                section = 2;
+                int octaveIndex = (idx - 4) / 12; // 0-based
+                absOffsetX = swStart + octaveIndex * swOct;
+                destW = swOct;
+                vw = octaveVW; vh = octaveVH;
+            } else {
+                // 无法解析 idx 时：默认放在 start 区（防止丢失）
+                section = 1;
+                absOffsetX = offsetXForStartDrawable;
+                destW = swStart;
+                vw = startVW; vh = startVH;
+            }
+
+            // 计算 matrix（scale + translate）
+            float sx = (float) destW / Math.max(1f, vw);
+            float sy = (float) contentHeightPx / Math.max(1f, vh);
+            Matrix m = new Matrix();
+            m.setScale(sx, sy);
+            m.postTranslate(absOffsetX, 0);
+
+            // 取得或创建 transformed path / region placeholders
+            Path transformed = keyTransformedMap.get(name);
+            if (transformed == null) {
+                transformed = new Path();
+                keyTransformedMap.put(name, transformed);
+            }
+            transformed.reset();
+            transformed.addPath(proto, m);
+
+            // 构建 region，先尝试 fullClip，其次回退到 bounds + padding（与原逻辑一致）
+            Region region = keyRegionMap.get(name);
+            if (region == null) {
+                region = new Region();
+                keyRegionMap.put(name, region);
+            }
+            region.setEmpty();
+
+            boolean ok = false;
+            try {
+                region.setPath(transformed, fullClip);
+                if (!region.isEmpty()) ok = true;
             } catch (Exception e) {
-                Log.w(TAG, "setPath with fullClip failed for key2_black_test, fallback to bound-based region", e);
+                ok = false;
+            }
+            if (!ok) {
                 android.graphics.RectF rf = new android.graphics.RectF();
-                keyPathBlackPart2Transformed.computeBounds(rf, true);
-                int[] dirs = VirtualPianoHelper.calculate_4_direction(rf.left,rf.top,rf.right,rf.bottom,REGION_PAD_PX);
-                Region fallback = new Region(Math.max(0,dirs[0]),Math.max(0,dirs[1]) , Math.min(Math.max(1,contentWidthPx),dirs[2]), Math.min(Math.max(1, contentHeightPx),dirs[3]));
+                transformed.computeBounds(rf, true);
+                int[] dirs = VirtualPianoHelper.calculate_4_direction(rf.left, rf.top, rf.right, rf.bottom, REGION_PAD_PX);
+                int left = Math.max(0, dirs[0]);
+                int top = Math.max(0, dirs[1]);
+                int right = Math.min(Math.max(1, contentWidthPx), dirs[2]);
+                int bottom = Math.min(Math.max(1, contentHeightPx), dirs[3]);
+                Region boundsClip = new Region(left, top, right, bottom);
                 try {
-                    keyRegionBlackPart2.setPath(keyPathBlackPart2Transformed, fallback);
+                    region.setPath(transformed, boundsClip);
+                    if (region.isEmpty()) {
+                        int pad = Math.max(1, REGION_PAD_PX * 4);
+                        boundsClip.set(Math.max(0, left - pad), Math.max(0, top - pad),
+                                Math.min(contentWidthPx, right + pad), Math.min(contentHeightPx, bottom + pad));
+                        region.setPath(transformed, boundsClip);
+                    }
                 } catch (Exception e2) {
-                    Log.w(TAG, "final fallback failed for key2_black_test, using bounds region", e2);
-                    keyRegionBlackPart2.set(fallback);
+                    // 最后保底：用 bounds 矩形
+                    region.set(boundsClip);
                 }
             }
+
+            // 兼容旧字段与黑键合并
+            if ("key1_white".equals(name)) {
+                keyPathWhite1Transformed = transformed;
+                keyRegionWhite1 = region;
+            } else if ("key3_white".equals(name)) {
+                keyPathWhite2Transformed = transformed;
+                keyRegionWhite2 = region;
+            }
+
+            if (name.endsWith("_black") && !name.endsWith("_black_part2")) {
+                // 合并到黑键总 path / region
+                keyPathBlackTransformed.addPath(transformed);
+                keyRegionBlack.op(region, Region.Op.UNION);
+            }
+
+            if ("key2_black_part2".equals(name)) {
+                keyPathBlackPart2Transformed = transformed;
+                keyRegionBlackPart2 = region;
+            }
         }
+
+        // 对于那些在 init 时创建了 transformed/region 占位但未被上面填充的（例如某些 optional _black_part2），保证占位为空对象存在
+        for (String name : keyTransformedMap.keySet()) {
+            if (keyTransformedMap.get(name) == null) keyTransformedMap.put(name, new Path());
+            if (!keyRegionMap.containsKey(name)) keyRegionMap.put(name, new Region());
+        }
+
+
     }
 
     @Override
@@ -510,5 +758,86 @@ public class PianoView extends View {
 
     public int getContentWidth() {
         return contentWidthPx;
+    }
+
+
+
+    //TEST
+    public void debugValidateInitKeyHitTest() {
+        // piano pattern: in 12-key template, 白键位置 (1-based): 1,3,5,6,8,10,12 ; 黑键位置: 2,4,7,9,11
+        Set<Integer> whitePositions = new HashSet<>();
+        int[] whites = new int[] {1,3,5,6,8,10,12};
+        for (int w : whites) whitePositions.add(w);
+        Set<Integer> blackPositions = new HashSet<>();
+        int[] blacks = new int[] {2,4,7,9,11};
+        for (int b : blacks) blackPositions.add(b);
+
+        List<String> expected = new ArrayList<>();
+        // piano_start 的绝对三个键（保留）
+        expected.add("key1_white");
+        expected.add("key2_black");
+        // key2_black_part2 为可选，仅当解析到时再验证；保留在报告中单独说明
+        expected.add("key3_white");
+
+        // piano_keys 模板 -> 7 octaves * 12 keys, global index 4..87 (3 + oct*12 + k)
+        for (int oct = 0; oct < 7; oct++) {
+            for (int k = 1; k <= 12; k++) {
+                int global = 3 + oct * 12 + k; // 4..87
+                if (whitePositions.contains(k)) {
+                    expected.add("key" + global + "_white");
+                }
+                if (blackPositions.contains(k)) {
+                    expected.add("key" + global + "_black");
+                    // 不把 _black_part2 当作强制期望（视资源而定）
+                }
+            }
+        }
+        // piano_end 的绝对键
+        expected.add("key88_white");
+
+        // 检查 prototype 存在性
+        List<String> missingProtos = new ArrayList<>();
+        for (String name : expected) {
+            if (!keyPrototypeMap.containsKey(name)) {
+                missingProtos.add(name);
+            }
+        }
+
+        // 检查 transformed/region 占位（init 后是否创建）
+        List<String> missingTransformed = new ArrayList<>();
+        List<String> missingRegions = new ArrayList<>();
+        for (Map.Entry<String, Path> e : keyPrototypeMap.entrySet()) {
+            String name = e.getKey();
+            if (!keyTransformedMap.containsKey(name)) missingTransformed.add(name);
+            if (!keyRegionMap.containsKey(name)) missingRegions.add(name);
+        }
+
+        Log.i(TAG, "debugValidateInitKeyHitTest: prototypes=" + keyPrototypeMap.size()
+                + " transformed=" + keyTransformedMap.size()
+                + " regions=" + keyRegionMap.size()
+                + " expectedTotal=" + expected.size());
+
+        if (!missingProtos.isEmpty()) {
+            Log.w(TAG, "Missing prototypes (" + missingProtos.size() + "): " + missingProtos.subList(0, Math.min(80, missingProtos.size())));
+        } else {
+            Log.i(TAG, "All expected prototypes present (based on piano layout).");
+        }
+
+        // 特别检查是否解析到任何 _black_part2（因为我们把它当可选）
+        List<String> foundBlackPart2 = new ArrayList<>();
+        for (String name : keyPrototypeMap.keySet()) {
+            if (name.endsWith("_black_part2")) foundBlackPart2.add(name);
+        }
+        Log.i(TAG, "Found _black_part2 prototypes count=" + foundBlackPart2.size() + " sample=" + (foundBlackPart2.isEmpty() ? "[]" : foundBlackPart2.subList(0, Math.min(20, foundBlackPart2.size()))));
+
+        if (!missingTransformed.isEmpty()) {
+            Log.w(TAG, "Missing transformed placeholders (" + missingTransformed.size() + "), sample: " + missingTransformed.subList(0, Math.min(20, missingTransformed.size())));
+        }
+        if (!missingRegions.isEmpty()) {
+            Log.w(TAG, "Missing region placeholders (" + missingRegions.size() + "), sample: " + missingRegions.subList(0, Math.min(20, missingRegions.size())));
+        }
+
+        // 输出解析到的 prototype 名称集合，便于进一步比对资源命名
+        Log.i(TAG, "Parsed prototype names (sample, up to 100): " + new ArrayList<>(keyPrototypeMap.keySet()).subList(0, Math.min(100, keyPrototypeMap.size())));
     }
 }

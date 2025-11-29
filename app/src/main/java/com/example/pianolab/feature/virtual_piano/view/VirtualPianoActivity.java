@@ -61,6 +61,17 @@ public class VirtualPianoActivity extends AppCompatActivity {
                 } catch (Exception e) {
                     Log.e(TAG, "onGlobalLayout error", e);
                 }
+                // --- 调用测试函数：在布局完成后、UI 线程排队执行 ---
+
+                    pianoView.post(() -> {
+                        try {
+                            pianoView.debugValidateInitKeyHitTest();
+                        } catch (Exception e) {
+                            Log.e(TAG, "debugValidateInitKeyHitTest error", e);
+                        }
+                    });
+
+
             }
         });
     }
