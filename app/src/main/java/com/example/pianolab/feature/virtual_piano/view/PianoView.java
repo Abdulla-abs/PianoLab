@@ -12,10 +12,13 @@ import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.Region;
 import android.graphics.drawable.Drawable;
+import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.View;
+
+import com.example.pianolab.feature.virtual_piano.engine.PianoSoundEngine;
 import com.example.pianolab.utils.VirtualPianoHelper;
 
 import androidx.core.content.ContextCompat;
@@ -82,6 +85,7 @@ public class PianoView extends View {
 
     private static final float PIANO_START_VIEWPORT_W = 104.34f;
     private static final float PIANO_START_VIEWPORT_H = 323.5f;
+    private PianoSoundEngine soundEngine;
 
     public PianoView(Context context) { this(context, null); }
     public PianoView(Context context, AttributeSet attrs) { this(context, attrs, 0); }
@@ -97,6 +101,7 @@ public class PianoView extends View {
         fallbackPaintOctave.setColor(Color.parseColor("#e0e0e0"));
         fallbackPaintEnd = new Paint(Paint.ANTI_ALIAS_FLAG);
         fallbackPaintEnd.setColor(Color.parseColor("#dcdcdc"));
+        soundEngine = new PianoSoundEngine(context);
     }
 
     @SuppressLint("ResourceType")
@@ -256,7 +261,7 @@ public class PianoView extends View {
                     Region r = keyRegionMap.get(name);
                     boolean contains = (r != null && r.contains(x, y));
                     if (contains) {
-                        Log.d(TAG, "hitTestKeyAt -> hit(black): " + name + " at(" + x + "," + y + ") regionEmpty=" + (r == null ? "null" : r.isEmpty()));
+//                        Log.d(TAG, "hitTestKeyAt -> hit(black): " + name + " at(" + x + "," + y + ") regionEmpty=" + (r == null ? "null" : r.isEmpty()));
                         return name;
                     }
                 }
@@ -267,7 +272,7 @@ public class PianoView extends View {
                     Region r = keyRegionMap.get(name);
                     boolean contains = (r != null && r.contains(x, y));
                     if (contains) {
-                        Log.d(TAG, "hitTestKeyAt -> hit(black_part2): " + name + " at(" + x + "," + y + ") regionEmpty=" + (r == null ? "null" : r.isEmpty()));
+//                        Log.d(TAG, "hitTestKeyAt -> hit(black_part2): " + name + " at(" + x + "," + y + ") regionEmpty=" + (r == null ? "null" : r.isEmpty()));
                         return name;
                     }
                 }
@@ -278,7 +283,7 @@ public class PianoView extends View {
                     Region r = keyRegionMap.get(name);
                     boolean contains = (r != null && r.contains(x, y));
                     if (contains) {
-                        Log.d(TAG, "hitTestKeyAt -> hit(white): " + name + " at(" + x + "," + y + ") regionEmpty=" + (r == null ? "null" : r.isEmpty()));
+//                        Log.d(TAG, "hitTestKeyAt -> hit(white): " + name + " at(" + x + "," + y + ") regionEmpty=" + (r == null ? "null" : r.isEmpty()));
                         return name;
                     }
                 }
@@ -704,8 +709,16 @@ public class PianoView extends View {
 
     @Override
     public boolean onTouchEvent(android.view.MotionEvent ev) {
+        final long tNowNs = SystemClock.elapsedRealtimeNanos();
+        final long tNowMs = tNowNs / 1000000L;
         int action = ev.getActionMasked();
         int index = ev.getActionIndex();
+
+//        if (Log.isLoggable(TAG, Log.DEBUG)) {
+//            Log.d(TAG, "onTouchEvent entry action=" + action + " idx=" + index
+//                    + " pointers=" + ev.getPointerCount()
+//                    + " eventTime=" + ev.getEventTime() + " nowMs=" + tNowMs);
+//        }
 
         switch (action) {
             case android.view.MotionEvent.ACTION_DOWN:
@@ -713,11 +726,25 @@ public class PianoView extends View {
                 int pid = ev.getPointerId(index);
                 int px = Math.round(ev.getX(index));
                 int py = Math.round(ev.getY(index));
+                final long tHitStart = SystemClock.elapsedRealtimeNanos();
                 String hit = hitTestKeyAt(px, py);
+                final long tHitEnd = SystemClock.elapsedRealtimeNanos();
+//                    Log.i(TAG, "ACTION_DOWN pid=" + pid + " at(" + px + "," + py + ") hit=" + hit
+//                            + " hitMs=" + ((tHitEnd - tHitStart) / 1000000L));
+
                 if (hit != null) {
                     pointerKeyMap.put(pid, hit);
                     addPressedKey(hit);
-                    Log.i(TAG, "key pressed (down): " + hit + " pid=" + pid);
+                    // 播放声音
+                    if (soundEngine != null) {
+                        final long tCall = SystemClock.elapsedRealtimeNanos();
+//                            Log.i(TAG, "calling soundEngine.onKeyDown key=" + hit + " pid=" + pid + " callDelayMs=" + ((tCall - tHitEnd) / 1000000L));
+
+                        soundEngine.onKeyDown(hit, pid);
+                    }
+
+//                        Log.i(TAG, "key pressed (down): " + hit + " pid=" + pid);
+
                     invalidate();
                     return true; // 捕获事件以便接收后续 MOVE/UP
                 }
@@ -725,12 +752,18 @@ public class PianoView extends View {
             }
             case android.view.MotionEvent.ACTION_MOVE: {
                 boolean changed = false;
+                final long tMoveStart = SystemClock.elapsedRealtimeNanos();
                 for (int i = 0; i < ev.getPointerCount(); i++) {
                     int pid = ev.getPointerId(i);
                     int px = Math.round(ev.getX(i));
                     int py = Math.round(ev.getY(i));
                     String prev = pointerKeyMap.get(pid);
+                    final long tHitStart = SystemClock.elapsedRealtimeNanos();
                     String now = hitTestKeyAt(px, py);
+                    final long tHitEnd = SystemClock.elapsedRealtimeNanos();
+
+//                        Log.i(TAG, "MOVE pointer=" + pid + " prev=" + prev + " now=" + now + " hitMs=" + ((tHitEnd - tHitStart) / 1000000L));
+
                     if ((prev == null && now == null) || (prev != null && prev.equals(now))) {
                         continue;
                     }
@@ -738,14 +771,32 @@ public class PianoView extends View {
                     if (prev != null) {
                         removePressedKey(prev);
                         pointerKeyMap.remove(pid);
+                        // 停止对应声音（若尚未播放完则截断）
+                        if (soundEngine != null) {
+
+//                                Log.i(TAG, "MOVE -> stopping prev sound key=" + prev + " pid=" + pid);
+
+                            soundEngine.onKeyUp(prev, pid);
+                        }
                     }
                     if (now != null) {
                         pointerKeyMap.put(pid, now);
                         addPressedKey(now);
+                        // 播放新按下的声音
+                        if (soundEngine != null) {
+
+//                                Log.i(TAG, "MOVE -> starting new sound key=" + now + " pid=" + pid);
+
+                            soundEngine.onKeyDown(now, pid);
+                        }
                     }
                     changed = true;
                 }
+                final long tMoveEnd = SystemClock.elapsedRealtimeNanos();
                 if (changed) {
+
+//                        Log.i(TAG, "ACTION_MOVE processed durationMs=" + ((tMoveEnd - tMoveStart) / 1000000L));
+
                     invalidate();
                     return true;
                 }
@@ -758,7 +809,16 @@ public class PianoView extends View {
                 if (prev != null) {
                     removePressedKey(prev);
                     pointerKeyMap.remove(pid);
-                    Log.i(TAG, "key released (up): " + prev + " pid=" + pid);
+                    // 松手：停止（若尚未播放完则截断）
+                    if (soundEngine != null) {
+
+//                            Log.i(TAG, "ACTION_UP -> soundEngine.onKeyUp key=" + prev + " pid=" + pid);
+
+                        soundEngine.onKeyUp(prev, pid);
+                    }
+
+//                        Log.i(TAG, "key released (up): " + prev + " pid=" + pid);
+
                     invalidate();
                     return true;
                 }
@@ -769,11 +829,26 @@ public class PianoView extends View {
                 pointerKeyMap.clear();
                 keyRefCount.clear();
                 activeKeys.clear();
+                // 释放所有音频资源
+                if (soundEngine != null) {
+
+//                        Log.i(TAG, "ACTION_CANCEL -> releasing soundEngine");
+
+                    soundEngine.releaseAll();
+                }
                 invalidate();
                 return true;
             }
         }
         return super.onTouchEvent(ev);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (soundEngine != null) {
+            soundEngine.releaseAll();
+        }
     }
 
 
@@ -860,5 +935,17 @@ public class PianoView extends View {
 
         // 输出解析到的 prototype 名称集合，便于进一步比对资源命名
         Log.i(TAG, "Parsed prototype names (sample, up to 100): " + new ArrayList<>(keyPrototypeMap.keySet()).subList(0, Math.min(100, keyPrototypeMap.size())));
+
+//        if (soundEngine != null) {
+//            // 示例：测试 key16_white -> k036, key20_white -> k040（按你的命名规则调整）
+//            int resA = getResources().getIdentifier("k036", "raw", getContext().getPackageName());
+//            int resB = getResources().getIdentifier("k040", "raw", getContext().getPackageName());
+//            if (resA != 0 && resB != 0) {
+//                Log.i(TAG, "debug: calling playSimultaneousTest resA=" + resA + " resB=" + resB);
+//                soundEngine.playSimultaneousTestAsync(resA, resB,2000);
+//            } else {
+//                Log.w(TAG, "debug: test resources not found resA=" + resA + " resB=" + resB);
+//            }
+//        }
     }
 }
