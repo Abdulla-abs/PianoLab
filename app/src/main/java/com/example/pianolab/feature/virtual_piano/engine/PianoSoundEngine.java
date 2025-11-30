@@ -37,15 +37,20 @@ public class PianoSoundEngine {
     private final Map<Integer, Long> startTimes = Collections.synchronizedMap(new HashMap<>());
     private final Map<Integer, List<Integer>> pendingPlays = Collections.synchronizedMap(new HashMap<>());
 
-    private final ExecutorService loader = Executors.newSingleThreadExecutor();
-    private volatile boolean released = false;
-    private static final long MIN_STREAM_DURATION_MS = 250L;
+    private static final long SINGLE_NOTE_DISPATCH_DELAY_MS = 0L;
+
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Object chordLock = new Object();
     private final Map<Integer, Integer> chordQueue = new LinkedHashMap<>();
     private boolean chordFlushScheduled = false;
     private final Runnable chordFlushRunnable = this::flushChordQueue;
     private final Map<Integer, Long> streamStartMs = Collections.synchronizedMap(new HashMap<>());
+    private long chordFlushDelayMs = SINGLE_NOTE_DISPATCH_DELAY_MS;
+
+    private final ExecutorService loader = Executors.newSingleThreadExecutor();
+    private volatile boolean released = false;
+    private static final long MIN_STREAM_DURATION_MS = 250L;
+
 
     private static final long CHORD_DISPATCH_WINDOW_MS = 15L;
 
@@ -277,12 +282,22 @@ public class PianoSoundEngine {
     }
     private void enqueueChordPlay(int resId, int pointerId) {
         if (released || soundPool == null || playExecutor.isShutdown()) return;
+        long delayToPost = -1L;
         synchronized (chordLock) {
             chordQueue.put(pointerId, resId);
+            boolean multiTouch = chordQueue.size() > 1;
             if (!chordFlushScheduled) {
                 chordFlushScheduled = true;
-                handler.postDelayed(chordFlushRunnable, CHORD_DISPATCH_WINDOW_MS);
+                chordFlushDelayMs = multiTouch ? CHORD_DISPATCH_WINDOW_MS : SINGLE_NOTE_DISPATCH_DELAY_MS;
+                delayToPost = chordFlushDelayMs;
+            } else if (multiTouch && chordFlushDelayMs != CHORD_DISPATCH_WINDOW_MS) {
+                handler.removeCallbacks(chordFlushRunnable);
+                chordFlushDelayMs = CHORD_DISPATCH_WINDOW_MS;
+                delayToPost = chordFlushDelayMs;
             }
+        }
+        if (delayToPost >= 0) {
+            handler.postDelayed(chordFlushRunnable, delayToPost);
         }
     }
     private void flushChordQueue() {
@@ -291,11 +306,13 @@ public class PianoSoundEngine {
             if (released || soundPool == null || chordQueue.isEmpty()) {
                 chordQueue.clear();
                 chordFlushScheduled = false;
+                chordFlushDelayMs = SINGLE_NOTE_DISPATCH_DELAY_MS;
                 return;
             }
             snapshot = new LinkedHashMap<>(chordQueue);
             chordQueue.clear();
             chordFlushScheduled = false;
+            chordFlushDelayMs = SINGLE_NOTE_DISPATCH_DELAY_MS;
         }
         if (snapshot.isEmpty()) return;
 
@@ -373,6 +390,7 @@ public class PianoSoundEngine {
         synchronized (chordLock) {
             chordQueue.clear();
             chordFlushScheduled = false;
+            chordFlushDelayMs = SINGLE_NOTE_DISPATCH_DELAY_MS;
         }
 
         try {
