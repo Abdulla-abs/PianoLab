@@ -16,8 +16,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 public class PianoSoundEngine {
@@ -176,6 +179,15 @@ public class PianoSoundEngine {
             });
         }
     }
+    private final ExecutorService playExecutor = Executors.newFixedThreadPool(4, new ThreadFactory() {
+        private int idx = 0;
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(r, "piano-chord-" + (++idx));
+            t.setDaemon(true);
+            return t;
+        }
+    });
 
     public void onKeyDown(String keyName, int pointerId) {
         long tEntryNs = SystemClock.elapsedRealtimeNanos();
@@ -264,7 +276,7 @@ public class PianoSoundEngine {
         }
     }
     private void enqueueChordPlay(int resId, int pointerId) {
-        if (released || soundPool == null) return;
+        if (released || soundPool == null || playExecutor.isShutdown()) return;
         synchronized (chordLock) {
             chordQueue.put(pointerId, resId);
             if (!chordFlushScheduled) {
@@ -285,9 +297,33 @@ public class PianoSoundEngine {
             chordQueue.clear();
             chordFlushScheduled = false;
         }
-        for (Map.Entry<Integer, Integer> entry : snapshot.entrySet()) {
+        if (snapshot.isEmpty()) return;
+
+        if (snapshot.size() == 1 || playExecutor.isShutdown()) {
+            Map.Entry<Integer, Integer> entry = snapshot.entrySet().iterator().next();
             playSample(entry.getValue(), entry.getKey());
+            return;
         }
+
+        CountDownLatch startGate = new CountDownLatch(1);
+        for (Map.Entry<Integer, Integer> entry : snapshot.entrySet()) {
+            final int pid = entry.getKey();
+            final int res = entry.getValue();
+            try {
+                playExecutor.execute(() -> {
+                    try {
+                        startGate.await();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                    playSample(res, pid);
+                });
+            } catch (RejectedExecutionException ex) {
+                playSample(res, pid);
+            }
+        }
+        startGate.countDown();
     }
     private boolean removeFromChordQueue(int pointerId) {
         synchronized (chordLock) {
@@ -340,6 +376,15 @@ public class PianoSoundEngine {
         }
 
         try {
+            playExecutor.shutdown();
+            if (!playExecutor.awaitTermination(500, TimeUnit.MILLISECONDS)) {
+                playExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (Exception ignored) { }
+
+        try {
             loader.shutdown();
             if (!loader.awaitTermination(500, TimeUnit.MILLISECONDS)) {
                 loader.shutdownNow();
@@ -364,7 +409,6 @@ public class PianoSoundEngine {
 
         Log.d(TAG, "releaseAll");
     }
-
     public void playSimultaneousTestAsync(final int resIdA, final int resIdB, final long timeoutMs) {
         loader.execute(() -> {
             if (released || soundPool == null) {
