@@ -19,6 +19,7 @@ import android.util.SparseArray;
 import android.view.View;
 
 import com.example.pianolab.feature.virtual_piano.engine.PianoSoundEngine;
+import com.example.pianolab.feature.virtual_piano.engine.PianoPaintEngine;
 import com.example.pianolab.utils.VirtualPianoHelper;
 
 import androidx.core.content.ContextCompat;
@@ -81,11 +82,17 @@ public class PianoView extends View {
     private Path keyPathBlackPart2Transformed;
     private Region keyRegionBlackPart2;
 
+    private boolean showPitchNames = true;
+    private final Map<String, String> keyNoteNameMap = new HashMap<>();
+    private Paint noteTextPaint;
+
     // piano_start 的 viewport 大小（从 xml 确认）
 
     private static final float PIANO_START_VIEWPORT_W = 104.34f;
     private static final float PIANO_START_VIEWPORT_H = 323.5f;
     private PianoSoundEngine soundEngine;
+    private final PianoPaintEngine paintEngine;
+
 
     public PianoView(Context context) { this(context, null); }
     public PianoView(Context context, AttributeSet attrs) { this(context, attrs, 0); }
@@ -102,6 +109,11 @@ public class PianoView extends View {
         fallbackPaintEnd = new Paint(Paint.ANTI_ALIAS_FLAG);
         fallbackPaintEnd.setColor(Color.parseColor("#dcdcdc"));
         soundEngine = new PianoSoundEngine(context);
+        paintEngine = new PianoPaintEngine();
+        noteTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        noteTextPaint.setColor(0xFF1E88E5);
+        noteTextPaint.setStyle(Paint.Style.FILL);
+        noteTextPaint.setTextAlign(Paint.Align.CENTER);
     }
 
     @SuppressLint("ResourceType")
@@ -189,6 +201,8 @@ public class PianoView extends View {
                 keyRegionMap.put(blackPart2Name, new Region());
             }
         }
+
+        ensureNoteLabelMap();
 
 
     }
@@ -327,166 +341,47 @@ public class PianoView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        int x = 0;
-        int h = getHeight();
+        int height = getHeight();
 
-        // start
         if (swStart <= 0) swStart = Math.max(1, contentWidthPx / (octaveCount * 7 + 3));
-        if (dStart != null) {
-            dStart.setBounds(x, 0, x + swStart, h);
-            try { dStart.draw(canvas); } catch (Exception e) { Log.e(TAG, "draw dStart failed", e); }
-        } else {
-            canvas.drawRect(x, 0, x + swStart, h, fallbackPaintStart);
-        }
-        x += swStart;
-
-        // octaves
         if (swOct <= 0) swOct = Math.max(1, (contentWidthPx - swStart - swEnd) / Math.max(1, octaveCount));
-        for (int i = 0; i < octaveCount; i++) {
-            if (dOctave != null) {
-                dOctave.setBounds(x, 0, x + swOct, h);
-                try { dOctave.draw(canvas); } catch (Exception e) { Log.e(TAG, "draw dOctave failed idx=" + i, e); }
-            } else {
-                canvas.drawRect(x, 0, x + swOct, h, fallbackPaintOctave);
-            }
-            x += swOct;
-        }
-
-        // end
         if (swEnd <= 0) swEnd = Math.max(1, contentWidthPx / (octaveCount * 7 + 3));
-        if (dEnd != null) {
-            dEnd.setBounds(x, 0, x + swEnd, h);
-            try { dEnd.draw(canvas); } catch (Exception e) { Log.e(TAG, "draw dEnd failed", e); }
-        } else {
-            canvas.drawRect(x, 0, x + swEnd, h, fallbackPaintEnd);
-        }
 
-        if (!activeKeys.isEmpty()) {
-            try {
-                // debug snapshot
-                StringBuilder sb = new StringBuilder();
-                sb.append("onDraw highlight activeKeys=").append(activeKeys.size()).append(" list=").append(activeKeys);
-                int foundTrans = 0, foundRegionNonEmpty = 0;
-                int sampleLog = 0;
-                for (String name : activeKeys) {
-                    if (name == null) continue;
-                    Path p = keyTransformedMap.get(name);
-                    Region r = keyRegionMap.get(name);
-                    boolean hasP = (p != null);
-                    boolean hasR = (r != null && !r.isEmpty());
-                    if (hasP) foundTrans++;
-                    if (hasR) foundRegionNonEmpty++;
-                    if (sampleLog < 20) {
-                        sb.append("\n  ").append(name)
-                                .append(" transformed=").append(hasP)
-                                .append(" regionNonEmpty=").append(hasR);
-                        if (hasP) {
-                            try {
-                                android.graphics.RectF rf = new android.graphics.RectF();
-                                p.computeBounds(rf, true);
-                                sb.append(" bounds=").append((int)rf.left).append(",").append((int)rf.top)
-                                        .append(",").append((int)rf.right).append(",").append((int)rf.bottom);
-                            } catch (Exception ignored) {}
-                        }
-                        sampleLog++;
-                    }
-                }
-                sb.append(" transformedFound=").append(foundTrans).append(" regionFound=").append(foundRegionNonEmpty);
-                Log.d(TAG, sb.toString());
+        paintEngine.drawBackground(
+                canvas,
+                dStart,
+                dOctave,
+                dEnd,
+                fallbackPaintStart,
+                fallbackPaintOctave,
+                fallbackPaintEnd,
+                swStart,
+                swOct,
+                swEnd,
+                octaveCount,
+                contentWidthPx,
+                height
+        );
 
-                // 合并所有活跃白键路径（用于绘制白键高亮）
-                Path whiteCombined = new Path();
-                boolean hasWhite = false;
+        paintEngine.drawHighlights(
+                canvas,
+                activeKeys,
+                keyTransformedMap,
+                keyPathWhite1Transformed,
+                keyPathWhite2Transformed,
+                keyPathBlackTransformed,
+                keyPathBlackPart2Transformed,
+                keyHighlightWhitePaint,
+                keyHighlightBlackPaint
+        );
 
-                // 合并活跃黑键用于在上层绘制（不用于差集）
-                Path blackCombinedActive = new Path();
-                boolean hasActiveBlack = false;
-
-                for (String name : activeKeys) {
-                    if (name == null) continue;
-                    if (name.endsWith("_white")) {
-                        Path p = keyTransformedMap.get(name);
-                        if (p != null) {
-                            whiteCombined.addPath(p);
-                            hasWhite = true;
-                        } else {
-                            // 兼容旧字段回退
-                            if ("key1_white".equals(name) && keyPathWhite1Transformed != null) {
-                                whiteCombined.addPath(keyPathWhite1Transformed);
-                                hasWhite = true;
-                            } else if ("key3_white".equals(name) && keyPathWhite2Transformed != null) {
-                                whiteCombined.addPath(keyPathWhite2Transformed);
-                                hasWhite = true;
-                            }
-                        }
-                    } else if (name.endsWith("_black") || name.endsWith("_black_part2")) {
-                        Path p = keyTransformedMap.get(name);
-                        if (p != null) {
-                            blackCombinedActive.addPath(p);
-                            hasActiveBlack = true;
-                        } else {
-                            if (!name.endsWith("_black_part2") && keyPathBlackTransformed != null) {
-                                blackCombinedActive.addPath(keyPathBlackTransformed);
-                                hasActiveBlack = true;
-                            } else if (name.endsWith("_black_part2") && keyPathBlackPart2Transformed != null) {
-                                blackCombinedActive.addPath(keyPathBlackPart2Transformed);
-                                hasActiveBlack = true;
-                            }
-                        }
-                    }
-                }
-
-                // 计算全局聚合黑键是否存在（用于挖去白键上的黑键形状）
-                boolean hasAggregateBlack = false;
-                if (keyPathBlackTransformed != null) {
-                    try {
-                        android.graphics.RectF rf = new android.graphics.RectF();
-                        keyPathBlackTransformed.computeBounds(rf, true);
-                        hasAggregateBlack = (rf.width() > 0 && rf.height() > 0);
-                    } catch (Exception ignored) {
-                        hasAggregateBlack = true; // 保守地认为存在
-                    }
-                }
-
-                Log.d(TAG, "onDraw highlight computed hasWhite=" + hasWhite + " hasActiveBlack=" + hasActiveBlack + " hasAggregateBlack=" + hasAggregateBlack);
-
-                // 白键高亮：优先用 (whiteCombined - keyPathBlackTransformed)（如果聚合黑键存在）
-                if (hasWhite) {
-                    if (hasAggregateBlack) {
-                        Path drawPath = new Path(whiteCombined);
-                        try {
-                            drawPath.op(keyPathBlackTransformed, Path.Op.DIFFERENCE);
-                            canvas.drawPath(drawPath, keyHighlightWhitePaint);
-                        } catch (Exception e) {
-                            Log.w(TAG, "aggregate white - aggregateBlack op failed, fallback to whiteCombined", e);
-                            try {
-                                canvas.drawPath(whiteCombined, keyHighlightWhitePaint);
-                            } catch (Exception e2) {
-                                Log.w(TAG, "draw fallback whiteCombined failed", e2);
-                            }
-                        }
-                    } else {
-                        try {
-                            canvas.drawPath(whiteCombined, keyHighlightWhitePaint);
-                        } catch (Exception e) {
-                            Log.w(TAG, "draw whiteCombined failed", e);
-                        }
-                    }
-                }
-
-                // 绘制按下的黑键高亮（始终在上层）
-                if (hasActiveBlack) {
-                    try {
-                        canvas.drawPath(blackCombinedActive, keyHighlightBlackPaint);
-                    } catch (Exception e) {
-                        Log.w(TAG, "draw blackCombinedActive failed", e);
-                    }
-                }
-
-            } catch (Exception e) {
-                Log.w(TAG, "highlight draw failed", e);
-            }
-        }
+        paintEngine.drawNoteLabels(
+                canvas,
+                showPitchNames,
+                keyNoteNameMap,
+                keyRegionMap,
+                contentHeightPx
+        );
     }
 
     // java
@@ -854,6 +749,53 @@ public class PianoView extends View {
 
     public int getContentWidth() {
         return contentWidthPx;
+    }
+
+    public int getKeyCenterX(String keyName) {
+        if (keyRegionMap == null || keyRegionMap.isEmpty()) {
+            return Math.max(0, contentWidthPx / 2);
+        }
+        if (keyName != null) {
+            Region region = keyRegionMap.get(keyName);
+            if (region != null && !region.isEmpty()) {
+                Rect bounds = region.getBounds();
+                return bounds.left + (bounds.width() / 2);
+            }
+        }
+        return Math.max(0, contentWidthPx / 2);
+    }
+
+    public void setShowPitchNames(boolean show) {
+        if (this.showPitchNames == show) return;
+        this.showPitchNames = show;
+        invalidate();
+    }
+
+    private void ensureNoteLabelMap() {
+        if (!keyNoteNameMap.isEmpty()) return;
+        String[] noteNames = {"C","C#","D","D#","E","F","F#","G","G#","A","A#","B"};
+        for (int i = 1; i <= 88; i++) {
+            int midi = i + 20; // A0(21) ... C8(108)
+            String name = noteNames[midi % 12];
+            if (name.contains("#")) continue; // 仅对白键绘制
+            int octave = midi / 12 - 1;
+            keyNoteNameMap.put("key" + i + "_white", name + octave);
+        }
+    }
+
+    private void drawNoteLabels(Canvas canvas) {
+        if (!showPitchNames || keyNoteNameMap.isEmpty() || keyRegionMap.isEmpty()) return;
+        float textSize = Math.max(12f, contentHeightPx * 0.08f);
+        noteTextPaint.setTextSize(textSize);
+        Paint.FontMetrics fm = noteTextPaint.getFontMetrics();
+        for (Map.Entry<String, String> entry : keyNoteNameMap.entrySet()) {
+            Region region = keyRegionMap.get(entry.getKey());
+            if (region == null || region.isEmpty()) continue;
+            Rect bounds = region.getBounds();
+            float cx = bounds.centerX();
+            float baseline = bounds.bottom - bounds.height() * 0.08f - fm.bottom;
+            canvas.drawText(entry.getValue(), cx, baseline, noteTextPaint);
+        }
     }
 
 
