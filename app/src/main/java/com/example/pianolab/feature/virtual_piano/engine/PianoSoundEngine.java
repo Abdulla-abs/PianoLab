@@ -13,9 +13,11 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -50,6 +52,10 @@ public class PianoSoundEngine {
     private final ExecutorService loader = Executors.newSingleThreadExecutor();
     private volatile boolean released = false;
     private static final long MIN_STREAM_DURATION_MS = 250L;
+    private volatile boolean sustainEnabled = false;
+    private static final long SUSTAIN_STREAM_TIMEOUT_MS = 9000L;
+    private final Set<Integer> sustainingStreams = Collections.synchronizedSet(new HashSet<>());
+    private final Map<Integer, Runnable> sustainCleanupTasks = Collections.synchronizedMap(new HashMap<>());
 
 
     private static final long CHORD_DISPATCH_WINDOW_MS = 15L;
@@ -270,6 +276,11 @@ public class PianoSoundEngine {
             removePendingPointer(pointerId);
             return;
         }
+        if (sustainEnabled) {
+            sustainingStreams.add(streamId);
+            scheduleSustainCleanup(streamId);
+            return;
+        }
 
         Long startMs = streamStartMs.get(streamId);
         long elapsed = (startMs == null) ? MIN_STREAM_DURATION_MS : (SystemClock.elapsedRealtime() - startMs);
@@ -380,11 +391,20 @@ public class PianoSoundEngine {
         } catch (Exception e) {
             Log.w(TAG, "stopStream failed stream=" + streamId, e);
         } finally {
+            cancelSustainCleanup(streamId);
+            sustainingStreams.remove(streamId);
             streamStartMs.remove(streamId);
         }
     }
 
+    public void setSustainEnabled(boolean enabled) {
+        if (this.sustainEnabled == enabled) return;
+        this.sustainEnabled = enabled;
+        stopAllStreams();
+    }
+
     public void releaseAll() {
+        stopAllStreams();
         released = true;
         handler.removeCallbacksAndMessages(null);
         synchronized (chordLock) {
@@ -426,6 +446,68 @@ public class PianoSoundEngine {
         streamStartMs.clear();
 
         Log.d(TAG, "releaseAll");
+    }
+
+    private void stopAllStreams() {
+        List<Integer> streamIds = new ArrayList<>();
+        synchronized (pointerToStream) {
+            streamIds.addAll(pointerToStream.values());
+            pointerToStream.clear();
+        }
+        synchronized (sustainingStreams) {
+            streamIds.addAll(sustainingStreams);
+            sustainingStreams.clear();
+        }
+        synchronized (sustainCleanupTasks) {
+            for (Runnable task : sustainCleanupTasks.values()) {
+                handler.removeCallbacks(task);
+            }
+            sustainCleanupTasks.clear();
+        }
+        synchronized (pendingPlays) {
+            pendingPlays.clear();
+        }
+        for (Integer streamId : streamIds) {
+            if (streamId == null) continue;
+            if (soundPool != null) {
+                stopStream(streamId);
+            } else {
+                cancelSustainCleanup(streamId);
+                streamStartMs.remove(streamId);
+            }
+        }
+        streamStartMs.clear();
+    }
+
+    private void scheduleSustainCleanup(int streamId) {
+        Runnable existing;
+        synchronized (sustainCleanupTasks) {
+            existing = sustainCleanupTasks.remove(streamId);
+        }
+        if (existing != null) handler.removeCallbacks(existing);
+
+        Runnable task = new Runnable() {
+            @Override
+            public void run() {
+                sustainingStreams.remove(streamId);
+                streamStartMs.remove(streamId);
+                synchronized (sustainCleanupTasks) {
+                    sustainCleanupTasks.remove(streamId);
+                }
+            }
+        };
+        synchronized (sustainCleanupTasks) {
+            sustainCleanupTasks.put(streamId, task);
+        }
+        handler.postDelayed(task, SUSTAIN_STREAM_TIMEOUT_MS);
+    }
+
+    private void cancelSustainCleanup(int streamId) {
+        Runnable task;
+        synchronized (sustainCleanupTasks) {
+            task = sustainCleanupTasks.remove(streamId);
+        }
+        if (task != null) handler.removeCallbacks(task);
     }
     public void playSimultaneousTestAsync(final int resIdA, final int resIdB, final long timeoutMs) {
         loader.execute(() -> {

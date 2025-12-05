@@ -2,4 +2,12 @@
     <string name="app_name">PianoLab</string>
     <string name="label_current_beat">拍: %1$d</string>
     <string name="desc_piano_keys">钢琴键盘</string>
+    <string name="tuner_title">调音器</string>
+    <string name="tuner_target_note_label">目标音高</string>
+    <string name="tuner_detected_note_label">当前检测</string>
+    <string name="tuner_status_listening">正在监听…</string>
+    <string name="tuner_status_idle">未开始</string>
+    <string name="tuner_start_listening">开始调音</string>
+    <string name="tuner_stop_listening">停止调音</string>
+    <string name="tuner_frequency">%1$.2f Hz</string>
 </resources>

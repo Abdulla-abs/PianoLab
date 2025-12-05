@@ -75,7 +75,7 @@ public class VirtualPianoActivity extends AppCompatActivity {
             if (switchSustain.isChecked() != sustain) {
                 switchSustain.setChecked(sustain);
             }
-            // 具体延音逻辑将来添加
+            pianoView.setSustainEnabled(sustain);
         });
 
         hsPiano.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {

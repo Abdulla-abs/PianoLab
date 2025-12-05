@@ -85,6 +85,7 @@ public class PianoView extends View {
     private boolean showPitchNames = true;
     private final Map<String, String> keyNoteNameMap = new HashMap<>();
     private Paint noteTextPaint;
+    private boolean sustainEnabled = false;
 
     // piano_start 的 viewport 大小（从 xml 确认）
 
@@ -145,7 +146,7 @@ public class PianoView extends View {
         Map<String, Path> namedStart = VirtualPianoHelper.loadNamedPathsFromVector(getContext(), R.drawable.piano_start, false);
         Map<String, Path> namedKeys  = VirtualPianoHelper.loadNamedPathsFromVector(getContext(), R.drawable.piano_keys, true);
         Map<String, Path> namedEnd   = VirtualPianoHelper.loadNamedPathsFromVector(getContext(), R.drawable.piano_end, false);
-        // 后续逻辑保持不变（把 namedStart/namedKeys/namedEnd 合并并生成 keyPrototypeMap...）
+        // 把 namedStart/namedKeys/namedEnd 合并并生成 keyPrototypeMap...
         // 把 piano_start 的绝对命名先放入原型 map（优先）
         for (Map.Entry<String, Path> e : namedStart.entrySet()) {
             Path copy = new Path();
@@ -153,7 +154,7 @@ public class PianoView extends View {
             keyPrototypeMap.put(e.getKey(), copy);
         }
 
-        // piano_keys 模板扩展逻辑（不变）
+        // piano_keys 模板扩展逻辑
         for (int oct = 0; oct < 7; oct++) {
             for (int k = 1; k <= 12; k++) {
                 String relName = "key" + k;
@@ -179,7 +180,7 @@ public class PianoView extends View {
             keyPrototypeMap.put(e.getKey(), copy);
         }
 
-        // 创建 transformed/region 占位（保持原实现）
+        // 创建 transformed/region 占位
         for (int i = 1; i <= 88; i++) {
             String whiteName = "key" + i + "_white";
             String blackName = "key" + i + "_black";
@@ -303,7 +304,7 @@ public class PianoView extends View {
                 }
             }
 
-            // 没命中时，打印 summary（避免过于频繁，使用 info 级别）
+            // 没命中时，打印 summary
             int nonEmptyBlack = 0, nonEmptyWhite = 0;
             for (String name : allKeyNames) {
                 Region r = keyRegionMap.get(name);
@@ -318,23 +319,23 @@ public class PianoView extends View {
                     + " keyRegionMap=" + (keyRegionMap == null ? "null" : keyRegionMap.size()));
         }
 
-        // 回退兼容：如果上面没有填充 map（或未命中），保留原有单一字段检测以避免回归
-        if (keyRegionBlack != null && keyRegionBlack.contains(x, y)) {
-            Log.d(TAG, "hitTestKeyAt -> fallback hit key2_black at(" + x + "," + y + ") regionEmpty=" + keyRegionBlack.isEmpty());
-            return "key2_black";
-        }
-        if (keyRegionBlackPart2 != null && keyRegionBlackPart2.contains(x, y)) {
-            Log.d(TAG, "hitTestKeyAt -> fallback hit key2_black_part2 at(" + x + "," + y + ") regionEmpty=" + keyRegionBlackPart2.isEmpty());
-            return "key2_black_part2";
-        }
-        if (keyRegionWhite1 != null && keyRegionWhite1.contains(x, y)) {
-            Log.d(TAG, "hitTestKeyAt -> fallback hit key1_white at(" + x + "," + y + ") regionEmpty=" + keyRegionWhite1.isEmpty());
-            return "key1_white";
-        }
-        if (keyRegionWhite2 != null && keyRegionWhite2.contains(x, y)) {
-            Log.d(TAG, "hitTestKeyAt -> fallback hit key3_white at(" + x + "," + y + ") regionEmpty=" + keyRegionWhite2.isEmpty());
-            return "key3_white";
-        }
+//        // 回退兼容：如果上面没有填充 map（或未命中），保留原有单一字段检测以避免回归
+//        if (keyRegionBlack != null && keyRegionBlack.contains(x, y)) {
+//            Log.d(TAG, "hitTestKeyAt -> fallback hit key2_black at(" + x + "," + y + ") regionEmpty=" + keyRegionBlack.isEmpty());
+//            return "key2_black";
+//        }
+//        if (keyRegionBlackPart2 != null && keyRegionBlackPart2.contains(x, y)) {
+//            Log.d(TAG, "hitTestKeyAt -> fallback hit key2_black_part2 at(" + x + "," + y + ") regionEmpty=" + keyRegionBlackPart2.isEmpty());
+//            return "key2_black_part2";
+//        }
+//        if (keyRegionWhite1 != null && keyRegionWhite1.contains(x, y)) {
+//            Log.d(TAG, "hitTestKeyAt -> fallback hit key1_white at(" + x + "," + y + ") regionEmpty=" + keyRegionWhite1.isEmpty());
+//            return "key1_white";
+//        }
+//        if (keyRegionWhite2 != null && keyRegionWhite2.contains(x, y)) {
+//            Log.d(TAG, "hitTestKeyAt -> fallback hit key3_white at(" + x + "," + y + ") regionEmpty=" + keyRegionWhite2.isEmpty());
+//            return "key3_white";
+//        }
         return null;
     }
 
@@ -456,7 +457,7 @@ public class PianoView extends View {
                 vw = startVW; vh = startVH;
             }
 
-            // **局部修复**：仅针对最后一个白键 key88_white 基于 proto bounds 计算 matrix，其他键不变
+            // 仅针对最后一个白键 key88_white 基于 proto bounds 计算 matrix，其他键不变
             Matrix m = new Matrix();
             if (idx == 88 && name.endsWith("_white")) {
                 android.graphics.RectF protoRf = new android.graphics.RectF();
@@ -769,6 +770,14 @@ public class PianoView extends View {
         if (this.showPitchNames == show) return;
         this.showPitchNames = show;
         invalidate();
+    }
+
+    public void setSustainEnabled(boolean sustainEnabled) {
+        if (this.sustainEnabled == sustainEnabled) return;
+        this.sustainEnabled = sustainEnabled;
+        if (soundEngine != null) {
+            soundEngine.setSustainEnabled(sustainEnabled);
+        }
     }
 
     private void ensureNoteLabelMap() {
