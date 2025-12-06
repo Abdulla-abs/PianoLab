@@ -10,4 +10,14 @@
     <string name="tuner_start_listening">开始调音</string>
     <string name="tuner_stop_listening">停止调音</string>
     <string name="tuner_frequency">%1$.2f Hz</string>
+    <string name="tuner_reference_label">标准音：%1$s · %2$.1f Hz</string>
+    <string name="tuner_deviation">偏差：%1$.1f 音分</string>
+    <string name="tuner_settings_title">基本设置</string>
+    <string name="tuner_setting_auto_detect">自动检测音高</string>
+    <string name="tuner_setting_noise_filter">噪声滤波</string>
+    <string name="tuner_wave_placeholder">波形监视</string>
+    <string name="tuner_back_home">返回主页</string>
+    <string name="tuner_play_reference">播放标准音</string>
+    <string name="tuner_stop_reference">停止标准音</string>
+    <string name="tuner_piano_preview_label">当前调音键位预览</string>
 </resources>

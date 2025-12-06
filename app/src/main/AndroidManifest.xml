@@ -39,7 +39,8 @@
         <activity
             android:name="com.example.pianolab.feature.tuner.view.TunerActivity"
             android:exported="false"
-            android:parentActivityName="com.example.pianolab.feature.home.view.HomeActivity">
+            android:parentActivityName="com.example.pianolab.feature.home.view.HomeActivity"
+            android:screenOrientation="sensorLandscape">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.example.pianolab.feature.home.view.HomeActivity" />
