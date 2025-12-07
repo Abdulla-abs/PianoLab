@@ -20,4 +20,6 @@
     <string name="tuner_play_reference">播放标准音</string>
     <string name="tuner_stop_reference">停止标准音</string>
     <string name="tuner_piano_preview_label">当前调音键位预览</string>
+    <string name="tuner_permission_title">需要录音权限</string>
+    <string name="tuner_permission_message">开启麦克风以便调音。</string>
 </resources>

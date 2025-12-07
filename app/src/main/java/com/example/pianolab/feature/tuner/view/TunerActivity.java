@@ -1,10 +1,17 @@
 package com.example.pianolab.feature.tuner.view;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.databinding.DataBindingUtil;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -13,8 +20,11 @@ import com.example.pianolab.databinding.ActivityTunerBinding;
 import com.example.pianolab.feature.tuner.viewmodel.TunerViewModel;
 
 public class TunerActivity extends AppCompatActivity {
+    private static final String PERMISSION = Manifest.permission.RECORD_AUDIO;
+
     private ActivityTunerBinding binding;
     private TunerViewModel viewModel;
+    private ActivityResultLauncher<String> permissionLauncher;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -25,10 +35,37 @@ public class TunerActivity extends AppCompatActivity {
         viewModel = new ViewModelProvider(this).get(TunerViewModel.class);
         binding.setViewModel(viewModel);
 
+        initPermissionLauncher();
         initToolbar();
         initSettings();
         initButtons();
         observeState();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (viewModel.getTunerState().getValue() != null && viewModel.getTunerState().getValue().isListening()) {
+            ensurePermissionThenStart();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (viewModel.getTunerState().getValue() != null && viewModel.getTunerState().getValue().isListening()) {
+            viewModel.toggleListening();
+        }
+    }
+
+    private void initPermissionLauncher() {
+        permissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+            if (granted) {
+                viewModel.toggleListening();
+            } else {
+                showPermissionRationale();
+            }
+        });
     }
 
     private void initToolbar() {
@@ -48,7 +85,23 @@ public class TunerActivity extends AppCompatActivity {
                     ? R.string.tuner_stop_reference
                     : R.string.tuner_play_reference);
         });
-        binding.toggleListeningButton.setOnClickListener(v -> viewModel.toggleListening());
+        binding.toggleListeningButton.setOnClickListener(v -> ensurePermissionThenStart());
+    }
+
+    private void ensurePermissionThenStart() {
+        if (ContextCompat.checkSelfPermission(this, PERMISSION) == PackageManager.PERMISSION_GRANTED) {
+            viewModel.toggleListening();
+        } else {
+            permissionLauncher.launch(PERMISSION);
+        }
+    }
+
+    private void showPermissionRationale() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.tuner_permission_title)
+                .setMessage(R.string.tuner_permission_message)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
     }
 
     private void observeState() {

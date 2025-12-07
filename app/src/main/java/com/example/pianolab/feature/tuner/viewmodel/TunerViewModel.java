@@ -1,21 +1,35 @@
 package com.example.pianolab.feature.tuner.viewmodel;
 
+import android.app.Application;
+
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.ViewModel;
 
+import com.example.pianolab.feature.tuner.engine.PitchNoteMapper;
+import com.example.pianolab.feature.tuner.engine.TarsosAudioEngine;
 import com.example.pianolab.feature.tuner.model.TunerState;
 
-import java.util.ArrayList;
-import java.util.List;
+public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngine.Listener {
+    private static final float DEFAULT_REFERENCE = 440f;
+    private static final float ALT_REFERENCE = 442f;
+    private static final float PROBABILITY_THRESHOLD = 0.85f;
+    private static final float SAMPLE_RATE = 44100f;
+    private static final int BUFFER_SIZE = 2048;
 
-public class TunerViewModel extends ViewModel {
     private final MutableLiveData<TunerState> tunerState = new MutableLiveData<>(TunerState.idle());
+    private final TarsosAudioEngine audioEngine;
     private boolean referencePlaying = false;
     private String manualTargetNote = "A4";
-    private float manualTargetFrequency = 440f;
+    private float manualTargetFrequency = DEFAULT_REFERENCE;
     private boolean listening;
 
+
+    public TunerViewModel(@NonNull Application application) {
+        super(application);
+        audioEngine = new TarsosAudioEngine(SAMPLE_RATE, BUFFER_SIZE, this);
+    }
 
     public LiveData<TunerState> getTunerState() {
         return tunerState;
@@ -52,7 +66,9 @@ public class TunerViewModel extends ViewModel {
         boolean newListening = !current.isListening();
         tunerState.setValue(current.withListening(newListening));
         if (newListening) {
-            emitMockDetection();
+            audioEngine.start();
+        } else {
+            audioEngine.stop();
         }
     }
 
@@ -65,31 +81,42 @@ public class TunerViewModel extends ViewModel {
         return referencePlaying;
     }
 
-    private void emitMockDetection() {
+    @Override
+    public void onCleared() {
+        super.onCleared();
+        audioEngine.release();
+    }
+
+    @Override
+    public void onPitch(@NonNull com.example.pianolab.feature.tuner.engine.PitchDetectionResult result) {
+        if (!result.isReliable(PROBABILITY_THRESHOLD)) {
+            return;
+        }
+        float measured = result.getFrequency();
         TunerState current = safeState();
-        float measured = 439.5f;
-        float deviation = -3.2f;
-        List<Float> waveform = createMockWaveform();
         if (current.isAutoDetectEnabled()) {
+            String note = PitchNoteMapper.frequencyToNoteName(measured);
             tunerState.setValue(current
-                    .withAutoDetection("A4", 440f)
+                    .withAutoDetection(note, measured)
                     .withMeasurement(measured)
-                    .withDeviation(deviation)
-                    .withWaveform(waveform));
+                    .withDeviation(calcDeviation(measured, measured))
+            );
         } else {
             tunerState.setValue(current
                     .withMeasurement(measured)
-                    .withDeviation(deviation)
-                    .withWaveform(waveform));
+                    .withDeviation(calcDeviation(measured, current.getManualFrequency()))
+            );
         }
     }
 
-    private List<Float> createMockWaveform() {
-        List<Float> samples = new ArrayList<>();
-        for (int i = 0; i < 128; i++) {
-            samples.add((float) Math.sin(i / 8f));
-        }
-        return samples;
+    @Override
+    public void onError(@NonNull Throwable throwable) {
+        // TODO: surface error to UI once design is available
+        toggleListening();
+    }
+
+    private float calcDeviation(float measured, float reference) {
+        return PitchNoteMapper.centsOff(measured, reference);
     }
 
     private TunerState safeState() {
