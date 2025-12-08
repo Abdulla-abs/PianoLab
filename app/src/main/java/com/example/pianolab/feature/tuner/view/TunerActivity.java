@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.CompoundButton;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -25,12 +26,17 @@ public class TunerActivity extends AppCompatActivity {
     private ActivityTunerBinding binding;
     private TunerViewModel viewModel;
     private ActivityResultLauncher<String> permissionLauncher;
+    private CompoundButton.OnCheckedChangeListener waveModeListener;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_tuner);
         binding.setLifecycleOwner(this);
+
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
 
         viewModel = new ViewModelProvider(this).get(TunerViewModel.class);
         binding.setViewModel(viewModel);
@@ -76,15 +82,16 @@ public class TunerActivity extends AppCompatActivity {
         binding.switchAutoDetect.setOnCheckedChangeListener((compoundButton, isChecked) -> viewModel.onAutoDetectChanged(isChecked));
         binding.switchNoiseFilter.setOnCheckedChangeListener((compoundButton, isChecked) -> viewModel.onNoiseFilterChanged(isChecked));
         binding.switchRefStandard.setOnCheckedChangeListener((compoundButton, isChecked) -> viewModel.onReferenceStandardChanged(isChecked));
+        waveModeListener = (buttonView, isChecked) -> {
+            boolean frequencyMode = !isChecked;
+            viewModel.setWaveDisplayMode(frequencyMode);
+            binding.waveformPlaceholder.setFrequencyMode(frequencyMode);
+        };
+        binding.switchWaveMode.setOnCheckedChangeListener(waveModeListener);
     }
 
     private void initButtons() {
-        binding.buttonPlayReference.setOnClickListener(v -> {
-            viewModel.toggleReferenceTone();
-            binding.buttonPlayReference.setText(viewModel.isReferencePlaying()
-                    ? R.string.tuner_stop_reference
-                    : R.string.tuner_play_reference);
-        });
+        binding.buttonPlayReference.setOnClickListener(v -> viewModel.toggleReferenceTone());
         binding.toggleListeningButton.setOnClickListener(v -> ensurePermissionThenStart());
     }
 
@@ -106,15 +113,32 @@ public class TunerActivity extends AppCompatActivity {
 
     private void observeState() {
         viewModel.getTunerState().observe(this, state -> {
+            boolean switchesEnabled = !state.isListening();
+
+            binding.switchAutoDetect.setEnabled(switchesEnabled);
+            binding.switchNoiseFilter.setEnabled(switchesEnabled);
+            binding.switchRefStandard.setEnabled(switchesEnabled);
+            binding.switchWaveMode.setEnabled(switchesEnabled);
+
             binding.switchAutoDetect.setChecked(state.isAutoDetectEnabled());
             binding.switchNoiseFilter.setChecked(state.isNoiseFilterEnabled());
             binding.switchRefStandard.setChecked(Math.abs(state.getReferenceFrequency() - 442f) < 0.5f);
+            binding.switchWaveMode.setChecked(!viewModel.isFrequencyMode());
+            binding.switchWaveMode.setOnCheckedChangeListener(null);
+            binding.switchWaveMode.setOnCheckedChangeListener(waveModeListener);
+
             binding.toggleListeningButton.setText(state.isListening() ? R.string.tuner_stop_listening : R.string.tuner_start_listening);
             binding.textCurrentNote.setText(state.getDisplayNote());
-            binding.textRefFreq.setText(getString(R.string.tuner_frequency, state.getMeasuredFrequency()));
-            binding.textCurrFreq.setText(getString(R.string.tuner_frequency, state.getDisplayFrequency()));
+            binding.textRefFreq.setText(getString(R.string.tuner_ref_frequency, state.getReferenceFrequency()));
+            binding.textCurrFreq.setText(getString(R.string.tuner_current_frequency, state.getDisplayFrequency()));
             binding.textDeviation.setText(getString(R.string.tuner_deviation, state.getDeviationCents()));
-            binding.waveformPlaceholder.setWaveform(state.getWaveformSamples());
+
+            binding.waveformPlaceholder.setFrequencyMode(viewModel.isFrequencyMode());
+            if (viewModel.isFrequencyMode()) {
+                binding.waveformPlaceholder.setWaveform(state.getSpectrumMagnitudes());
+            } else {
+                binding.waveformPlaceholder.setWaveform(state.getWaveformSamples());
+            }
             updateDeviationIndicator(state.getDeviationCents());
         });
     }

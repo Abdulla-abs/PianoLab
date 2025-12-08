@@ -16,6 +16,7 @@ public class TunerState {
     private final float measuredFrequency;
     private final float deviationCents;
     private final List<Float> waveformSamples;
+    private final List<Float> spectrumMagnitudes;
 
     private TunerState(boolean listening,
                        boolean autoDetectEnabled,
@@ -27,7 +28,8 @@ public class TunerState {
                        float detectedFrequency,
                        float measuredFrequency,
                        float deviationCents,
-                       List<Float> waveformSamples) {
+                       List<Float> waveformSamples,
+                       List<Float> spectrumMagnitudes) {
         this.listening = listening;
         this.autoDetectEnabled = autoDetectEnabled;
         this.noiseFilterEnabled = noiseFilterEnabled;
@@ -39,6 +41,7 @@ public class TunerState {
         this.measuredFrequency = measuredFrequency;
         this.deviationCents = deviationCents;
         this.waveformSamples = waveformSamples;
+        this.spectrumMagnitudes = spectrumMagnitudes;
     }
 
     public static TunerState idle() {
@@ -53,45 +56,51 @@ public class TunerState {
                 0f,
                 0f,
                 0f,
+                Collections.emptyList(),
                 Collections.emptyList()
         );
     }
 
     public TunerState withListening(boolean listening) {
-        return new TunerState(listening, autoDetectEnabled, noiseFilterEnabled, referenceFrequency, manualNote, manualFrequency, detectedNote, detectedFrequency, measuredFrequency, deviationCents, waveformSamples);
+        return new TunerState(listening, autoDetectEnabled, noiseFilterEnabled, referenceFrequency, manualNote, manualFrequency, detectedNote, detectedFrequency, measuredFrequency, deviationCents, waveformSamples, spectrumMagnitudes);
     }
 
     public TunerState withAutoDetect(boolean enabled) {
-        return new TunerState(listening, enabled, noiseFilterEnabled, referenceFrequency, manualNote, manualFrequency, detectedNote, detectedFrequency, measuredFrequency, deviationCents, waveformSamples);
+        return new TunerState(listening, enabled, noiseFilterEnabled, referenceFrequency, manualNote, manualFrequency, detectedNote, detectedFrequency, measuredFrequency, deviationCents, waveformSamples, spectrumMagnitudes);
     }
 
     public TunerState withNoiseFilter(boolean enabled) {
-        return new TunerState(listening, autoDetectEnabled, enabled, referenceFrequency, manualNote, manualFrequency, detectedNote, detectedFrequency, measuredFrequency, deviationCents, waveformSamples);
+        return new TunerState(listening, autoDetectEnabled, enabled, referenceFrequency, manualNote, manualFrequency, detectedNote, detectedFrequency, measuredFrequency, deviationCents, waveformSamples, spectrumMagnitudes);
     }
 
     public TunerState withReferenceFrequency(float frequency) {
-        return new TunerState(listening, autoDetectEnabled, noiseFilterEnabled, frequency, manualNote, manualFrequency, detectedNote, detectedFrequency, measuredFrequency, deviationCents, waveformSamples);
+        return new TunerState(listening, autoDetectEnabled, noiseFilterEnabled, frequency, manualNote, manualFrequency, detectedNote, detectedFrequency, measuredFrequency, deviationCents, waveformSamples, spectrumMagnitudes);
     }
 
     public TunerState withManualTarget(String note, float frequency) {
-        return new TunerState(listening, autoDetectEnabled, noiseFilterEnabled, referenceFrequency, note, frequency, detectedNote, detectedFrequency, measuredFrequency, deviationCents, waveformSamples);
+        return new TunerState(listening, autoDetectEnabled, noiseFilterEnabled, referenceFrequency, note, frequency, detectedNote, detectedFrequency, measuredFrequency, deviationCents, waveformSamples, spectrumMagnitudes);
     }
 
     public TunerState withAutoDetection(String note, float frequency) {
-        return new TunerState(listening, autoDetectEnabled, noiseFilterEnabled, referenceFrequency, manualNote, manualFrequency, note, frequency, measuredFrequency, deviationCents, waveformSamples);
+        return new TunerState(listening, autoDetectEnabled, noiseFilterEnabled, referenceFrequency, manualNote, manualFrequency, note, frequency, measuredFrequency, deviationCents, waveformSamples, spectrumMagnitudes);
     }
 
     public TunerState withMeasurement(float frequency) {
-        return new TunerState(listening, autoDetectEnabled, noiseFilterEnabled, referenceFrequency, manualNote, manualFrequency, detectedNote, detectedFrequency, frequency, deviationCents, waveformSamples);
+        return new TunerState(listening, autoDetectEnabled, noiseFilterEnabled, referenceFrequency, manualNote, manualFrequency, detectedNote, detectedFrequency, frequency, deviationCents, waveformSamples, spectrumMagnitudes);
     }
 
     public TunerState withDeviation(float cents) {
-        return new TunerState(listening, autoDetectEnabled, noiseFilterEnabled, referenceFrequency, manualNote, manualFrequency, detectedNote, detectedFrequency, measuredFrequency, cents, waveformSamples);
+        return new TunerState(listening, autoDetectEnabled, noiseFilterEnabled, referenceFrequency, manualNote, manualFrequency, detectedNote, detectedFrequency, measuredFrequency, cents, waveformSamples, spectrumMagnitudes);
     }
 
     public TunerState withWaveform(List<Float> samples) {
         List<Float> immutable = samples == null ? Collections.emptyList() : Collections.unmodifiableList(new ArrayList<>(samples));
-        return new TunerState(listening, autoDetectEnabled, noiseFilterEnabled, referenceFrequency, manualNote, manualFrequency, detectedNote, detectedFrequency, measuredFrequency, deviationCents, immutable);
+        return new TunerState(listening, autoDetectEnabled, noiseFilterEnabled, referenceFrequency, manualNote, manualFrequency, detectedNote, detectedFrequency, measuredFrequency, deviationCents, immutable, spectrumMagnitudes);
+    }
+
+    public TunerState withSpectrum(List<Float> magnitudes) {
+        List<Float> immutable = magnitudes == null ? Collections.emptyList() : Collections.unmodifiableList(new ArrayList<>(magnitudes));
+        return new TunerState(listening, autoDetectEnabled, noiseFilterEnabled, referenceFrequency, manualNote, manualFrequency, detectedNote, detectedFrequency, measuredFrequency, deviationCents, waveformSamples, immutable);
     }
 
     public boolean isListening() {
@@ -138,11 +147,25 @@ public class TunerState {
         return waveformSamples;
     }
 
+    public List<Float> getSpectrumMagnitudes() {
+        return spectrumMagnitudes;
+    }
+
+    public List<Float> getWaveformSamplesForMode(boolean frequencyMode) {
+        return frequencyMode ? spectrumMagnitudes : waveformSamples;
+    }
+
     public String getDisplayNote() {
-        return autoDetectEnabled ? detectedNote : manualNote;
+        if (autoDetectEnabled && detectedNote != null && !detectedNote.isEmpty()) {
+            return detectedNote;
+        }
+        return manualNote;
     }
 
     public float getDisplayFrequency() {
-        return autoDetectEnabled ? detectedFrequency : manualFrequency;
+        if (autoDetectEnabled && detectedFrequency > 0f) {
+            return detectedFrequency;
+        }
+        return manualFrequency;
     }
 }

@@ -21,7 +21,6 @@
             android:layout_height="48dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:weightSum="4"
             android:padding="4dp">
 
             <ImageButton
@@ -35,16 +34,6 @@
                 android:scaleType="centerInside"
                 app:tint="@android:color/white" />
 
-            <TextView
-                android:id="@+id/text_title"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/tuner_title"
-                android:textColor="@android:color/white"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:gravity="center" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -108,10 +97,11 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="参考频率: "
+                    android:maxLines="1"
+                    android:text="标准频率: "
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
-                    android:maxLines="1" />
+                    android:textSize="12sp" />
+
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -137,6 +127,52 @@
                     android:textSize="12sp"
                     android:maxLines="1" />
             </LinearLayout>
+            <LinearLayout
+                android:id="@+id/wave_display_group"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="波形显示:"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:maxLines="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:text="频域"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:maxLines="1" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/switch_wave_mode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:checked="false"
+                    android:showText="true"
+                    android:textOn="频域"
+                    android:textOff="时域" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:text="时域"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:maxLines="1" />
+            </LinearLayout>
+
         </LinearLayout>
 
         <LinearLayout
@@ -179,16 +215,6 @@
                 android:layout_marginEnd="8dp"
                 android:background="#11FFFFFF" />
         </LinearLayout>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/tuner_piano_preview_label"
-            android:textColor="@android:color/white"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
         <LinearLayout
             android:id="@+id/piano_section"
             android:layout_width="match_parent"
@@ -202,7 +228,7 @@
                 android:id="@+id/piano_preview_container"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="0.65"
+                android:layout_weight="0.5"
                 android:fillViewport="true"
                 android:overScrollMode="never">
 
@@ -242,7 +268,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text='@{@string/tuner_frequency(viewModel.tunerState.measuredFrequency)}'
+                    android:text='@{@string/tuner_ref_frequency(viewModel.tunerState.measuredFrequency)}'
                     android:textColor="@android:color/white" />
 
                 <TextView
@@ -251,7 +277,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:textColor="@android:color/holo_red_light"
-                    android:text='@{@string/tuner_frequency(viewModel.tunerState.displayFrequency)}' />
+                    android:text='@{@string/tuner_current_frequency(viewModel.tunerState.displayFrequency)}' />
                 <TextView
                     android:id="@+id/text_deviation"
                     android:layout_width="match_parent"
@@ -265,9 +291,9 @@
 
             <LinearLayout
                 android:id="@+id/action_row"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:layout_marginStart="12dp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.22"
                 android:gravity="center"
                 android:orientation="vertical">
                 <ToggleButton
@@ -285,12 +311,10 @@
                     android:text='播放当前参考音' />
 
 
-
                 <Button
                     android:id="@+id/button_play_reference"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
                     android:text="@string/tuner_play_reference" />
 
             </LinearLayout>

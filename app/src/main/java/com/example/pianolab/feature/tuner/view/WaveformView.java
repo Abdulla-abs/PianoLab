@@ -11,7 +11,9 @@ import java.util.List;
 
 public class WaveformView extends View {
     private final Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint barPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final List<Float> samples = new ArrayList<>();
+    private boolean frequencyMode = true;
 
     public WaveformView(Context context) {
         super(context);
@@ -32,6 +34,9 @@ public class WaveformView extends View {
         linePaint.setStyle(Paint.Style.STROKE);
         linePaint.setStrokeWidth(2f);
         linePaint.setColor(0xFFFFFFFF);
+
+        barPaint.setStyle(Paint.Style.FILL);
+        barPaint.setColor(0x88FFFFFF);
     }
 
     public void setWaveform(List<Float> waveform) {
@@ -42,12 +47,25 @@ public class WaveformView extends View {
         invalidate();
     }
 
+    public void setFrequencyMode(boolean frequencyMode) {
+        this.frequencyMode = frequencyMode;
+        invalidate();
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (samples.isEmpty()) {
             return;
         }
+        if (frequencyMode) {
+            drawSpectrum(canvas);
+        } else {
+            drawWaveform(canvas);
+        }
+    }
+
+    private void drawWaveform(Canvas canvas) {
         float width = getWidth();
         float height = getHeight();
         float centerY = height / 2f;
@@ -65,5 +83,27 @@ public class WaveformView extends View {
             prevY = y;
         }
     }
-}
 
+    private void drawSpectrum(Canvas canvas) {
+        float width = getWidth();
+        float height = getHeight();
+        float max = 1f;
+        for (float value : samples) {
+            if (value > max) {
+                max = value;
+            }
+        }
+        if (max <= 0f) {
+            return;
+        }
+        float barWidth = Math.max(width / samples.size(), 2f);
+        for (int i = 0; i < samples.size(); i++) {
+            float norm = samples.get(i) / max;
+            float barHeight = norm * height;
+            float left = i * barWidth;
+            float right = left + barWidth * 0.8f;
+            float top = height - barHeight;
+            canvas.drawRect(left, top, right, height, barPaint);
+        }
+    }
+}
