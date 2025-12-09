@@ -23,6 +23,8 @@ import be.tarsos.dsp.util.fft.FFT;
 
 public class TarsosAudioEngine {
     private static final String TAG = "TarsosAudioEngine";
+    private final NoiseFilter noiseFilter;
+    private final AudioProcessor noiseFilterProcessor;
     public interface Listener {
         @MainThread
         void onPitch(@NonNull PitchDetectionResult result);
@@ -54,6 +56,8 @@ public class TarsosAudioEngine {
         this.bufferSize = bufferSize;
         this.listener = listener;
         this.spectrumProcessor = createSpectrumProcessor();
+        this.noiseFilter = new NoiseFilter(sampleRate);
+        this.noiseFilterProcessor = createNoiseFilterProcessor();
     }
 
     public void start() {
@@ -66,6 +70,7 @@ public class TarsosAudioEngine {
             try {
                 dispatcher = AudioDispatcherFactory.fromDefaultMicrophone((int) sampleRate, bufferSize, 0);
                 Log.d(TAG, "microphone opened");
+                dispatcher.addAudioProcessor(noiseFilterProcessor);
                 dispatcher.addAudioProcessor(spectrumProcessor);
                 PitchProcessor processor = new PitchProcessor(
                         PitchProcessor.PitchEstimationAlgorithm.YIN,
@@ -92,6 +97,20 @@ public class TarsosAudioEngine {
     public void release() {
         stop();
         executor.shutdownNow();
+    }
+
+    private AudioProcessor createNoiseFilterProcessor() {
+        return new AudioProcessor() {
+            @Override
+            public boolean process(AudioEvent event) {
+                float[] buffer = event.getFloatBuffer();
+                noiseFilter.apply(buffer);
+                return true;
+            }
+
+            @Override
+            public void processingFinished() { }
+        };
     }
 
     private void stopInternal() {

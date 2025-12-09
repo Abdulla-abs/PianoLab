@@ -80,7 +80,7 @@ public class TunerActivity extends AppCompatActivity {
 
     private void initSettings() {
         binding.switchAutoDetect.setOnCheckedChangeListener((compoundButton, isChecked) -> viewModel.onAutoDetectChanged(isChecked));
-        binding.switchNoiseFilter.setOnCheckedChangeListener((compoundButton, isChecked) -> viewModel.onNoiseFilterChanged(isChecked));
+        binding.switchAutoStop.setOnCheckedChangeListener((compoundButton, isChecked) -> viewModel.onAutoStopChanged(isChecked));
         binding.switchRefStandard.setOnCheckedChangeListener((compoundButton, isChecked) -> viewModel.onReferenceStandardChanged(isChecked));
         waveModeListener = (buttonView, isChecked) -> {
             boolean frequencyMode = !isChecked;
@@ -116,12 +116,12 @@ public class TunerActivity extends AppCompatActivity {
             boolean switchesEnabled = !state.isListening();
 
             binding.switchAutoDetect.setEnabled(switchesEnabled);
-            binding.switchNoiseFilter.setEnabled(switchesEnabled);
+            binding.switchAutoStop.setEnabled(switchesEnabled);
             binding.switchRefStandard.setEnabled(switchesEnabled);
             binding.switchWaveMode.setEnabled(switchesEnabled);
 
             binding.switchAutoDetect.setChecked(state.isAutoDetectEnabled());
-            binding.switchNoiseFilter.setChecked(state.isNoiseFilterEnabled());
+            binding.switchAutoStop.setChecked(state.isAutoStopEnabled());
             binding.switchRefStandard.setChecked(Math.abs(state.getReferenceFrequency() - 442f) < 0.5f);
             binding.switchWaveMode.setChecked(!viewModel.isFrequencyMode());
             binding.switchWaveMode.setOnCheckedChangeListener(null);
@@ -129,8 +129,8 @@ public class TunerActivity extends AppCompatActivity {
 
             binding.toggleListeningButton.setText(state.isListening() ? R.string.tuner_stop_listening : R.string.tuner_start_listening);
             binding.textCurrentNote.setText(state.getDisplayNote());
-            binding.textRefFreq.setText(getString(R.string.tuner_ref_frequency, state.getReferenceFrequency()));
-            binding.textCurrFreq.setText(getString(R.string.tuner_current_frequency, state.getDisplayFrequency()));
+            binding.textDetectedNoteFreq.setText(getString(R.string.tuner_detectedNote_frequency, state.getDisplayFrequency()));
+            binding.textCurrFreq.setText(getString(R.string.tuner_current_frequency, state.getMeasuredFrequency()));
             binding.textDeviation.setText(getString(R.string.tuner_deviation, state.getDeviationCents()));
 
             binding.waveformPlaceholder.setFrequencyMode(viewModel.isFrequencyMode());
@@ -144,14 +144,8 @@ public class TunerActivity extends AppCompatActivity {
     }
 
     private void updateDeviationIndicator(float cents) {
-        View ruler = binding.deviationRuler;
-        View indicator = binding.deviationIndicator;
-        ruler.post(() -> {
-            float width = ruler.getWidth();
-            float half = width / 2f;
-            float normalized = Math.max(-50f, Math.min(50f, cents));
-            float offset = normalized / 50f * half;
-            indicator.setTranslationX(offset);
-        });
+        if (binding.deviationRuler instanceof DeviationRulerView) {
+            ((DeviationRulerView) binding.deviationRuler).setDeviation(cents);
+        }
     }
 }

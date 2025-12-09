@@ -24,6 +24,18 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
     private static final float PROBABILITY_THRESHOLD = 0.85f;
     private static final float SAMPLE_RATE = 44100f;
     private static final int BUFFER_SIZE = 2048;
+    private static final int STABLE_FRAME_COUNT = 5;
+    private static final int DELAY_FRAME_COUNT = 3;
+    private static final float STABLE_DEVIATION_CENTS = 10f;
+    private static final float AMPLITUDE_DROP_RATIO = 0.4f;
+
+    private static final int QUICK_STOP_FRAME_COUNT = 3;  // 约 3 帧 ≈ 225ms
+    private int validPitchCount = 0;
+
+    private final List<Float> stableFrequencies = new ArrayList<>();
+    private int delayCounter = 0;
+    private float lastRMS = 0f;
+
 
 
     private final MutableLiveData<TunerState> tunerState = new MutableLiveData<>(TunerState.idle());
@@ -61,8 +73,11 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
         }
     }
 
-    public void onNoiseFilterChanged(boolean enabled) {
-        tunerState.setValue(safeState().withNoiseFilter(enabled));
+    public void onAutoStopChanged(boolean enabled) {
+        tunerState.setValue(safeState().withAutoStop(enabled));
+        if (enabled && safeState().isListening()) {
+            resetAutoStopState();
+        }
     }
 
     public void onReferenceStandardChanged(boolean use442) {
@@ -86,6 +101,7 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
         tunerState.setValue(current.withListening(newListening));
         listening = newListening;
         if (newListening) {
+            resetAutoStopState();
             audioEngine.start();
         } else {
             audioEngine.stop();
@@ -117,18 +133,27 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
         if (measured <= 0f) {
             return;
         }
+
         TunerState current = safeState();
+        float targetFreq;
+
         if (current.isAutoDetectEnabled()) {
-            float referenceFreq = TunerHelper.calculate_ref_freq(measured, current.getReferenceFrequency());
+            float detectedNoteFreq = TunerHelper.calculate_ref_freq(measured, current.getReferenceFrequency());
             String note = PitchNoteMapper.frequencyToNoteName(measured);
+            targetFreq = detectedNoteFreq;
             tunerState.setValue(current
-                    .withAutoDetection(note, referenceFreq)
+                    .withAutoDetection(note, detectedNoteFreq)
                     .withMeasurement(measured)
-                    .withDeviation(calcDeviation(measured, referenceFreq)));
+                    .withDeviation(TunerHelper.calculate_deviation_cent(measured, detectedNoteFreq)));
         } else {
+            targetFreq = current.getManualFrequency();
             tunerState.setValue(current
                     .withMeasurement(measured)
-                    .withDeviation(calcDeviation(measured, current.getManualFrequency())));
+                    .withDeviation(TunerHelper.calculate_deviation_cent(measured, targetFreq)));
+        }
+
+        if (current.isAutoStopEnabled()) {
+            processQuickStop();
         }
     }
 
@@ -162,10 +187,45 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
             waveform.add(sample);
         }
         tunerState.setValue(safeState().withWaveform(waveform));
+
+        if (safeState().isAutoStopEnabled()) {
+            float rms = TunerHelper.calculate_RMS(samples);
+            if (lastRMS > 0f && rms < lastRMS * AMPLITUDE_DROP_RATIO) {
+                Log.d(TAG, "Amplitude drop detected, reset quick-stop");
+                resetAutoStopState();
+            }
+            lastRMS = rms;
+        }
     }
 
-    private float calcDeviation(float measured, float reference) {
-        return PitchNoteMapper.centsOff(measured, reference);
+    private void processAutoStop(float measured, float targetFreq) {
+        float deviation = Math.abs(TunerHelper.calculate_deviation_cent(measured, targetFreq));
+
+        if (deviation <= STABLE_DEVIATION_CENTS) {
+            stableFrequencies.add(measured);
+            if (stableFrequencies.size() >= STABLE_FRAME_COUNT) {
+                delayCounter++;
+                if (delayCounter >= DELAY_FRAME_COUNT) {
+                    Log.d(TAG, "Auto-stop triggered: stopping listening");
+                    toggleListening();
+                }
+            }
+        } else {
+            resetAutoStopState();
+        }
+    }
+
+    private void processQuickStop() {
+        validPitchCount++;
+        if (validPitchCount >= QUICK_STOP_FRAME_COUNT) {
+            Log.d(TAG, "Quick-stop triggered after " + validPitchCount + " frames");
+            toggleListening();
+        }
+    }
+
+    private void resetAutoStopState() {
+        validPitchCount = 0;
+        lastRMS = 0f;
     }
 
     private TunerState safeState() {

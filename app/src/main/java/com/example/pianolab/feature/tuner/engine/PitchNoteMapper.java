@@ -20,12 +20,5 @@ public final class PitchNoteMapper {
         return NOTE_NAMES[noteIndex] + octave;
     }
 
-    public static float centsOff(float frequency, float referenceFrequency) {
-        if (frequency <= 0 || referenceFrequency <= 0) {
-            return 0f;
-        }
-        double ratio = frequency / referenceFrequency;
-        return (float) (1200.0 * Math.log(ratio) / Math.log(2));
-    }
 }
 

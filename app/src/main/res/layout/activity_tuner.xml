@@ -72,16 +72,18 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/tuner_setting_noise_filter"
+                    android:text="@string/tuner_setting_auto_stop"
                     android:textColor="@android:color/white"
                     android:textSize="12sp"
                     android:maxLines="1" />
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/switch_noise_filter"
+                    android:id="@+id/switch_auto_stop"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp" />
+                    android:layout_marginStart="4dp"
+                    android:checked="true"
+                    />
             </LinearLayout>
 
             <LinearLayout
@@ -183,30 +185,14 @@
             android:orientation="horizontal"
             android:layout_marginTop="12dp">
 
-            <LinearLayout
+            <com.example.pianolab.feature.tuner.view.DeviationRulerView
                 android:id="@+id/deviation_ruler"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="0.6"
                 android:layout_marginEnd="8dp"
-                android:orientation="vertical"
                 android:background="#26FFFFFF"
-                android:gravity="center"
-                android:padding="8dp">
-
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="2dp"
-                    android:background="#88FFFFFF" />
-
-                <View
-                    android:id="@+id/deviation_indicator"
-                    android:layout_width="4dp"
-                    android:layout_height="28dp"
-                    android:layout_marginTop="12dp"
-                    android:background="@android:color/holo_green_light" />
-            </LinearLayout>
+                android:padding="8dp" />
             <com.example.pianolab.feature.tuner.view.WaveformView
                 android:id="@+id/waveform_placeholder"
                 android:layout_width="0dp"
@@ -264,11 +250,11 @@
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/text_ref_freq"
+                    android:id="@+id/text_detectedNote_freq"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text='@{@string/tuner_ref_frequency(viewModel.tunerState.measuredFrequency)}'
+                    android:text='@{@string/tuner_detectedNote_frequency(viewModel.tunerState.displayFrequency)}'
                     android:textColor="@android:color/white" />
 
                 <TextView
@@ -277,7 +263,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:textColor="@android:color/holo_red_light"
-                    android:text='@{@string/tuner_current_frequency(viewModel.tunerState.displayFrequency)}' />
+                    android:text='@{@string/tuner_current_frequency(viewModel.tunerState.measuredFrequency)}' />
                 <TextView
                     android:id="@+id/text_deviation"
                     android:layout_width="match_parent"
