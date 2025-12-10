@@ -179,4 +179,64 @@ public class PianoPaintEngine {
             canvas.drawText(entry.getValue(), cx, baseline, noteTextPaint);
         }
     }
+
+    //tuner模块定制引擎
+    public void drawSingleOctave(
+            Canvas canvas,
+            Drawable octaveDrawable,
+            Paint fallbackPaint,
+            int width,
+            int height,
+            Set<String> highlightedKeys,
+            Map<String, Path> keyPaths,
+            Paint highlightWhite,
+            Paint highlightBlack
+    ) {
+        if (octaveDrawable != null) {
+            octaveDrawable.setBounds(0, 0, width, height);
+            try {
+                octaveDrawable.draw(canvas);
+            } catch (Exception e) {
+                canvas.drawRect(0, 0, width, height, fallbackPaint);
+            }
+        } else {
+            canvas.drawRect(0, 0, width, height, fallbackPaint);
+        }
+
+    }
+
+    /**
+     * 绘制简化的音名标签(仅字母,无八度数字)
+     */
+    public void drawSimplifiedNoteLabels(
+            Canvas canvas,
+            Map<String, String> keyNoteMap,
+            Map<String, Region> keyRegionMap,
+            int height
+    ) {
+        if (keyNoteMap == null || keyNoteMap.isEmpty() || keyRegionMap == null) {
+            return;
+        }
+
+        Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        textPaint.setColor(0xFF1E88E5);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setTextSize(Math.max(12f, height * 0.08f));
+
+        Paint.FontMetrics fm = textPaint.getFontMetrics();
+        for (Map.Entry<String, String> entry : keyNoteMap.entrySet()) {
+            Region region = keyRegionMap.get(entry.getKey());
+            if (region == null || region.isEmpty()) continue;
+
+            Rect bounds = region.getBounds();
+            float cx = bounds.exactCenterX();
+            float baseline = bounds.bottom - bounds.height() * 0.08f - fm.bottom;
+            canvas.drawText(entry.getValue(), cx, baseline, textPaint);
+        }
+    }
+
+
+
+
+
 }

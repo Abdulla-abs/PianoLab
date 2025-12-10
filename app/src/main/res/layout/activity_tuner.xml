@@ -212,9 +212,9 @@
 
             <HorizontalScrollView
                 android:id="@+id/piano_preview_container"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:layout_weight="0.5"
+
                 android:fillViewport="true"
                 android:overScrollMode="never">
 
@@ -222,13 +222,25 @@
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent">
 
-                    <com.example.pianolab.feature.virtual_piano.view.PianoView
+                    <com.example.pianolab.feature.tuner.view.TunerPianoView
                         android:id="@+id/preview_piano"
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:background="@android:color/black" />
                 </FrameLayout>
             </HorizontalScrollView>
+            <TextView
+                android:id="@+id/text_current_note"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0.25"
+                android:text='@{viewModel.tunerState.displayNote}'
+                android:textColor="@android:color/white"
+                android:textSize="48sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp" />
 
 
             <LinearLayout
@@ -240,19 +252,12 @@
                 android:paddingStart="12dp"
                 android:gravity="center_vertical">
 
-                <TextView
-                    android:id="@+id/text_current_note"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text='@{viewModel.tunerState.displayNote}'
-                    android:textColor="@android:color/white"
-                    android:textSize="32sp"
-                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/text_detectedNote_freq"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
                     android:layout_marginTop="12dp"
                     android:text='@{@string/tuner_detectedNote_frequency(viewModel.tunerState.displayFrequency)}'
                     android:textColor="@android:color/white" />
@@ -260,14 +265,16 @@
                 <TextView
                     android:id="@+id/text_curr_freq"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
                     android:layout_marginTop="12dp"
                     android:textColor="@android:color/holo_red_light"
                     android:text='@{@string/tuner_current_frequency(viewModel.tunerState.measuredFrequency)}' />
                 <TextView
                     android:id="@+id/text_deviation"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
                     android:layout_marginTop="12dp"
                     android:textColor="@android:color/holo_red_light"
                     android:text='@{@string/tuner_deviation(viewModel.tunerState.deviationCents)}' />

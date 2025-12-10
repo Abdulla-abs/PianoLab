@@ -133,6 +133,10 @@ public class TunerActivity extends AppCompatActivity {
             binding.textCurrFreq.setText(getString(R.string.tuner_current_frequency, state.getMeasuredFrequency()));
             binding.textDeviation.setText(getString(R.string.tuner_deviation, state.getDeviationCents()));
 
+            if (binding.previewPiano instanceof TunerPianoView) {
+                ((TunerPianoView) binding.previewPiano).setDetectedNote(state.getDisplayNote());
+            }
+
             binding.waveformPlaceholder.setFrequencyMode(viewModel.isFrequencyMode());
             if (viewModel.isFrequencyMode()) {
                 binding.waveformPlaceholder.setWaveform(state.getSpectrumMagnitudes());

@@ -56,7 +56,7 @@ public class PianoSoundEngine {
     private static final long SUSTAIN_STREAM_TIMEOUT_MS = 9000L;
     private final Set<Integer> sustainingStreams = Collections.synchronizedSet(new HashSet<>());
     private final Map<Integer, Runnable> sustainCleanupTasks = Collections.synchronizedMap(new HashMap<>());
-
+    private final Map<String, Integer> keyNameCache = Collections.synchronizedMap(new HashMap<>());
 
     private static final long CHORD_DISPATCH_WINDOW_MS = 15L;
 
@@ -67,6 +67,7 @@ public class PianoSoundEngine {
         this.context = ctx.getApplicationContext();
         Log.i(TAG, "PianoSoundEngine ctor");
         initSoundPool();
+        buildKeyNameCache();
         preloadMappedRangeAsync(21, 108);
     }
 
@@ -111,6 +112,31 @@ public class PianoSoundEngine {
         }
     }
 
+    private void buildKeyNameCache() {
+        long start = SystemClock.elapsedRealtimeNanos();
+        String pkg = context.getPackageName();
+        int cached = 0;
+
+        // 为所有 88 个键(MIDI 21-108)构建缓存
+        for (int i = 1; i <= 88; i++) {
+            int mapped = i + 20; // key1 -> k021 ... key88 -> k108
+            String mappedName = String.format("k%03d", mapped);
+            int res = context.getResources().getIdentifier(mappedName, "raw", pkg);
+
+            if (res != 0) {
+                // 缓存两种可能的按键命名(带 _white/_black 后缀)
+                keyNameCache.put("key" + i + "_white", res);
+                keyNameCache.put("key" + i + "_black", res);
+                keyNameCache.put("key" + i + "_black_part2", res);
+                cached++;
+            }
+        }
+
+        long end = SystemClock.elapsedRealtimeNanos();
+        Log.i(TAG, "buildKeyNameCache completed: cached=" + cached + " entries=" + keyNameCache.size()
+                + " costMs=" + ((end - start) / 1000000L));
+    }
+
     private void preloadMappedRangeAsync(int fromInclusive, int toInclusive) {
         loader.execute(() -> {
             long batchStart = SystemClock.elapsedRealtimeNanos();
@@ -129,8 +155,16 @@ public class PianoSoundEngine {
     }
 
     private int resolveResIdForKey(String keyName) {
-        long tStart = SystemClock.elapsedRealtimeNanos();
         if (keyName == null) return 0;
+
+        Integer cached = keyNameCache.get(keyName);
+        if (cached != null){
+            Log.d(TAG,"get res from cache");
+            return cached;
+        }
+
+
+        long tStart = SystemClock.elapsedRealtimeNanos();
         String pkg = context.getPackageName();
 
         try {
@@ -142,6 +176,7 @@ public class PianoSoundEngine {
                 String mappedName = String.format("k%03d", mapped);
                 int res = context.getResources().getIdentifier(mappedName, "raw", pkg);
                 if (res != 0) {
+                    keyNameCache.put(keyName, res);
                     Log.d(TAG, "resolveResIdForKey mapped key=" + keyName + " -> " + mappedName + " res=" + res + " costMs=" + ((SystemClock.elapsedRealtimeNanos() - tStart) / 1000000L));
                     return res;
                 }

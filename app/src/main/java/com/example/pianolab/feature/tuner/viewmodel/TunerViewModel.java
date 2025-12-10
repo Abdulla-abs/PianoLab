@@ -23,7 +23,7 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
     private static final float ALT_REFERENCE = 442f;
     private static final float PROBABILITY_THRESHOLD = 0.85f;
     private static final float SAMPLE_RATE = 44100f;
-    private static final int BUFFER_SIZE = 2048;
+    private static final int BUFFER_SIZE = 1024*4;
     private static final int STABLE_FRAME_COUNT = 5;
     private static final int DELAY_FRAME_COUNT = 3;
     private static final float STABLE_DEVIATION_CENTS = 10f;

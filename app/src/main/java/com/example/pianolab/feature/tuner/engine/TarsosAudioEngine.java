@@ -73,7 +73,7 @@ public class TarsosAudioEngine {
                 dispatcher.addAudioProcessor(noiseFilterProcessor);
                 dispatcher.addAudioProcessor(spectrumProcessor);
                 PitchProcessor processor = new PitchProcessor(
-                        PitchProcessor.PitchEstimationAlgorithm.YIN,
+                        PitchProcessor.PitchEstimationAlgorithm.FFT_YIN,
                         sampleRate,
                         bufferSize,
                         pitchDetectionHandler
