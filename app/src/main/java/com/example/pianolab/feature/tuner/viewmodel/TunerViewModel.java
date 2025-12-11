@@ -1,6 +1,10 @@
 package com.example.pianolab.feature.tuner.viewmodel;
 
 import android.app.Application;
+import android.content.res.AssetFileDescriptor;
+import android.media.MediaPlayer;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -8,19 +12,17 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
-import com.example.pianolab.feature.tuner.engine.PitchNoteMapper;
 import com.example.pianolab.feature.tuner.engine.TarsosAudioEngine;
 import com.example.pianolab.feature.tuner.model.TunerState;
 import com.example.pianolab.utils.TunerHelper;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngine.Listener {
     private static final String TAG = "TunerViewModel";
-    private static final float DEFAULT_REFERENCE = 440f;
-    private static final float ALT_REFERENCE = 442f;
+    private static final float DEFAULT_STANDARD = 440f;
+    private static final float ALT_STANDARD = 442f;
     private static final float PROBABILITY_THRESHOLD = 0.85f;
     private static final float SAMPLE_RATE = 44100f;
     private static final int BUFFER_SIZE = 1024*4;
@@ -42,9 +44,14 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
     private final TarsosAudioEngine audioEngine;
     private boolean referencePlaying = false;
     private String manualTargetNote = "A4";
-    private float manualTargetFrequency = DEFAULT_REFERENCE;
+    private float manualTargetFrequency = DEFAULT_STANDARD;
     private boolean listening;
     private boolean frequencyMode = true;
+
+    private MediaPlayer mediaPlayer;
+    private final Handler mediaHandler = new Handler(Looper.getMainLooper());
+    private Runnable stopPlaybackTask;
+    private static final int PLAYBACK_DURATION_MS = 3000;
 
 
     public TunerViewModel(@NonNull Application application) {
@@ -82,19 +89,20 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
 
     public void onReferenceStandardChanged(boolean use442) {
         float freq = use442 ? 442f : 440f;
-        tunerState.setValue(safeState().withReferenceFrequency(freq));
+        tunerState.setValue(safeState().withstandardFrequency(freq));
         if (!safeState().isAutoDetectEnabled()) {
             setManualTarget(manualTargetNote, freq);
         }
     }
 
-    public void setManualTarget(String note, float frequency) {
+    public void setManualTarget(String note, float standardFreq) {
         this.manualTargetNote = note;
-        this.manualTargetFrequency = frequency;
-        tunerState.setValue(safeState().withManualTarget(note, frequency));
+        this.manualTargetFrequency = TunerHelper.calculateNoteFrequency(note, standardFreq);
+        tunerState.setValue(safeState().withManualTarget(note, manualTargetFrequency));
     }
 
     public void toggleListening() {
+        stopPlayback();
         TunerState current = safeState();
         boolean newListening = !current.isListening();
         Log.d(TAG, "toggleListening -> " + newListening);
@@ -108,9 +116,98 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
         }
     }
 
-    public void toggleReferenceTone() {
-        referencePlaying = !referencePlaying;
-        // TODO: connect to actual audio playback
+    public void playNote(boolean mode) {
+        stopPlayback();
+
+        String note;
+        if (mode) {
+            note = safeState().getDisplayNote();
+        } else {
+            note = "A4";
+        }
+
+        if (note == null || "--".equals(note)) {
+            return;
+        }
+
+        int resId = TunerHelper.getAudioResourceForDetectedNote(getApplication(), note);
+        if (resId == 0) {
+            Log.w(TAG, "playNote: no resource for note=" + note);
+            return;
+        }
+
+        try {
+            mediaPlayer = new MediaPlayer();
+
+            // 设置音频资源
+            AssetFileDescriptor afd = getApplication().getResources().openRawResourceFd(resId);
+            if (afd == null) {
+                Log.w(TAG, "playNote: cannot open resource " + resId);
+                return;
+            }
+
+            mediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            afd.close();
+
+            // 准备播放
+            mediaPlayer.prepare();
+            mediaPlayer.start();
+            referencePlaying = true;
+
+            Log.d(TAG, "playNote: started playing note=" + note + " resId=" + resId);
+
+            // 3秒后自动停止
+            stopPlaybackTask = () -> {
+                stopPlayback();
+                referencePlaying = false;
+            };
+            mediaHandler.postDelayed(stopPlaybackTask, PLAYBACK_DURATION_MS);
+
+            // 监听播放完成(如果音频本身小于3秒)
+            mediaPlayer.setOnCompletionListener(mp -> {
+                Log.d(TAG, "playNote: playback completed");
+                stopPlayback();
+                referencePlaying = false;
+            });
+
+            // 监听错误
+            mediaPlayer.setOnErrorListener((mp, what, extra) -> {
+                Log.e(TAG, "playNote: MediaPlayer error what=" + what + " extra=" + extra);
+                stopPlayback();
+                referencePlaying = false;
+                return true;
+            });
+
+        } catch (Exception e) {
+            Log.e(TAG, "playNote: failed to play", e);
+            stopPlayback();
+            referencePlaying = false;
+        }
+    }
+
+    private void stopPlayback() {
+        // 取消定时停止任务
+        if (stopPlaybackTask != null) {
+            mediaHandler.removeCallbacks(stopPlaybackTask);
+            stopPlaybackTask = null;
+        }
+
+        // 释放 MediaPlayer
+        if (mediaPlayer != null) {
+            try {
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.stop();
+                }
+                mediaPlayer.reset();
+                mediaPlayer.release();
+            } catch (Exception e) {
+                Log.w(TAG, "stopPlayback: error releasing MediaPlayer", e);
+            } finally {
+                mediaPlayer = null;
+            }
+        }
+
+        referencePlaying = false;
     }
 
     public boolean isReferencePlaying() {
@@ -120,6 +217,8 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
     @Override
     public void onCleared() {
         super.onCleared();
+        stopPlayback();
+        mediaHandler.removeCallbacksAndMessages(null);
         audioEngine.release();
     }
 
@@ -138,9 +237,8 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
         float targetFreq;
 
         if (current.isAutoDetectEnabled()) {
-            float detectedNoteFreq = TunerHelper.calculate_ref_freq(measured, current.getReferenceFrequency());
-            String note = PitchNoteMapper.frequencyToNoteName(measured);
-            targetFreq = detectedNoteFreq;
+            float detectedNoteFreq = TunerHelper.calculate_ref_freq(measured, current.getstandardFrequency());
+            String note = TunerHelper.PitchNoteMapper(measured,current.getstandardFrequency());
             tunerState.setValue(current
                     .withAutoDetection(note, detectedNoteFreq)
                     .withMeasurement(measured)

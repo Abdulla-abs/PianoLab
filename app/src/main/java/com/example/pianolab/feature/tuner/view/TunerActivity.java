@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.CompoundButton;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -91,8 +92,15 @@ public class TunerActivity extends AppCompatActivity {
     }
 
     private void initButtons() {
-        binding.buttonPlayReference.setOnClickListener(v -> viewModel.toggleReferenceTone());
+        binding.buttonPlayReference.setOnClickListener(v -> viewModel.playNote(true));
+        binding.buttonPlayStandard.setOnClickListener(v->viewModel.playNote(false));
         binding.toggleListeningButton.setOnClickListener(v -> ensurePermissionThenStart());
+        binding.textCurrentNote.setOnClickListener(v -> {
+            if (viewModel.getTunerState().getValue() != null &&
+                    !viewModel.getTunerState().getValue().isAutoDetectEnabled()) {
+                showNotePickerDialog();
+            }
+        });
     }
 
     private void ensurePermissionThenStart() {
@@ -111,18 +119,28 @@ public class TunerActivity extends AppCompatActivity {
                 .show();
     }
 
+    private void showNotePickerDialog() {
+        if (viewModel.getTunerState().getValue() == null) {
+            return;
+        }
+
+        String currentNote = viewModel.getTunerState().getValue().getManualNote();
+        float standardFreq = viewModel.getTunerState().getValue().getstandardFrequency();
+
+        NotePickerDialog dialog = new NotePickerDialog(
+                this,
+                currentNote,
+                (note) -> viewModel.setManualTarget(note,standardFreq)
+        );
+
+        dialog.show();
+    }
+
     private void observeState() {
         viewModel.getTunerState().observe(this, state -> {
-            boolean switchesEnabled = !state.isListening();
-
-            binding.switchAutoDetect.setEnabled(switchesEnabled);
-            binding.switchAutoStop.setEnabled(switchesEnabled);
-            binding.switchRefStandard.setEnabled(switchesEnabled);
-            binding.switchWaveMode.setEnabled(switchesEnabled);
-
             binding.switchAutoDetect.setChecked(state.isAutoDetectEnabled());
             binding.switchAutoStop.setChecked(state.isAutoStopEnabled());
-            binding.switchRefStandard.setChecked(Math.abs(state.getReferenceFrequency() - 442f) < 0.5f);
+            binding.switchRefStandard.setChecked(Math.abs(state.getstandardFrequency() - 442f) < 0.5f);
             binding.switchWaveMode.setChecked(!viewModel.isFrequencyMode());
             binding.switchWaveMode.setOnCheckedChangeListener(null);
             binding.switchWaveMode.setOnCheckedChangeListener(waveModeListener);

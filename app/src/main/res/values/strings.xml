@@ -23,4 +23,8 @@
     <string name="tuner_piano_preview_label">当前调音键位预览</string>
     <string name="tuner_permission_title">需要录音权限</string>
     <string name="tuner_permission_message">开启麦克风以便调音。</string>
+    <string name="tuner_select_target_note">选择目标音符</string>
+    <string name="tuner_note_name">音名</string>
+    <string name="tuner_accidental">升降号</string>
+    <string name="tuner_octave">八度</string>
 </resources>

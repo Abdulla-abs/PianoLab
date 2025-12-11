@@ -98,4 +98,77 @@ public class VirtualPianoHelper {
     }
 
 
+    public static int getAudioResourceForKey(Context context, String keyName) {
+        if (keyName == null || keyName.isEmpty()) {
+            return 0;
+        }
+
+        String packageName = context.getPackageName();
+
+        // 尝试从琴键名称提取索引并映射到MIDI编号
+        if (keyName.startsWith("key")) {
+            try {
+                // 提取数字部分 (忽略 _white, _black 等后缀)
+                int underscoreIndex = keyName.indexOf('_');
+                String numPart = (underscoreIndex > 0)
+                        ? keyName.substring(3, underscoreIndex)
+                        : keyName.substring(3);
+
+                int keyIndex = Integer.parseInt(numPart);
+
+                // 映射: key1-88 -> k021-108 (MIDI 21-108)
+                int midiNumber = keyIndex + 20;
+                String resourceName = String.format("k%03d", midiNumber);
+
+                int resId = context.getResources().getIdentifier(
+                        resourceName, "raw", packageName);
+
+                if (resId != 0) {
+                    return resId;
+                }
+            } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
+                // 继续尝试回退逻辑
+            }
+        }
+
+        // 回退: 直接用完整键名查找
+        int resId = context.getResources().getIdentifier(
+                keyName, "raw", packageName);
+
+        if (resId != 0) {
+            return resId;
+        }
+
+        // 最后尝试: 提取数字部分直接作为资源名
+        if (keyName.startsWith("key")) {
+            try {
+                int underscoreIndex = keyName.indexOf('_');
+                String numPart = (underscoreIndex > 0)
+                        ? keyName.substring(3, underscoreIndex)
+                        : keyName.substring(3);
+
+                int keyIndex = Integer.parseInt(numPart);
+                String resourceName = String.format("k%03d", keyIndex);
+
+                return context.getResources().getIdentifier(
+                        resourceName, "raw", packageName);
+            } catch (Exception e) {
+                return 0;
+            }
+        }
+
+        return 0;
+    }
+
+    public static int getAudioResourceForMidi(Context context, int midiNumber) {
+        if (midiNumber < 21 || midiNumber > 108) {
+            return 0;
+        }
+
+        String resourceName = String.format("k%03d", midiNumber);
+        return context.getResources().getIdentifier(
+                resourceName, "raw", context.getPackageName());
+    }
+
+
 }

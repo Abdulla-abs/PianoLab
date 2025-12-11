@@ -10,6 +10,8 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
 
+import com.example.pianolab.utils.VirtualPianoHelper;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -164,46 +166,15 @@ public class PianoSoundEngine {
         }
 
 
-        long tStart = SystemClock.elapsedRealtimeNanos();
-        String pkg = context.getPackageName();
+        // 使用 VirtualPianoHelper 获取资源ID
+        int res = VirtualPianoHelper.getAudioResourceForKey(context, keyName);
 
-        try {
-            if (keyName.startsWith("key")) {
-                int us = keyName.indexOf('_');
-                String numPart = (us > 0) ? keyName.substring(3, us) : keyName.substring(3);
-                int idx = Integer.parseInt(numPart);
-                int mapped = idx + 20;
-                String mappedName = String.format("k%03d", mapped);
-                int res = context.getResources().getIdentifier(mappedName, "raw", pkg);
-                if (res != 0) {
-                    keyNameCache.put(keyName, res);
-                    Log.d(TAG, "resolveResIdForKey mapped key=" + keyName + " -> " + mappedName + " res=" + res + " costMs=" + ((SystemClock.elapsedRealtimeNanos() - tStart) / 1000000L));
-                    return res;
-                }
-            }
-        } catch (Exception ignored) { }
-
-        int res = context.getResources().getIdentifier(keyName, "raw", pkg);
         if (res != 0) {
-            Log.d(TAG, "resolveResIdForKey fallback fullName key=" + keyName + " res=" + res + " costMs=" + ((SystemClock.elapsedRealtimeNanos() - tStart) / 1000000L));
-            return res;
+            keyNameCache.put(keyName, res);
+            Log.d(TAG, "resolveResIdForKey key=" + keyName + " res=" + res);
         }
 
-        try {
-            if (keyName.startsWith("key")) {
-                int us = keyName.indexOf('_');
-                String numPart = (us > 0) ? keyName.substring(3, us) : keyName.substring(3);
-                int idx = Integer.parseInt(numPart);
-                String mappedName = String.format("k%03d", idx);
-                res = context.getResources().getIdentifier(mappedName, "raw", pkg);
-                if (res != 0) {
-                    Log.d(TAG, "resolveResIdForKey fallback2 key=" + keyName + " -> " + mappedName + " res=" + res + " costMs=" + ((SystemClock.elapsedRealtimeNanos() - tStart) / 1000000L));
-                    return res;
-                }
-            }
-        } catch (Exception ignored) { }
-
-        return 0;
+        return res;
     }
 
     private void ensureLoadedAsync(final int resId) {
