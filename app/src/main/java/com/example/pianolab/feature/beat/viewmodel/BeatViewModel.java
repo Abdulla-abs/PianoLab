@@ -7,10 +7,14 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.example.pianolab.R;
 import com.example.pianolab.feature.beat.engine.BeatEngine;
 import com.example.pianolab.feature.beat.engine.BeatEngineImpl;
 import com.example.pianolab.feature.beat.model.BeatSettings;
 import com.example.pianolab.utils.BeatHelper;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * 简单的 ViewModel：无 UI 要求时用于控制节拍器引擎并暴露状态
@@ -36,6 +40,8 @@ public class BeatViewModel extends AndroidViewModel {
     private final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
     private Runnable startRunnable;
 
+    private final MutableLiveData<List<Integer>> specialRhythmIcons = new MutableLiveData<>();
+
     public BeatViewModel(@NonNull Application application) {
         super(application);
         engine = new BeatEngineImpl(application);
@@ -56,6 +62,17 @@ public class BeatViewModel extends AndroidViewModel {
                 status.postValue("Measure start");
             }
         });
+
+        specialRhythmIcons.setValue(Arrays.asList(
+                R.drawable.none,
+                R.drawable.foredot,
+                R.drawable.backdot,
+                R.drawable.fore8back16,
+                R.drawable.fore16back8,
+                R.drawable.tercet,
+                R.drawable.syncopation
+
+        ));
     }
 
     public LiveData<Integer> getBpm() {
@@ -152,6 +169,10 @@ public class BeatViewModel extends AndroidViewModel {
         try {
             if (engine != null) engine.playCountdown();
         } catch (Throwable ignored) {}
+    }
+
+    public LiveData<List<Integer>> getSpecialRhythmIcons() {
+        return specialRhythmIcons;
     }
 
     @Override

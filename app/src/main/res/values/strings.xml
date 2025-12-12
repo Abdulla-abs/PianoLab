@@ -27,4 +27,13 @@
     <string name="tuner_note_name">音名</string>
     <string name="tuner_accidental">升降号</string>
     <string name="tuner_octave">八度</string>
+    <string name="select_special_rhythm">选择特殊节奏型</string>
+    <string-array name="special_rhythm_options">
+        <item>无</item>
+        <item>前附点</item>
+        <item>前8后16</item>
+        <item>前16后8</item>
+        <item>三连音</item>
+        <item>切分音</item>
+    </string-array>
 </resources>

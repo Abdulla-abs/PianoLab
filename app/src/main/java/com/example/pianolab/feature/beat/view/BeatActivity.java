@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.widget.Button;
 import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 import android.widget.EditText;
@@ -22,6 +23,8 @@ import com.example.pianolab.feature.beat.viewmodel.BeatViewModel;
 import com.example.pianolab.feature.beat.model.BeatSettings;
 import com.example.pianolab.utils.BeatHelper;
 
+import java.util.List;
+
 
 public class BeatActivity extends AppCompatActivity {
 
@@ -34,10 +37,10 @@ public class BeatActivity extends AppCompatActivity {
     private TextView tvBeatsValue;
     private ToggleButton togglePlay;
 
-    private Button btnBack; // 返回按钮
 
     // 新增：可视化控件
     private RadialPulseView radialPulseView;
+    private Spinner spinnerSpecial;
 
     private androidx.appcompat.widget.SwitchCompat switchAccent;
 
@@ -64,18 +67,16 @@ public class BeatActivity extends AppCompatActivity {
 //        try {
 //            countdownPlayer = MediaPlayer.create(this, R.raw.countdown);
 //        } catch (Exception ignored) { countdownPlayer = null; }
-        btnBack = findViewById(R.id.btn_back);
         tvBpmValue = findViewById(R.id.tv_bpm_value);
         tvCrochetValue = findViewById(R.id.tv_crochet_value);
         tvTempoMarking = findViewById(R.id.tv_tempo_marking);
+        spinnerSpecial = findViewById(R.id.spinner_special_rhythm);
 
         seekbarBpm = findViewById(R.id.seekbar_bpm);
         tvBeatsValue = findViewById(R.id.tv_beats_value);
         togglePlay = findViewById(R.id.toggle_play);
         switchAccent = findViewById(R.id.switch_accent);
 
-        // 返回按钮行为：结束当前 Activity，返回上一个（Home）
-        btnBack.setOnClickListener(v -> finish());
 
         // 初始化 SeekBar 范围映射
         seekbarBpm.setMax(BeatSettings.MAX_BPM-BeatSettings.MIN_BPM);
@@ -121,6 +122,8 @@ public class BeatActivity extends AppCompatActivity {
             }
 
         });
+
+        viewModel.getSpecialRhythmIcons().observe(this, this::setupSpinner);
 
 
         if (switchAccent != null) {
@@ -406,6 +409,14 @@ public class BeatActivity extends AppCompatActivity {
         if (radialPulseView != null) {
             radialPulseView.setCenterText(tvBeatsValue.getText().toString());
         }
+    }
+    private void setupSpinner(List<Integer> icons) {
+        if (icons == null || icons.isEmpty()) return;
+        IconSpinnerAdapter adapter = new IconSpinnerAdapter(this, icons);
+        spinnerSpecial.setAdapter(adapter);
+
+        int noneIndex = icons.indexOf(R.drawable.none);
+        if (noneIndex >= 0) spinnerSpecial.setSelection(noneIndex);
     }
 
     @Override
