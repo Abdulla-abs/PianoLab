@@ -166,6 +166,7 @@ public class BeatViewModel extends AndroidViewModel {
                 beatsPerMeasure.getValue() != null ? beatsPerMeasure.getValue() : 4);
         s.setBaseBeat(baseBeat.getValue() != null ? baseBeat.getValue() : 4);
         s.setSpecialRhythmId(specialRhythmId.getValue() != null ? specialRhythmId.getValue() : 0);
+        s.setToneType(toneType.getValue() != null ? toneType.getValue() : BeatSettings.TONE_ELECTRONIC);
 
         // 标记为正在准备启动（UI 可显示为已切换），实际 engine 在倒计时结束后启动
         running.setValue(true);

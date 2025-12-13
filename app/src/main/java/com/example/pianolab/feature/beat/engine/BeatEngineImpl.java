@@ -63,9 +63,7 @@ public class BeatEngineImpl implements BeatEngine {
     private static final double BASE_LATENCY_MS = 65.0; // 基础目标提前量（可调整或通过 setAudioLatencyMs 覆盖）
     private static final long MAX_LATENCY_MS = 300L; // 限制上限，避免过度调整
 
-    private final float WEAK_BEAT_VOL = 1.0f;
-    private final float STRONG_BEAT_VOL = 3.5f;
-    private final float COUNTDOWN_VOL = 0.1f;
+
 
     // 已简化：不再使用 streaming 混音线程和事件队列，使用静态 AudioTrack 池 + scheduler
 
@@ -77,6 +75,14 @@ public class BeatEngineImpl implements BeatEngine {
     private byte[] weakPcmMechanical;
     private byte[] strongPcmMechanical;
     private byte[] countdownPcmMechanical;
+
+    private byte[] weakPcmDrum;
+    private byte[] strongPcmDrum;
+    private byte[] countdownPcmDrum;
+
+    private byte[] weakPcmMarimba;
+    private byte[] strongPcmMarimba;
+    private byte[] countdownPcmMarimba;
 
     private final Object audioLock = new Object();
 
@@ -200,7 +206,17 @@ public class BeatEngineImpl implements BeatEngine {
             strongPcmMechanical = loadWavPcm(R.raw.metronome_beat);
             countdownPcmMechanical = loadWavPcm(R.raw.countdown);
 
-            // 3. Initialize Tracks with default (Electronic)
+            // 3. Load Drum Sounds
+            weakPcmDrum = loadWavPcm(R.raw.drum_weak);
+            strongPcmDrum = loadWavPcm(R.raw.drum_strong);
+            countdownPcmDrum = loadWavPcm(R.raw.drum_countdown);
+
+            //4.load Marimba Sounds
+            weakPcmMarimba = loadWavPcm(R.raw.marimba_weak);
+            strongPcmMarimba = loadWavPcm(R.raw.marimba_strong);
+            countdownPcmMarimba = loadWavPcm(R.raw.marimba_countdown);
+
+            // 5. Initialize Tracks with default (Electronic)
             refreshAudioTracks();
 
             generatedLoaded = true;
@@ -230,16 +246,34 @@ public class BeatEngineImpl implements BeatEngine {
             }
 
             // Select source
-            byte[] weakSource = (toneType == BeatSettings.TONE_MECHANICAL) ? weakPcmMechanical : weakPcmElectronic;
-            byte[] strongSource = (toneType == BeatSettings.TONE_MECHANICAL) ? strongPcmMechanical : strongPcmElectronic;
-            byte[] countdownSource = (toneType == BeatSettings.TONE_MECHANICAL) ? countdownPcmMechanical : countdownPcmElectronic;
+            byte[] weakSource;
+            byte[] strongSource;
+            byte[] countdownSource;
+
+            if (toneType == BeatSettings.TONE_MECHANICAL) {
+                weakSource = weakPcmMechanical;
+                strongSource = strongPcmMechanical;
+                countdownSource = countdownPcmMechanical;
+            } else if (toneType == BeatSettings.TONE_DRUM) {
+                weakSource = weakPcmDrum;
+                strongSource = strongPcmDrum;
+                countdownSource = countdownPcmDrum;
+            } else if (toneType==BeatSettings.TONE_MARIMBA) {
+                weakSource = weakPcmMarimba;
+                strongSource = strongPcmMarimba;
+                countdownSource = countdownPcmMarimba;
+            } else {
+                weakSource = weakPcmElectronic;
+                strongSource = strongPcmElectronic;
+                countdownSource = countdownPcmElectronic;
+            }
 
             // Create new tracks
             for (int i = 0; i < AUDIO_POOL_SIZE; i++) {
-                weakTracks[i] = createStaticAudioTrack(weakSource, WEAK_BEAT_VOL);
-                strongTracks[i] = createStaticAudioTrack(strongSource, STRONG_BEAT_VOL);
+                weakTracks[i] = createStaticAudioTrack(weakSource, BeatHelper.VOLUME_PARA[toneType][1]);
+                strongTracks[i] = createStaticAudioTrack(strongSource, BeatHelper.VOLUME_PARA[toneType][2]);
             }
-            countdownTrack = createStaticAudioTrack(countdownSource, COUNTDOWN_VOL);
+            countdownTrack = createStaticAudioTrack(countdownSource,BeatHelper.VOLUME_PARA[toneType][0]);
         }
     }
 
@@ -252,9 +286,18 @@ public class BeatEngineImpl implements BeatEngine {
             specialRhythmId = settings.getSpecialRhythmId();
             baseBeat = settings.getBaseBeat();
 
+            // 强制检查 toneType，如果 settings 中的 toneType 与当前不同，或者 tracks 可能未初始化
             if (this.toneType != settings.getToneType()) {
                 this.toneType = settings.getToneType();
                 refreshAudioTracks();
+            } else {
+                // 即使 toneType 相同，也要确保 tracks 存在（防止意外释放或未初始化）
+                // 简单检查 countdownTrack 是否为空作为标志
+                synchronized (audioLock) {
+                    if (countdownTrack == null) {
+                        refreshAudioTracks();
+                    }
+                }
             }
 
             if (running) {
@@ -382,7 +425,7 @@ public class BeatEngineImpl implements BeatEngine {
                 if (at == null) {
                     // Recreate if missing (should be handled by refreshAudioTracks but just in case)
                     byte[] source = (toneType == BeatSettings.TONE_MECHANICAL) ? strongPcmMechanical : strongPcmElectronic;
-                    at = createStaticAudioTrack(source, STRONG_BEAT_VOL);
+                    at = createStaticAudioTrack(source, BeatHelper.VOLUME_PARA[toneType][2]);
                     strongTracks[idx] = at;
                 }
                 if (at != null) {
@@ -414,7 +457,7 @@ public class BeatEngineImpl implements BeatEngine {
                 AudioTrack at = weakTracks[idx];
                 if (at == null) {
                     byte[] source = (toneType == BeatSettings.TONE_MECHANICAL) ? weakPcmMechanical : weakPcmElectronic;
-                    at = createStaticAudioTrack(source, WEAK_BEAT_VOL);
+                    at = createStaticAudioTrack(source,BeatHelper.VOLUME_PARA[toneType][1]);
                     weakTracks[idx] = at;
                 }
                 if (at != null) {
@@ -437,21 +480,25 @@ public class BeatEngineImpl implements BeatEngine {
             }
         }
     }
-    //使用静态池播放倒计时
+    //使用静态��播放倒计时
     public void playCountdown() {
         synchronized (audioLock) {
             try {
                 if (!generatedLoaded) return;
+
                 if (countdownTrack == null) {
                     byte[] source = (toneType == BeatSettings.TONE_MECHANICAL) ? countdownPcmMechanical : countdownPcmElectronic;
-                    countdownTrack = createStaticAudioTrack(source, COUNTDOWN_VOL);
+                    countdownTrack = createStaticAudioTrack(source, BeatHelper.VOLUME_PARA[toneType][0]);
                 }
-                try { countdownTrack.stop(); } catch (Throwable ignored) {}
-                try { countdownTrack.setPlaybackHeadPosition(0); } catch (Throwable ignored) {}
-                try {
-                    countdownTrack.play();
-                } catch (Throwable t) {
-                    Log.w("BeatEngineImpl", "playCountdown play failed", t);
+
+                if (countdownTrack != null) {
+                    try { countdownTrack.stop(); } catch (Throwable ignored) {}
+                    try { countdownTrack.setPlaybackHeadPosition(0); } catch (Throwable ignored) {}
+                    try {
+                        countdownTrack.play();
+                    } catch (Throwable t) {
+                        Log.w("BeatEngineImpl", "playCountdown play failed", t);
+                    }
                 }
             } catch (Throwable t) {
                 Log.w("BeatEngineImpl", "playCountdown error", t);

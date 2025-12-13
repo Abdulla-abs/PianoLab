@@ -86,11 +86,22 @@ public class BeatActivity extends AppCompatActivity {
         spinnerTone.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, android.view.View view, int position, long id) {
-                viewModel.setToneType(position);
+                // 仅当选中项与 ViewModel 不一致时才更新，避免循环或意外重置
+                Integer current = viewModel.getToneType().getValue();
+                if (current == null || current != position) {
+                    viewModel.setToneType(position);
+                }
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+
+        // 观察 toneType 以同步 Spinner 状态（例如配置更改后恢复）
+        viewModel.getToneType().observe(this, type -> {
+            if (type != null && spinnerTone.getSelectedItemPosition() != type) {
+                spinnerTone.setSelection(type);
             }
         });
 

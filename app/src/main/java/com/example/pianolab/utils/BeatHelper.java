@@ -8,6 +8,14 @@ import java.util.Map;
 
 public class BeatHelper {
 
+    //分别对应countdown,weak,strong 的参数
+    public static float[][] VOLUME_PARA = {
+            {0.1f, 1.0f, 3.5f},   // 电子合成音
+            {0.6f, 2.2f, 4.3f},   // 木制节拍器
+            {0.3f, 0.3f, 3.5f},   // 鼓组
+            {1.0f, 0.9f, 3.1f}    // 马林巴琴
+    };
+
     public static final Map<Integer, double[]> RHYTHM_DATA = new HashMap<>();
 
     static {

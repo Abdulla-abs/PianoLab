@@ -13,6 +13,8 @@ public class BeatSettings {
 
     public static final int TONE_ELECTRONIC = 0;
     public static final int TONE_MECHANICAL = 1;
+    public static final int TONE_DRUM = 2;
+    public static final int TONE_MARIMBA = 3;
 
     public int getBaseBeat() {
         return baseBeat;
@@ -63,16 +65,16 @@ public class BeatSettings {
         return bpm;
     }
 
+    public int getBeatsPerMeasure() {
+        return beatsPerMeasure;
+    }
+
     public void setBpm(int bpm) {
         if (bpm < MIN_BPM) bpm = MIN_BPM;
         if (bpm > MAX_BPM) bpm = MAX_BPM;
         this.bpm = bpm;
 
         //TODO 超出范围添加  message box 提示
-    }
-
-    public int getBeatsPerMeasure() {
-        return beatsPerMeasure;
     }
 
     public void setBeatsPerMeasure(int beatsPerMeasure) {

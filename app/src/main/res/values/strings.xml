@@ -43,6 +43,8 @@
     <string-array name="tone_options">
         <item >电子合成音</item>
         <item >木制节拍器</item>
+        <item >鼓组</item>
+        <item >马林巴琴</item>
     </string-array>
 
 
