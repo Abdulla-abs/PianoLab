@@ -28,13 +28,15 @@ public class BeatViewModel extends AndroidViewModel {
     private final MutableLiveData<String> status = new MutableLiveData<>("stopped");
     private final MutableLiveData<Boolean> accentEnabled = new MutableLiveData<>(true);
 
-    // 新增：当前拍索引（0-based）
+    // 当前拍索引（0-based）
     private final MutableLiveData<Integer> currentBeatIndex = new MutableLiveData<>(0);
     // 引擎实际运行状态（只有在 engine.start() 完成后为 true）
     private final MutableLiveData<Boolean> engineRunning = new MutableLiveData<>(false);
 
     // 新增：baseBeat（以几分音符为一拍，例如 4 表示四分音符）
     private final MutableLiveData<Integer> baseBeat = new MutableLiveData<>(4);
+    private final MutableLiveData<Integer> specialRhythmId = new MutableLiveData<>(0);
+    private final MutableLiveData<Integer> toneType = new MutableLiveData<>(BeatSettings.TONE_ELECTRONIC);
 
     // 用于实现启动前的倒计时（3 秒）
     private final android.os.Handler handler = new android.os.Handler(android.os.Looper.getMainLooper());
@@ -45,7 +47,7 @@ public class BeatViewModel extends AndroidViewModel {
     public BeatViewModel(@NonNull Application application) {
         super(application);
         engine = new BeatEngineImpl(application);
-        bpm.setValue(120);
+        bpm.setValue(90);
         beatsPerMeasure.setValue(4);
         baseBeat.setValue(4);
 
@@ -69,9 +71,9 @@ public class BeatViewModel extends AndroidViewModel {
                 R.drawable.backdot,
                 R.drawable.fore8back16,
                 R.drawable.fore16back8,
+                R.drawable.syncopation,
                 R.drawable.tercet,
-                R.drawable.syncopation
-
+                R.drawable.quintuplet
         ));
     }
 
@@ -94,6 +96,15 @@ public class BeatViewModel extends AndroidViewModel {
 
     public LiveData<Integer> getBaseBeat() { return baseBeat; }
 
+    public LiveData<Integer> getSpecialRhythmId() { return specialRhythmId; }
+
+    public LiveData<Integer> getToneType() { return toneType; }
+
+    public void setToneType(int type) {
+        toneType.setValue(type);
+        engine.setToneType(type);
+    }
+
     public LiveData<Boolean> getAccentEnabled() { return accentEnabled; }
 
     public void setAccentEnabled(boolean enabled) {
@@ -103,6 +114,11 @@ public class BeatViewModel extends AndroidViewModel {
         }
     }
     public void setBpm(int value) {
+        // 如果当前选择了特殊节奏型（非无），则限制最大 BPM 为 80
+        Integer currentRhythmId = specialRhythmId.getValue();
+        if (currentRhythmId != null && currentRhythmId != 0 && currentRhythmId != R.drawable.none) {
+            if (value > 80) value = 80;
+        }
 
         value = BeatHelper.clampBPM(value);
 
@@ -126,6 +142,21 @@ public class BeatViewModel extends AndroidViewModel {
         // 当前 engine 实现不使用 baseBeat，但保存在 settings 以备将来使用
     }
 
+    public void setSpecialRhythmId(int id) {
+        specialRhythmId.setValue(id);
+        if (engine != null) {
+            engine.setSpecialRhythmId(id);
+        }
+
+        // 逻辑：若用户选择了特殊节奏型（非无），默认将 BPM 设置到 40，且限制最大 80
+        // 若用户选择“无”，则默认将 BPM 设置为 90
+        if (id != 0 && id != R.drawable.none) {
+            setBpm(40);
+        } else {
+            setBpm(90);
+        }
+    }
+
     public void start() {
         // 如果已经在倒计时或运行中，忽略重复 start
         Boolean alreadyRunning = running.getValue();
@@ -133,6 +164,8 @@ public class BeatViewModel extends AndroidViewModel {
 
         BeatSettings s = new BeatSettings(bpm.getValue() != null ? bpm.getValue() : 120,
                 beatsPerMeasure.getValue() != null ? beatsPerMeasure.getValue() : 4);
+        s.setBaseBeat(baseBeat.getValue() != null ? baseBeat.getValue() : 4);
+        s.setSpecialRhythmId(specialRhythmId.getValue() != null ? specialRhythmId.getValue() : 0);
 
         // 标记为正在准备启动（UI 可显示为已切换），实际 engine 在倒计时结束后启动
         running.setValue(true);

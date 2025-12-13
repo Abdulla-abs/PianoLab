@@ -3,15 +3,20 @@ package com.example.pianolab.feature.beat.engine;
 import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
-import android.media.AudioManager;
+
 import android.media.AudioTrack;
 import android.util.Log;
 
+import com.example.pianolab.R;
 import com.example.pianolab.feature.beat.model.BeatSettings;
+import com.example.pianolab.utils.BeatHelper;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -25,10 +30,11 @@ public class BeatEngineImpl implements BeatEngine {
 
     private volatile int bpm = 120;
     private volatile int beatsPerMeasure = 4;
-    private final AtomicInteger beatIndex = new AtomicInteger(0);
+    private volatile int specialRhythmId = 0;
+    private volatile int baseBeat = 4;
+    private volatile int toneType = BeatSettings.TONE_ELECTRONIC;
     private final AtomicLong absoluteBeatCounter = new AtomicLong(0L);
     private final AtomicLong lastPlayedBeat = new AtomicLong(-1L);
-    private Thread beatThread;
 
     public void setAccentEnabled(boolean accentEnabled) {
         this.accentEnabled = accentEnabled;
@@ -36,13 +42,7 @@ public class BeatEngineImpl implements BeatEngine {
 
     // 音频相关
     private final Context appContext;
-    //    private SoundPool soundPool;
-    //    private int soundClickId = 0;
-    //    private int soundBeatId = 0;
-    //    private volatile boolean soundsLoaded = false;
-    //    private final java.util.concurrent.atomic.AtomicInteger loadCount = new java.util.concurrent.atomic.AtomicInteger(0);
-    // 使用程序合成的 PCM 声音，避免 SoundPool 在高 BPM/设备差异下表现不稳定
-    // 使用 AudioTrack 池以避免对同一实例频繁重置带来的抖动
+
     private static final int AUDIO_POOL_SIZE = 4;
     private AudioTrack[] weakTracks = new AudioTrack[AUDIO_POOL_SIZE];
     private AudioTrack[] strongTracks = new AudioTrack[AUDIO_POOL_SIZE];
@@ -51,8 +51,6 @@ public class BeatEngineImpl implements BeatEngine {
     private int strongPlayIndex = 0;
     private volatile boolean generatedLoaded = false;
     private int sampleRate = 44100;
-    // 防止短时间内重复播放（例如调度重叠）导致的双响，记录上次播放时间（纳秒）
-    private volatile long lastPlayNs = 0L;
     // 起始时间戳（纳秒），用于计算每拍的精确预期时间
     private volatile long startTimeNs = 0L;
 
@@ -72,50 +70,19 @@ public class BeatEngineImpl implements BeatEngine {
     // 已简化：不再使用 streaming 混音线程和事件队列，使用静态 AudioTrack 池 + scheduler
 
     // 预生成的短整型波形（样本为 -32768..32767）
-    private short[] weakWave; // 440Hz, 40ms
-    private short[] strongWave; // 660Hz, 50ms
-    private short[] countdownWave; // 440Hz, 60ms
-    private int weakLen, strongLen, countdownLen;
+    private byte[] weakPcmElectronic;
+    private byte[] strongPcmElectronic;
+    private byte[] countdownPcmElectronic;
+
+    private byte[] weakPcmMechanical;
+    private byte[] strongPcmMechanical;
+    private byte[] countdownPcmMechanical;
+
     private final Object audioLock = new Object();
 
     private enum WaveType {SINE, TRIANGLE, SQUARE}
 
-    private byte[] generatePcm(double freq, int durationMs, WaveType type) {
-        int frames = (int) ((durationMs / 1000.0) * sampleRate);
-        int totalSamples = frames; // mono
-        byte[] pcm = new byte[totalSamples * 2]; // 16-bit little endian
-        double twoPiF = 2.0 * Math.PI * freq;
-        for (int i = 0; i < totalSamples; i++) {
-            double t = i / (double) sampleRate;
-            double value = 0.0;
-            switch (type) {
-                case SINE:
-                    value = Math.sin(twoPiF * t);
-                    break;
-                case TRIANGLE:
-                    // triangle wave from -1..1
-                    double period = sampleRate / freq;
-                    double pos = (i % (int) period) / period;
-                    if (pos < 0.25) value = 4 * pos;
-                    else if (pos < 0.75) value = 2 - 4 * pos;
-                    else value = -4 + 4 * pos;
-                    break;
-                case SQUARE:
-                    value = (Math.sin(twoPiF * t) >= 0) ? 1.0 : -1.0;
-                    break;
-            }
-            // 轻微包络（线性淡出/淡入）以减少爆音
-            double env = 1.0;
-            int attack = Math.max(1, (int) (sampleRate * 0.005)); // 5ms 攻击
-            int release = Math.max(1, (int) (sampleRate * 0.01)); // 10ms 释放
-            if (i < attack) env = i / (double) attack;
-            if (i >= totalSamples - release) env = (totalSamples - i) / (double) release;
-            short samp = (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, (int) (value * env * Short.MAX_VALUE * 0.8)));
-            pcm[i * 2] = (byte) (samp & 0xff);
-            pcm[i * 2 + 1] = (byte) ((samp >> 8) & 0xff);
-        }
-        return pcm;
-    }
+
 
     private short[] generatePcmShort(double freq, int durationMs, WaveType type) {
         int frames = (int) ((durationMs / 1000.0) * sampleRate);
@@ -159,6 +126,27 @@ public class BeatEngineImpl implements BeatEngine {
         return b;
     }
 
+    private byte[] loadWavPcm(int resId) {
+        try (InputStream is = appContext.getResources().openRawResource(resId)) {
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            int nRead;
+            byte[] data = new byte[1024];
+            while ((nRead = is.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+            buffer.flush();
+            byte[] allBytes = buffer.toByteArray();
+            // Skip 44 bytes header
+            if (allBytes.length > 44) {
+                return Arrays.copyOfRange(allBytes, 44, allBytes.length);
+            }
+            return new byte[0];
+        } catch (IOException e) {
+            Log.e("BeatEngineImpl", "Error loading wav resource " + resId, e);
+            return new byte[0];
+        }
+    }
+
     private AudioTrack createStaticAudioTrack(byte[] pcm,float volume) {
         try {
             int bufSize = pcm.length;
@@ -190,33 +178,68 @@ public class BeatEngineImpl implements BeatEngine {
         }
     }
 
-    private void initSoundPool() {
-        // 旧的 SoundPool 实现已弃用，改为程序生成音频 initGeneratedAudio 已在构造时调用
-    }
 
     public BeatEngineImpl(Context context) {
         this.appContext = context.getApplicationContext();
-        initGeneratedAudio();
+        initAudioResources();
     }
 
-    private void initGeneratedAudio() {
+    private void initAudioResources() {
         try {
-            weakWave = generatePcmShort(440.0, 40, WaveType.SINE);
-            strongWave = generatePcmShort(660.0, 50, WaveType.TRIANGLE);
-            countdownWave = generatePcmShort(440.0, 60, WaveType.SQUARE);
-            weakLen = weakWave.length;
-            strongLen = strongWave.length;
-            countdownLen = countdownWave.length;
-            for (int i = 0; i < AUDIO_POOL_SIZE; i++) {
-                weakTracks[i] = createStaticAudioTrack(shortsToBytes(weakWave),WEAK_BEAT_VOL);
-                strongTracks[i] = createStaticAudioTrack(shortsToBytes(strongWave),STRONG_BEAT_VOL);
-            }
-            countdownTrack = createStaticAudioTrack(shortsToBytes(countdownWave),COUNTDOWN_VOL);
+            // 1. Generate Electronic Sounds
+            short[] weakWaveShort = generatePcmShort(440.0, 40, WaveType.SINE);
+            short[] strongWaveShort = generatePcmShort(660.0, 50, WaveType.TRIANGLE);
+            short[] countdownWaveShort = generatePcmShort(440.0, 60, WaveType.SQUARE);
+
+            weakPcmElectronic = shortsToBytes(weakWaveShort);
+            strongPcmElectronic = shortsToBytes(strongWaveShort);
+            countdownPcmElectronic = shortsToBytes(countdownWaveShort);
+
+            // 2. Load Mechanical Sounds
+            weakPcmMechanical = loadWavPcm(R.raw.metronome_click);
+            strongPcmMechanical = loadWavPcm(R.raw.metronome_beat);
+            countdownPcmMechanical = loadWavPcm(R.raw.countdown);
+
+            // 3. Initialize Tracks with default (Electronic)
+            refreshAudioTracks();
+
             generatedLoaded = true;
-            Log.d("BeatEngineImpl", "initGeneratedAudio success. weakLen=" + weakLen + " strongLen=" + strongLen + " countdownLen=" + countdownLen);
+            Log.d("BeatEngineImpl", "initAudioResources success.");
         } catch (Throwable t) {
-            Log.e("BeatEngineImpl", "initGeneratedAudio error", t);
+            Log.e("BeatEngineImpl", "initAudioResources error", t);
             generatedLoaded = false;
+        }
+    }
+
+    private void refreshAudioTracks() {
+        synchronized (audioLock) {
+            // Release old tracks
+            for (int i = 0; i < AUDIO_POOL_SIZE; i++) {
+                if (weakTracks[i] != null) {
+                    try { weakTracks[i].release(); } catch (Throwable ignored) {}
+                    weakTracks[i] = null;
+                }
+                if (strongTracks[i] != null) {
+                    try { strongTracks[i].release(); } catch (Throwable ignored) {}
+                    strongTracks[i] = null;
+                }
+            }
+            if (countdownTrack != null) {
+                try { countdownTrack.release(); } catch (Throwable ignored) {}
+                countdownTrack = null;
+            }
+
+            // Select source
+            byte[] weakSource = (toneType == BeatSettings.TONE_MECHANICAL) ? weakPcmMechanical : weakPcmElectronic;
+            byte[] strongSource = (toneType == BeatSettings.TONE_MECHANICAL) ? strongPcmMechanical : strongPcmElectronic;
+            byte[] countdownSource = (toneType == BeatSettings.TONE_MECHANICAL) ? countdownPcmMechanical : countdownPcmElectronic;
+
+            // Create new tracks
+            for (int i = 0; i < AUDIO_POOL_SIZE; i++) {
+                weakTracks[i] = createStaticAudioTrack(weakSource, WEAK_BEAT_VOL);
+                strongTracks[i] = createStaticAudioTrack(strongSource, STRONG_BEAT_VOL);
+            }
+            countdownTrack = createStaticAudioTrack(countdownSource, COUNTDOWN_VOL);
         }
     }
 
@@ -226,6 +249,14 @@ public class BeatEngineImpl implements BeatEngine {
         synchronized (lock) {
             bpm = settings.getBpm();
             beatsPerMeasure = settings.getBeatsPerMeasure();
+            specialRhythmId = settings.getSpecialRhythmId();
+            baseBeat = settings.getBaseBeat();
+
+            if (this.toneType != settings.getToneType()) {
+                this.toneType = settings.getToneType();
+                refreshAudioTracks();
+            }
+
             if (running) {
                 stop();
             }
@@ -270,20 +301,14 @@ public class BeatEngineImpl implements BeatEngine {
 
                         long targetBeat = elapsed / periodNs; // floor，应该已触发的最大拍号
 
-                        long last = lastPlayedBeat.get();
                         // 只播放最新应到的那一拍，避免在一次 tick 内连发多拍（造成“抢拍”感）
+                        long last = lastPlayedBeat.get();
                         if (targetBeat > last) {
                             long b = targetBeat;
                             int idx = (int) (b % Math.max(1, beatsPerMeasure));
                             long expectedTs = startTimeNs + b * periodNs;
 
-                            if(accentEnabled){
-                                if(idx == 0) playStrongOnce();
-                                else playWeakOnce();
-                            }
-                            else {
-                                playWeakOnce();
-                            }
+                            playBeat(idx, specialRhythmId);
 
                             BeatListener l = listener;
                             if (l != null) {
@@ -355,7 +380,9 @@ public class BeatEngineImpl implements BeatEngine {
                 int idx = (strongPlayIndex++) % AUDIO_POOL_SIZE;
                 AudioTrack at = strongTracks[idx];
                 if (at == null) {
-                    at = createStaticAudioTrack(shortsToBytes(strongWave),STRONG_BEAT_VOL);
+                    // Recreate if missing (should be handled by refreshAudioTracks but just in case)
+                    byte[] source = (toneType == BeatSettings.TONE_MECHANICAL) ? strongPcmMechanical : strongPcmElectronic;
+                    at = createStaticAudioTrack(source, STRONG_BEAT_VOL);
                     strongTracks[idx] = at;
                 }
                 if (at != null) {
@@ -386,7 +413,8 @@ public class BeatEngineImpl implements BeatEngine {
                 int idx = (weakPlayIndex++) % AUDIO_POOL_SIZE;
                 AudioTrack at = weakTracks[idx];
                 if (at == null) {
-                    at = createStaticAudioTrack(shortsToBytes(weakWave),WEAK_BEAT_VOL);
+                    byte[] source = (toneType == BeatSettings.TONE_MECHANICAL) ? weakPcmMechanical : weakPcmElectronic;
+                    at = createStaticAudioTrack(source, WEAK_BEAT_VOL);
                     weakTracks[idx] = at;
                 }
                 if (at != null) {
@@ -415,7 +443,8 @@ public class BeatEngineImpl implements BeatEngine {
             try {
                 if (!generatedLoaded) return;
                 if (countdownTrack == null) {
-                    countdownTrack = createStaticAudioTrack(shortsToBytes(countdownWave),COUNTDOWN_VOL);
+                    byte[] source = (toneType == BeatSettings.TONE_MECHANICAL) ? countdownPcmMechanical : countdownPcmElectronic;
+                    countdownTrack = createStaticAudioTrack(source, COUNTDOWN_VOL);
                 }
                 try { countdownTrack.stop(); } catch (Throwable ignored) {}
                 try { countdownTrack.setPlaybackHeadPosition(0); } catch (Throwable ignored) {}
@@ -445,7 +474,6 @@ public class BeatEngineImpl implements BeatEngine {
                 scheduler = null;
             }
             absoluteBeatCounter.set(0L);
-            lastPlayedBeat.set(-1L);
             startTimeNs = 0L;
             // 停止并重置静态 AudioTrack 的播放头，但不释放资源以便 restart 时复用
             for (int i = 0; i < AUDIO_POOL_SIZE; i++) {
@@ -485,7 +513,6 @@ public class BeatEngineImpl implements BeatEngine {
 
         // 线程已由 stop() 关闭；无需在此再次 join 特定线程（实现已简化为使用 scheduler）
         synchronized (lock) {
-            beatThread = null;
             // audioThread 已移除
         }
 
@@ -525,5 +552,75 @@ public class BeatEngineImpl implements BeatEngine {
     public boolean isRunning() {
         return this.running;
     }
-}
 
+    @Override
+    public void setSpecialRhythmId(int specialRhythmId) {
+        this.specialRhythmId = specialRhythmId;
+    }
+
+    @Override
+    public void setToneType(int toneType) {
+        synchronized (lock) {
+            if (this.toneType != toneType) {
+                this.toneType = toneType;
+                refreshAudioTracks();
+            }
+        }
+    }
+
+    private void playBeat(int idx, int rhythmId) {
+        if (rhythmId == 0 || rhythmId == com.example.pianolab.R.drawable.none) {
+            // 默认模式
+            if (accentEnabled) {
+                if (idx == 0) playStrongOnce();
+                else playWeakOnce();
+            } else {
+                playWeakOnce();
+            }
+        } else {
+            // 特殊节奏型模式
+            playSpecialRhythm(idx, rhythmId);
+        }
+    }
+
+    private void playSpecialRhythm(int idx, int rhythmId) {
+        // 计算当前拍的时长（纳秒）
+        long beatDurationNs = Math.max(1L, Math.round(60_000_000_000.0 / bpm));
+
+
+        boolean isBase8 = (baseBeat == 8);
+        if (isBase8) {
+            if (idx % 2 != 0) {
+
+                long absBeat = absoluteBeatCounter.get() - 1; // absoluteBeatCounter 已经在 ticker 里 +1 了
+                if (absBeat % 2 != 0) {
+                    return;
+                }
+                // 此时触发，时长为 2 * beatDurationNs
+                beatDurationNs *= 2;
+            } else {
+                 long absBeat = absoluteBeatCounter.get() - 1;
+                 if (absBeat % 2 != 0) return;
+                 beatDurationNs *= 2;
+            }
+        }
+
+        double[] rhythm_data = BeatHelper.RHYTHM_DATA.get(rhythmId);
+
+        for (int i = 0; i < rhythm_data[0]; i++) {
+            long delayNs = (long) (rhythm_data[i+1] * beatDurationNs);
+            boolean isAccent = ((rhythm_data[i+6]>0)&&this.accentEnabled);
+
+            // 立即播放第一个音（delay=0），其他音调度播放
+            if (delayNs == 0) {
+                if (isAccent) playStrongOnce();
+                else playWeakOnce();
+            } else {
+                scheduler.schedule(() -> {
+                    if (isAccent) playStrongOnce();
+                    else playWeakOnce();
+                }, delayNs, java.util.concurrent.TimeUnit.NANOSECONDS);
+            }
+        }
+    }
+}

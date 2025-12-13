@@ -1,8 +1,64 @@
 package com.example.pianolab.utils;
 
+import com.example.pianolab.R;
 import com.example.pianolab.feature.beat.model.BeatSettings;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class BeatHelper {
+
+    public static final Map<Integer, double[]> RHYTHM_DATA = new HashMap<>();
+
+    static {
+        // 前附点: 0.75 + 0.25
+        RHYTHM_DATA.put(R.drawable.foredot, new double[]{
+                2.0,                        // Count
+                0.0, 0.75, 0.0, 0.0, 0.0,   // Offsets
+                0.0, 0.0, 0.0, 0.0, 0.0     // Accents
+        });
+
+        // 后附点: 0.25 + 0.75
+        RHYTHM_DATA.put(R.drawable.backdot, new double[]{
+                2.0,
+                0.0, 0.25, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0
+        });
+
+        // 前八后十六: 0.5 + 0.25 + 0.25
+        RHYTHM_DATA.put(R.drawable.fore8back16, new double[]{
+                3.0,
+                0.0, 0.5, 0.75, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0
+        });
+
+        // 前十六后八: 0.25 + 0.25 + 0.5
+        RHYTHM_DATA.put(R.drawable.fore16back8, new double[]{
+                3.0,
+                0.0, 0.25, 0.5, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0
+        });
+
+        // 三连音: 1/3, 1/3, 1/3
+        RHYTHM_DATA.put(R.drawable.tercet, new double[]{
+                3.0,
+                0.0, 1.0/3.0, 2.0/3.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0
+        });
+
+        // 小切分: 0.25 + 0.5 + 0.25 (中间重音)
+        RHYTHM_DATA.put(R.drawable.syncopation, new double[]{
+                3.0,
+                0.0, 0.25, 0.75, 0.0, 0.0,
+                0.0, 1.0, 0.0, 0.0, 0.0     // Index 7 (accents[1]) is 1.0
+        });
+        RHYTHM_DATA.put(R.drawable.quintuplet, new double[]{
+                5.0,                            // Count
+                0.0, 0.2, 0.4, 0.6, 0.8,        // Offsets
+                0.0, 0.0, 0.0, 0.0, 0.0        // Index 7 (accents[1]) is 1.0
+        });
+    }
+
 
     public static int BPM_TO_CPM(int bpm,int base_beat){
         return (int) Math.round(bpm * (4.0/base_beat));

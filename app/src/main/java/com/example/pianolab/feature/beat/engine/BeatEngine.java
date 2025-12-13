@@ -27,10 +27,13 @@ public interface BeatEngine {
 
     void setBeatsPerMeasure(int beatsPerMeasure);
 
+    void setSpecialRhythmId(int specialRhythmId);
+
+    void setToneType(int toneType);
+
     void setListener(BeatListener listener);
 
     boolean isRunning();
 
     void release();
 }
-

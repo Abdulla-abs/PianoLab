@@ -1,0 +1,41 @@
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64.244dp"
+    android:height="58.408dp"
+    android:viewportWidth="64.244"
+    android:viewportHeight="58.408">
+  <!-- 5 Note Heads (spaced by 13 units) -->
+  <path
+      android:pathData="
+      M1,54.038c0,2.106 1.741,3.37 3.931,3.37 3.594,0 8.003,-3.314 8.003,-6.74 0,-2.077 -1.629,-3.37 -3.931,-3.37 -4.437,0 -8.003,3.286 -8.003,6.74
+      M14,54.038c0,2.106 1.741,3.37 3.931,3.37 3.594,0 8.003,-3.314 8.003,-6.74 0,-2.077 -1.629,-3.37 -3.931,-3.37 -4.437,0 -8.003,3.286 -8.003,6.74
+      M27,54.038c0,2.106 1.741,3.37 3.931,3.37 3.594,0 8.003,-3.314 8.003,-6.74 0,-2.077 -1.629,-3.37 -3.931,-3.37 -4.437,0 -8.003,3.286 -8.003,6.74
+      M40,54.038c0,2.106 1.741,3.37 3.931,3.37 3.594,0 8.003,-3.314 8.003,-6.74 0,-2.077 -1.629,-3.37 -3.931,-3.37 -4.437,0 -8.003,3.286 -8.003,6.74
+      M53,54.038c0,2.106 1.741,3.37 3.931,3.37 3.594,0 8.003,-3.314 8.003,-6.74 0,-2.077 -1.629,-3.37 -3.931,-3.37 -4.437,0 -8.003,3.286 -8.003,6.74
+      "
+      android:fillColor="#09090b"/>
+
+  <!-- Stems and Beam -->
+  <path
+      android:strokeWidth="1"
+      android:pathData="
+      M12.184,52.353v-34.25
+      M25.184,52.353v-34.25
+      M38.184,52.353v-34.25
+      M51.184,52.353v-34.25
+      M64.184,52.353v-34.25
+      M11.434,17.353v5h53.5v-5z
+      "
+      android:fillColor="#09090b"
+      android:strokeColor="#09090b"/>
+
+  <!-- Number 5 (Stroke representation) -->
+  <!-- Scaled to 90% of previous, shifted right, stroke increased to 3.2 -->
+  <path
+      android:pathData="M39.4,2.5 H34.5 V6.5 H38.4 C39.8,6.5 40.3,7.8 40.3,9.8 C40.3,11.8 39.0,13.0 37.0,13.0 C35.2,13.0 34.5,11.8 34.5,10.6"
+      android:strokeColor="#09090b"
+      android:strokeWidth="3.2"
+      android:strokeLineCap="round"
+      android:strokeLineJoin="round"
+      android:fillColor="#00000000"/>
+</vector>

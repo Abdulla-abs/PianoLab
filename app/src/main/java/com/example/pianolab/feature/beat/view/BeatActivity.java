@@ -1,9 +1,10 @@
 package com.example.pianolab.feature.beat.view;
 
-import android.media.MediaPlayer;
+
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.widget.Button;
+import android.widget.AdapterView;
+
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -35,19 +36,20 @@ public class BeatActivity extends AppCompatActivity {
     private SeekBar seekbarBpm;
     private TextView tvTempoMarking;
     private TextView tvBeatsValue;
+    private ImageView buttonBack;
     private ToggleButton togglePlay;
 
 
     // 新增：可视化控件
     private RadialPulseView radialPulseView;
     private Spinner spinnerSpecial;
+    private Spinner spinnerTone;
 
     private androidx.appcompat.widget.SwitchCompat switchAccent;
 
     
 
     // 倒计时音效与计时器
-    private MediaPlayer countdownPlayer;
     private CountDownTimer countdownTimer;
 
     private boolean accentProgrammatic = false;
@@ -57,25 +59,40 @@ public class BeatActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_beat);
 
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().hide();
+        }
+
         viewModel = new ViewModelProvider(this).get(BeatViewModel.class);
 
         // 绑定视图
         radialPulseView = findViewById(R.id.radial_pulse_view);
         // 将中心文本字体设置为更大（超参数，方便调整）
         radialPulseView.setCenterTextSizeFactor(0.7f);
-        // 初始化倒计时音效（确保 res/raw/countdown.wav 存在）
-//        try {
-//            countdownPlayer = MediaPlayer.create(this, R.raw.countdown);
-//        } catch (Exception ignored) { countdownPlayer = null; }
+
         tvBpmValue = findViewById(R.id.tv_bpm_value);
         tvCrochetValue = findViewById(R.id.tv_crochet_value);
         tvTempoMarking = findViewById(R.id.tv_tempo_marking);
         spinnerSpecial = findViewById(R.id.spinner_special_rhythm);
+        spinnerTone = findViewById(R.id.spinner_tone);
 
         seekbarBpm = findViewById(R.id.seekbar_bpm);
         tvBeatsValue = findViewById(R.id.tv_beats_value);
         togglePlay = findViewById(R.id.toggle_play);
         switchAccent = findViewById(R.id.switch_accent);
+        buttonBack = findViewById(R.id.btn_back);
+        buttonBack.setOnClickListener(v -> finish());
+
+        spinnerTone.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, android.view.View view, int position, long id) {
+                viewModel.setToneType(position);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+            }
+        });
 
 
         // 初始化 SeekBar 范围映射
@@ -145,29 +162,6 @@ public class BeatActivity extends AppCompatActivity {
             });
         }
 
-//        if (switchAccent != null) {
-////            switchAccent.setOnCheckedChangeListener((buttonView, isChecked) -> {
-////                try { viewModel.setAccentEnabled(isChecked); } catch (Exception ignored) {}
-////            });
-//            switchAccent.setOnCheckedChangeListener((buttonView, isChecked) -> {
-//                try {
-//                    viewModel.setAccentEnabled(isChecked);
-//                } catch (Exception ignored) {}
-//
-//                // 仅在用户真实按下切换时重启；避免程序性更新触发（buttonView 为 CompoundButton）
-//                boolean userInitiated = false;
-//                if (buttonView instanceof android.widget.CompoundButton) {
-//                    userInitiated = ((android.widget.CompoundButton) buttonView).isPressed();
-//                }
-//                if (userInitiated) {
-//                    Boolean isRunning = viewModel.getIsRunning().getValue();
-//                    if (isRunning != null && isRunning) {
-//                        viewModel.stop();
-//                        viewModel.start();
-//                    }
-//                }
-//            });
-//        }
 
 
         // 点击 bpm 文本可以手动输入 BPM
@@ -253,12 +247,7 @@ public class BeatActivity extends AppCompatActivity {
                     });
                 }
             }
-//            else {
-//                // 引擎未运行时仅更新 UI 文本（例如进入页面或处于倒计时阶段），但不触发脉冲
-//                if (radialPulseView != null) {
-//                    radialPulseView.post(() -> radialPulseView.setCenterText(String.valueOf(idx + 1)));
-//                }
-//            }
+
         });
 
         // 观察运行状态
@@ -278,15 +267,7 @@ public class BeatActivity extends AppCompatActivity {
                     @Override
                     public void onTick(long millisUntilFinished) {
                         int secLeft = (int) Math.ceil(millisUntilFinished / 1000.0);
-                        // 播放倒计时音效
-//                        try {
-//                            if (countdownPlayer != null) {
-//                                countdownPlayer.start();
-//                                // reset for next play
-//                                countdownPlayer.seekTo(0);
-//                            }
-//                        } catch (Exception ignored) {}
-//                        // 更新中心文本（radialPulseView 也会更新，但我们主动设置以保证同步）
+
                         try {
                             viewModel.playCountdown();
                         } catch (Exception ignored) {}
@@ -417,6 +398,26 @@ public class BeatActivity extends AppCompatActivity {
 
         int noneIndex = icons.indexOf(R.drawable.none);
         if (noneIndex >= 0) spinnerSpecial.setSelection(noneIndex);
+
+        spinnerSpecial.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, android.view.View view, int position, long id) {
+                Integer resId = (Integer) parent.getItemAtPosition(position);
+                if (resId != null) {
+                    viewModel.setSpecialRhythmId(resId);
+                    // 如果正在运行，重启以应用更改
+                    Boolean isRunning = viewModel.getIsRunning().getValue();
+                    if (isRunning != null && isRunning) {
+                        viewModel.stop();
+                        viewModel.start();
+                    }
+                }
+            }
+
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {
+            }
+        });
     }
 
     @Override
@@ -426,11 +427,6 @@ public class BeatActivity extends AppCompatActivity {
             countdownTimer.cancel();
             countdownTimer = null;
         }
-//        try {
-//            if (countdownPlayer != null) {
-//                countdownPlayer.release();
-//                countdownPlayer = null;
-//            }
-//        } catch (Exception ignored) {}
+
     }
 }
