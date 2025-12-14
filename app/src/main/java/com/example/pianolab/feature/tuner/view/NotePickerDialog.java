@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.NumberPicker;
 import android.widget.RadioGroup;
 
@@ -19,7 +20,9 @@ public class NotePickerDialog extends AlertDialog {
     private final OnNoteSelectedListener listener;
     private NumberPicker pickerNoteName;
     private final String initialNote;
-    private RadioGroup radioAccidental;
+    private CheckBox checkFlat;
+    private CheckBox checkSharp;
+
     private NumberPicker pickerOctave;
     private static final String TAG = "NotePickerDialog";
 
@@ -41,7 +44,8 @@ public class NotePickerDialog extends AlertDialog {
     protected void onCreate(Bundle savedInstanceState) {
         View view = LayoutInflater.from(getContext()).inflate(R.layout.dialog_note_picker, null);
         pickerNoteName = view.findViewById(R.id.picker_note_name);
-        radioAccidental = view.findViewById(R.id.radio_accidental);
+        checkSharp = view.findViewById(R.id.check_sharp);
+        checkFlat = view.findViewById(R.id.check_flat);
         pickerOctave = view.findViewById(R.id.picker_octave);
         setView(view);
         setTitle(R.string.tuner_select_target_note);
@@ -51,6 +55,17 @@ public class NotePickerDialog extends AlertDialog {
             }
         });
         setButton(Dialog.BUTTON_NEGATIVE, getContext().getString(android.R.string.cancel), (dialog, which) -> dismiss());
+
+        if (checkFlat!=null){
+            checkFlat.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if(isChecked&&checkSharp!=null) checkSharp.setChecked(false);
+            });
+        }
+        if(checkSharp!=null){
+            checkSharp.setOnCheckedChangeListener((buttonView,isChecked)->{
+                if(isChecked&&checkFlat!=null) checkFlat.setChecked(false);
+            });
+        }
 
         super.onCreate(savedInstanceState);
 
@@ -70,10 +85,9 @@ public class NotePickerDialog extends AlertDialog {
         String noteName = NOTE_NAMES[pickerNoteName.getValue()];
         String accidental = "";
 
-        int checkedId = radioAccidental.getCheckedRadioButtonId();
-        if (checkedId == R.id.radio_sharp) {
+        if (checkSharp!=null&&checkSharp.isChecked()) {
             accidental = "#";
-        } else if (checkedId == R.id.radio_flat) {
+        } else if (checkFlat!=null &&checkFlat.isChecked()) {
             accidental = "b";
         }
 
@@ -85,6 +99,8 @@ public class NotePickerDialog extends AlertDialog {
      * 根据当前音符字符串设置默认值
      */
     public void setCurrentNote(String note) {
+        if (checkSharp != null) checkSharp.setChecked(false);
+        if (checkFlat != null) checkFlat.setChecked(false);
         if (note == null || note.isEmpty() || "--".equals(note)) {
             pickerNoteName.setValue(5); // 默认 A
             pickerOctave.setValue(4); // 默认 A4
@@ -101,10 +117,10 @@ public class NotePickerDialog extends AlertDialog {
         }
 
         // 解析升降号
-        if (note.contains("#")) {
-            radioAccidental.check(R.id.radio_sharp);
-        } else if (note.contains("b")) {
-            radioAccidental.check(R.id.radio_flat);
+        if (note.contains("#") && checkSharp != null) {
+            checkSharp.setChecked(true);
+        } else if (note.contains("b") && checkFlat != null) {
+            checkFlat.setChecked(true);
         }
 
         // 解析八度

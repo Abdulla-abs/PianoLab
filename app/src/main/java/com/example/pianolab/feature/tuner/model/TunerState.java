@@ -156,10 +156,29 @@ public class TunerState {
     }
 
     public String getDisplayNote() {
-        if (autoDetectEnabled && detectedNote != null && !detectedNote.isEmpty()) {
-            return detectedNote;
+        String note = autoDetectEnabled && detectedNote != null && !detectedNote.isEmpty() ? detectedNote : manualNote;
+        if (note == null) return "--";
+
+        // 格式化音符显示：将 A#4 转换为 #A4，将 Bb4 转换为 bB4
+        if (note.length() >= 3) {
+            if (note.contains("#")) {
+                int sharpIndex = note.indexOf('#');
+                if (sharpIndex > 0) {
+                    String noteName = note.substring(0, sharpIndex);
+                    String octave = note.substring(sharpIndex + 1);
+                    return "#" + noteName + octave;
+                }
+            } else if (note.contains("b")) {
+                int flatIndex = note.indexOf('b');
+                if (flatIndex > 0) {
+                    String noteName = note.substring(0, flatIndex);
+                    String octave = note.substring(flatIndex + 1);
+                    return "b" + noteName + octave;
+                }
+            }
         }
-        return manualNote;
+
+        return note;
     }
 
     public float getDisplayFrequency() {

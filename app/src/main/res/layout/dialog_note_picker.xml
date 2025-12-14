@@ -6,6 +6,42 @@
     android:padding="16dp"
     android:gravity="center">
 
+    <!-- 升降号选择 -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/tuner_accidental"
+            android:textSize="12sp"
+            android:layout_marginBottom="4dp" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <CheckBox
+                android:id="@+id/check_sharp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="♯" />
+
+            <CheckBox
+                android:id="@+id/check_flat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="♭" />
+        </LinearLayout>
+
+
+    </LinearLayout>
+
     <!-- 音名选择器 -->
     <LinearLayout
         android:layout_width="wrap_content"
@@ -27,41 +63,7 @@
             android:layout_height="100dp" />
     </LinearLayout>
 
-    <!-- 升降号选择 -->
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/tuner_accidental"
-            android:textSize="12sp"
-            android:layout_marginBottom="4dp" />
-
-        <RadioGroup
-            android:id="@+id/radio_accidental"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <RadioButton
-                android:id="@+id/radio_sharp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="♯" />
-
-            <RadioButton
-                android:id="@+id/radio_flat"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="♭" />
-        </RadioGroup>
-    </LinearLayout>
 
     <!-- 八度选择器 -->
     <LinearLayout
