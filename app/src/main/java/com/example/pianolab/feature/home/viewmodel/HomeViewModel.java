@@ -11,6 +11,7 @@ import com.example.pianolab.feature.home.model.FeatureItem;
 import com.example.pianolab.feature.beat.view.BeatActivity;
 import com.example.pianolab.feature.virtual_piano.view.VirtualPianoActivity;
 import com.example.pianolab.feature.tuner.view.TunerActivity;
+import com.example.pianolab.feature.chord.view.ChordActivity;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +47,12 @@ public class HomeViewModel extends ViewModel {
                 R.mipmap.ic_launcher,
                 "调音器",
                 TunerActivity.class
+        ));
+
+        items.add(new FeatureItem(
+                R.mipmap.ic_launcher,
+                "和弦工具",
+                ChordActivity.class
         ));
 
         featureItems.setValue(items);

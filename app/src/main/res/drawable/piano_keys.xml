@@ -3957,7 +3957,7 @@
         android:pathData="M95.85,192.56V0h20.13v192.56z"
         android:name="key4_black_part2">
       <aapt:attr name="android:fillColor">
-        <gradient 
+        <gradient
             android:startX="95.85"
             android:startY="0"
             android:endX="115.98"
@@ -3972,7 +3972,7 @@
         android:pathData="m120.54,209.05 l-4.56,-16.49V0h4.56z"
         android:name="key4_black_part2">
       <aapt:attr name="android:fillColor">
-        <gradient 
+        <gradient
             android:startX="120.54"
             android:startY="0"
             android:endX="115.98"

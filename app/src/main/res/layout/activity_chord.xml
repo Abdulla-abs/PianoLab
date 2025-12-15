@@ -110,7 +110,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent">
 
-                <com.example.pianolab.feature.virtual_piano.view.PianoView
+                <com.example.pianolab.feature.chord.view.ChordPianoView
                     android:id="@+id/piano_view"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent" />
