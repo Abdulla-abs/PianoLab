@@ -102,7 +102,7 @@
             android:id="@+id/hs_piano"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="10.5"
+            android:layout_weight="9.5"
             android:fillViewport="true"
             android:overScrollMode="never">
 
@@ -125,25 +125,25 @@
             android:layout_height="match_parent"
             android:layout_weight="6"
             android:orientation="horizontal"
-            android:background="#222222"
+            android:background="#E0E0E0"
             android:padding="8dp">
 
             <!-- 左边：存放 SVG 素材 -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="1"
+                android:layout_weight="3"
                 android:orientation="vertical"
                 >
 
                 <com.example.pianolab.feature.chord.view.StaffView
                     android:id="@+id/staff_g_clef"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="0dp"
                     android:layout_weight="1" />
                 <com.example.pianolab.feature.chord.view.StaffView
                     android:id="@+id/staff_f_clef"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="0dp"
                     android:layout_weight="1" />
             </LinearLayout>
@@ -153,7 +153,7 @@
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="1"
+                android:layout_weight="2"
                 android:orientation="vertical"
                 android:gravity="center">
 
