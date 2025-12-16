@@ -129,14 +129,25 @@
             android:padding="8dp">
 
             <!-- 左边：存放 SVG 素材 -->
-            <ImageView
-                android:id="@+id/iv_chord_svg"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:scaleType="fitCenter"
-                android:contentDescription="Chord Diagram"
-                android:src="@drawable/ic_launcher_foreground" />
+                android:orientation="vertical"
+                >
+
+                <com.example.pianolab.feature.chord.view.StaffView
+                    android:id="@+id/staff_g_clef"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+                <com.example.pianolab.feature.chord.view.StaffView
+                    android:id="@+id/staff_f_clef"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+            </LinearLayout>
+
 
             <!-- 右边：TextView 和 Button 竖直排列 -->
             <LinearLayout

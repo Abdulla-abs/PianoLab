@@ -9,26 +9,32 @@
       android:fillColor="#FF000000"
       android:strokeColor="#000"/>
   <path
+      android:name="f_line1"
       android:pathData="m9.69,18.1 l177.07,0.72"
       android:strokeWidth="1.25"
       android:fillColor="#FF000000"
       android:strokeColor="#000"/>
   <path
+      android:name="f_line2"
       android:pathData="m11.14,40.06 l177.07,0.72"
       android:strokeWidth="1.25"
       android:fillColor="#FF000000"
       android:strokeColor="#000"/>
+
   <path
+      android:name="f_line3"
       android:pathData="m11.85,61.83 l177.07,0.72"
       android:strokeWidth="1.25"
       android:fillColor="#FF000000"
       android:strokeColor="#000"/>
   <path
+      android:name="f_line4"
       android:pathData="m10.06,84.05 l177.07,0.72"
       android:strokeWidth="1.25"
       android:fillColor="#FF000000"
       android:strokeColor="#000"/>
   <path
+      android:name="f_line5"
       android:pathData="m10.78,105.83 l177.07,0.72"
       android:strokeWidth="1.25"
       android:fillColor="#FF000000"

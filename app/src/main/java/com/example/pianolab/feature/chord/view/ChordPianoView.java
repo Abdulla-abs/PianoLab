@@ -28,7 +28,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class ChordPianoView extends View {
     private static final String TAG = "ChordPianoView";
@@ -70,6 +69,16 @@ public class ChordPianoView extends View {
 
     private PianoSoundEngine soundEngine;
     private final PianoPaintEngine paintEngine;
+
+    private OnKeyToggledListener onKeyToggledListener;
+
+    public interface OnKeyToggledListener {
+        void onKeyToggled(String keyName);
+    }
+
+    public void setOnKeyToggledListener(OnKeyToggledListener listener) {
+        this.onKeyToggledListener = listener;
+    }
 
     private static final int DEFAULT_OCTAVE_W = 375;
     private static final int DEFAULT_OCTAVE_H = 323;
@@ -427,6 +436,19 @@ public class ChordPianoView extends View {
             }
             lastPlayedKey = keyName;
         }
+
+        if (onKeyToggledListener != null) {
+            onKeyToggledListener.onKeyToggled(keyName);
+        }
+
+        invalidate();
+    }
+
+    public void setSelectedKeys(List<String> keys) {
+        this.selectedKeys.clear();
+        if (keys != null) {
+            this.selectedKeys.addAll(keys);
+        }
         invalidate();
     }
 
@@ -514,4 +536,3 @@ public class ChordPianoView extends View {
         return Math.max(0, contentWidthPx / 2);
     }
 }
-

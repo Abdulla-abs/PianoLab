@@ -5,8 +5,11 @@ import android.view.ViewTreeObserver;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 import com.example.pianolab.R;
+import com.example.pianolab.feature.chord.viewmodel.ChordViewModel;
 
 public class ChordActivity extends AppCompatActivity {
     private SeekBar seekBar;
@@ -15,11 +18,17 @@ public class ChordActivity extends AppCompatActivity {
     private ImageButton buttonBack;
     private ImageButton buttonReset;
     private ImageButton buttonBackout;
+    private StaffView staffGClef;
+    private StaffView staffFClef;
+    private TextView tvChordName;
+    private ChordViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chord);
+
+        viewModel = new ViewModelProvider(this).get(ChordViewModel.class);
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
@@ -34,10 +43,28 @@ public class ChordActivity extends AppCompatActivity {
         buttonBack = findViewById(R.id.button_back);
         buttonReset = findViewById(R.id.button_reset);
         buttonBackout = findViewById(R.id.button_backout);
+        staffGClef = findViewById(R.id.staff_g_clef);
+        staffFClef = findViewById(R.id.staff_f_clef);
+        tvChordName = findViewById(R.id.tv_chord_name);
+
+        staffGClef.setClefType(StaffView.ClefType.TREBLE);
+        staffFClef.setClefType(StaffView.ClefType.BASS);
 
         buttonBack.setOnClickListener(v -> finish());
-        buttonReset.setOnClickListener(v -> pianoView.reset());
-        buttonBackout.setOnClickListener(v -> pianoView.backout());
+        buttonReset.setOnClickListener(v -> viewModel.reset());
+        buttonBackout.setOnClickListener(v -> viewModel.backout());
+
+        pianoView.setOnKeyToggledListener(key -> viewModel.toggleKey(key));
+
+        viewModel.selectedKeys.observe(this, keys -> {
+            pianoView.setSelectedKeys(keys);
+            staffGClef.setNotes(keys);
+            staffFClef.setNotes(keys);
+        });
+
+        viewModel.chordText.observe(this, text -> {
+            tvChordName.setText(text);
+        });
 
         hsPiano.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
