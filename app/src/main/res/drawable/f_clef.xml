@@ -10,32 +10,32 @@
       android:strokeColor="#000"/>
   <path
       android:name="f_line1"
-      android:pathData="m11.14,18.1 l182,0.72"
+      android:pathData="m11.14,18.1 l186,0.72"
       android:strokeWidth="1.25"
       android:fillColor="#FF000000"
       android:strokeColor="#000"/>
   <path
       android:name="f_line2"
-      android:pathData="m11.14,40.06 l182,0.72"
+      android:pathData="m11.14,40.06 l186,0.72"
       android:strokeWidth="1.25"
       android:fillColor="#FF000000"
       android:strokeColor="#000"/>
 
   <path
       android:name="f_line3"
-      android:pathData="m11.14,61.83 l182,0.72"
+      android:pathData="m11.14,61.83 l186,0.72"
       android:strokeWidth="1.25"
       android:fillColor="#FF000000"
       android:strokeColor="#000"/>
   <path
       android:name="f_line4"
-      android:pathData="m11.14,84.05 l182,0.72"
+      android:pathData="m11.14,84.05 l186,0.72"
       android:strokeWidth="1.25"
       android:fillColor="#FF000000"
       android:strokeColor="#000"/>
   <path
       android:name="f_line5"
-      android:pathData="m11.14,105.83 l182,0.72"
+      android:pathData="m11.14,105.83 l186,0.72"
       android:strokeWidth="1.25"
       android:fillColor="#FF000000"
       android:strokeColor="#000"/>

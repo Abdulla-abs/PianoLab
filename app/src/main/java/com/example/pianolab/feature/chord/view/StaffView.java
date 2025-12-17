@@ -8,6 +8,8 @@ import android.view.View;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import com.example.pianolab.R;
+import com.example.pianolab.utils.ChordHelper;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,16 +29,19 @@ public class StaffView extends View {
     private static final float VIEWPORT_H_BASS = 153.33f;
 
     // Line Y positions from XML (Top to Bottom)
-    // Treble: Line 5 (Top, F5) to Line 1 (Bottom, E4)
     private static final float[] TREBLE_LINES_Y = {18.1f, 40.06f, 61.83f, 84.05f, 105.83f};
-    // Bass: Line 1 (Top, A3) to Line 5 (Bottom, G2)
     private static final float[] BASS_LINES_Y = {18.1f, 40.06f, 61.83f, 84.05f, 105.83f};
 
     // Reference notes for calculation
-    // Treble Line 1 (Bottom) is E4.
-    // Bass Line 5 (Bottom) is G2.
     private static final int TREBLE_BOTTOM_LINE_NOTE_INDEX = 44; // E4 (Key 44)
     private static final int BASS_BOTTOM_LINE_NOTE_INDEX = 23;   // G2 (Key 23)
+
+    // Hyperparameters
+    private float secondNoteShiftRatio = 0.85f;
+    private float globalNoteShiftX = 60f;
+    private float bassClefShiftY = 30f;
+    private float flatSpacingRatio = 1.2f;
+    private float flatNotePadding = 10f;
 
     public StaffView(Context context) {
         super(context);
@@ -75,9 +80,55 @@ public class StaffView extends View {
         invalidate();
     }
 
+    // Inner class for rendering info
+    private static class NoteRenderInfo implements Comparable<NoteRenderInfo> {
+        int rawIndex;
+        int visualIndex;
+        boolean isBlack;
+        String keyName;
+
+        public NoteRenderInfo(int rawIndex, String keyName) {
+            this.rawIndex = rawIndex;
+            this.keyName = keyName;
+
+            // Determine if black key based on index (0=C, 1=C#...)
+            // C=0, C#=1, D=2, D#=3, E=4, F=5, F#=6, G=7, G#=8, A=9, A#=10, B=11
+            int semitone = (rawIndex - 4) % 12;
+            if (semitone < 0) semitone += 12;
+
+            // Black keys are at indices 1, 3, 6, 8, 10 relative to C
+            this.isBlack = (semitone == 1 || semitone == 3 || semitone == 6 || semitone == 8 || semitone == 10);
+
+            // If black key, treat as flat of the next white key (e.g., C# -> Db)
+            // Visual position moves up one semitone to the white key line
+            this.visualIndex = this.isBlack ? rawIndex + 1 : rawIndex;
+        }
+
+        @Override
+        public int compareTo(NoteRenderInfo o) {
+            return Integer.compare(this.rawIndex, o.rawIndex);
+        }
+    }
+
+    // Inner class for flat placement collision detection
+    private static class PlacedFlat {
+        int diatonicPos;
+        int shiftIndex;
+
+        public PlacedFlat(int diatonicPos, int shiftIndex) {
+            this.diatonicPos = diatonicPos;
+            this.shiftIndex = shiftIndex;
+        }
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+
+        int saveCount = canvas.save();
+        if (clefType == ClefType.BASS) {
+            canvas.translate(0, bassClefShiftY);
+        }
 
         int w = getWidth();
         int h = getHeight();
@@ -87,110 +138,136 @@ public class StaffView extends View {
             clefDrawable.draw(canvas);
         }
 
-        // 提前计算缩放比例和线间距，因为休止符也需要用到
         float viewportH = (clefType == ClefType.TREBLE) ? VIEWPORT_H_TREBLE : VIEWPORT_H_BASS;
         float scaleY = h / viewportH;
         float lineSpacingUnits = 22f;
         float lineSpacingPx = lineSpacingUnits * scaleY;
 
-        // 1. 检查是否有属于当前谱号的音符
-        boolean hasRelevantNotes = false;
+        // 1. Filter and build NoteRenderInfo list
+        List<NoteRenderInfo> notesToRender = new ArrayList<>();
         for (String key : noteKeys) {
-            int keyIndex = getKeyIndex(key);
+            int keyIndex = ChordHelper.getKeyIndex(key);
             if (keyIndex == -1) continue;
 
-            // 高音谱号只关心 >= C4 (40)
             if (clefType == ClefType.TREBLE && keyIndex >= 40) {
-                hasRelevantNotes = true;
-                break;
-            }
-            // 低音谱号只关心 < C4 (40)
-            if (clefType == ClefType.BASS && keyIndex < 40) {
-                hasRelevantNotes = true;
-                break;
+                notesToRender.add(new NoteRenderInfo(keyIndex, key));
+            } else if (clefType == ClefType.BASS && keyIndex < 40) {
+                notesToRender.add(new NoteRenderInfo(keyIndex, key));
             }
         }
+        java.util.Collections.sort(notesToRender);
 
-        // 如果当前谱号没有音符，绘制全休止符
-        if (!hasRelevantNotes) {
+        // Draw Whole Rest if empty
+        if (notesToRender.isEmpty()) {
             Drawable rest = ContextCompat.getDrawable(getContext(), R.drawable.whole_rest);
             if (rest != null) {
-                // 2. 修正位置：顶边与从上往下数第2根线重合 (Index 1)
                 float line2YUnits = (clefType == ClefType.TREBLE) ? TREBLE_LINES_Y[1] : BASS_LINES_Y[1];
                 float line2YPx = line2YUnits * scaleY;
 
-                // 大小估算：高度约为半个间距，宽度约为一个间距多一点
                 int rh = (int) (lineSpacingPx * 0.5f);
                 int rw = (int) (lineSpacingPx * 1.2f);
 
                 int rx = (w - rw) / 2;
-                int ry = (int) line2YPx; // 顶边对齐线
+                int ry = (int) line2YPx;
 
                 rest.setBounds(rx, ry, rx + rw, ry + rh);
                 rest.draw(canvas);
             }
+            canvas.restoreToCount(saveCount);
             return;
         }
 
         float halfSpacePx = lineSpacingPx / 2f;
-
-        // Reference Y (Bottom Line)
         float refYUnits = (clefType == ClefType.TREBLE) ? TREBLE_LINES_Y[4] : BASS_LINES_Y[4];
         float refYPx = refYUnits * scaleY;
-
         int refNoteIndex = (clefType == ClefType.TREBLE) ? TREBLE_BOTTOM_LINE_NOTE_INDEX : BASS_BOTTOM_LINE_NOTE_INDEX;
 
-        for (String key : noteKeys) {
-            int keyIndex = getKeyIndex(key);
-            if (keyIndex == -1) continue;
+        Drawable flatDrawable = ContextCompat.getDrawable(getContext(), R.drawable.flat);
+        List<PlacedFlat> placedFlats = new ArrayList<>();
 
-            // Filter based on clef
-            if (clefType == ClefType.TREBLE && keyIndex < 40) continue;
-            if (clefType == ClefType.BASS && keyIndex >= 40) continue;
+        if (noteDrawable != null) {
+            int noteH = (int) lineSpacingPx;
+            int noteW = (int) (noteH * 1.5f);
 
-            // Calculate Diatonic Step Difference
-            int diatonicDiff = getDiatonicDistance(refNoteIndex, keyIndex);
+            // Flat dimensions
+            int flatW = (int) (noteW * 0.6f);
+            int flatH = (int) (noteH * 2.5f);
 
-            // Calculate Y
-            float yPos = refYPx - (diatonicDiff * halfSpacePx);
+            int xBase = (w - noteW) / 2 + (int) globalNoteShiftX;
+            int prevOffset = 0;
 
-            // Draw Note
-            if (noteDrawable != null) {
-                int noteH = (int) lineSpacingPx;
-                int noteW = (int) (noteH * 1.5f);
+            for (int i = 0; i < notesToRender.size(); i++) {
+                NoteRenderInfo currentNote = notesToRender.get(i);
+                int currentOffset = 0;
 
-                int xPos = (w - noteW) / 2;
+                // Calculate Second Interval Shift
+                if (i > 0) {
+                    NoteRenderInfo prevNote = notesToRender.get(i - 1);
+                    int diatonicDiff = ChordHelper.getDiatonicDistance(prevNote.visualIndex, currentNote.visualIndex);
+
+                    if (diatonicDiff == 1) {
+                        if (prevOffset == 0) {
+                            currentOffset = 1;
+                        }
+                    }
+                }
+
+                // Calculate Y Position
+                int distFromRef = ChordHelper.getDiatonicDistance(refNoteIndex, currentNote.visualIndex);
+                float yPos = refYPx - (distFromRef * halfSpacePx);
                 int top = (int) (yPos - noteH / 2f);
+
+                // Calculate X Position (Note Head)
+                int xShift = (currentOffset == 1) ? (int)(noteW * secondNoteShiftRatio) : 0;
+                int xPos = xBase + xShift;
 
                 noteDrawable.setBounds(xPos, top, xPos + noteW, top + noteH);
                 noteDrawable.draw(canvas);
+
+                // Draw Flat if needed
+                if (currentNote.isBlack && flatDrawable != null) {
+                    // Find available shift index for flat
+                    int flatShiftIndex = 0;
+                    while (true) {
+                        boolean collision = false;
+                        for (PlacedFlat pf : placedFlats) {
+                            if (pf.shiftIndex == flatShiftIndex) {
+                                // Check vertical distance (less than octave = 7 steps)
+                                if (Math.abs(pf.diatonicPos - distFromRef) < 7) {
+                                    collision = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!collision) {
+                            break;
+                        }
+                        flatShiftIndex++;
+                    }
+
+                    placedFlats.add(new PlacedFlat(distFromRef, flatShiftIndex));
+
+                    // Calculate Flat X Position
+                    // Base is to the left of the main note column (xBase), ignoring second shift
+                    int flatRight = xBase - (int)flatNotePadding;
+                    int flatXOffset = (int) (flatShiftIndex * flatW * flatSpacingRatio);
+
+                    int flatL = flatRight - flatW - flatXOffset;
+                    int flatR = flatL + flatW;
+
+                    // Adjust Flat Y to align center/belly with line
+                    int flatTop = (int) (yPos - flatH * 0.65f);
+
+                    flatDrawable.setBounds(flatL, flatTop, flatR, flatTop + flatH);
+                    flatDrawable.draw(canvas);
+                }
+
+                prevOffset = currentOffset;
             }
         }
+
+        canvas.restoreToCount(saveCount);
     }
 
-    private int getKeyIndex(String keyName) {
-        try {
-            int us = keyName.indexOf('_');
-            if (keyName.startsWith("key") && us > 3) {
-                return Integer.parseInt(keyName.substring(3, us));
-            }
-        } catch (Exception ignore) {}
-        return -1;
-    }
 
-    // Returns number of diatonic steps (C, D, E...) between fromIndex and toIndex.
-    // Positive if toIndex is higher pitch.
-    private int getDiatonicDistance(int fromIndex, int toIndex) {
-        int[] diatonicMap = {0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6}; // C=0, C#=0, D=1...
-
-        int fromOctave = (fromIndex - 4) / 12; // Key 4 is C1.
-        int fromNote = (fromIndex - 4) % 12;
-        int fromDiatonic = fromOctave * 7 + diatonicMap[fromNote];
-
-        int toOctave = (toIndex - 4) / 12;
-        int toNote = (toIndex - 4) % 12;
-        int toDiatonic = toOctave * 7 + diatonicMap[toNote];
-
-        return toDiatonic - fromDiatonic;
-    }
 }

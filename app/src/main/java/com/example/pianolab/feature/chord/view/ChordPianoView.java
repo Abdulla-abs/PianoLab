@@ -33,17 +33,22 @@ public class ChordPianoView extends View {
     private static final String TAG = "ChordPianoView";
     private Drawable dOctave;
     private Drawable dThreeKeys;
+    private Drawable dFiveKeys; // 新增：F2-B2 部分
 
-    // C2 (key 16) to E6 (key 68)
-    private static final int START_KEY_INDEX = 16;
-    private static final int END_KEY_INDEX = 68;
-    private static final int PARTIAL_OCTAVE_START_INDEX = 64; // C6
+    // Range: F2 (key 21) to E5 (key 56)
+    private static final int START_KEY_INDEX = 21;
+    private static final int END_KEY_INDEX = 56;
+
+    // Split points
+    private static final int SECTION_1_END = 27; // B2
+    private static final int SECTION_2_END = 51; // B4 (covers C3-B4)
 
     private int contentWidthPx = 0;
     private int contentHeightPx = 0;
 
     private int swOct = 0;
     private int swThree = 0;
+    private int swFive = 0; // 新增
 
     // Selection logic
     private LinkedList<String> selectedKeys = new LinkedList<>();
@@ -90,6 +95,7 @@ public class ChordPianoView extends View {
 
         try { dOctave = ContextCompat.getDrawable(context, R.drawable.piano_keys); } catch (Exception e) { Log.e(TAG, "load piano_keys failed", e); dOctave = null; }
         try { dThreeKeys = ContextCompat.getDrawable(context, R.drawable.piano_three_keys); } catch (Exception e) { Log.e(TAG, "load piano_three_keys failed", e); dThreeKeys = null; }
+        try { dFiveKeys = ContextCompat.getDrawable(context, R.drawable.piano_five_keys); } catch (Exception e) { Log.e(TAG, "load piano_five_keys failed", e); dFiveKeys = null; }
 
         fallbackPaintOctave = new Paint(Paint.ANTI_ALIAS_FLAG);
         fallbackPaintOctave.setColor(Color.parseColor("#e0e0e0"));
@@ -124,20 +130,28 @@ public class ChordPianoView extends View {
         // Load templates
         Map<String, Path> namedKeys  = VirtualPianoHelper.loadNamedPathsFromVector(getContext(), R.drawable.piano_keys, true);
         Map<String, Path> namedThreeKeys = VirtualPianoHelper.loadNamedPathsFromVector(getContext(), R.drawable.piano_three_keys, true);
+        Map<String, Path> namedFiveKeys = VirtualPianoHelper.loadNamedPathsFromVector(getContext(), R.drawable.piano_five_keys, true);
 
         for (int i = START_KEY_INDEX; i <= END_KEY_INDEX; i++) {
             String relName;
             Map<String, Path> sourceMap;
 
-            if (i < PARTIAL_OCTAVE_START_INDEX) {
-                // Use piano_keys (1..12)
-                int templateIndex = (i - 4) % 12 + 1;
+            // Calculate template index (1-12)
+            // C=1, C#=2 ... F=6 ... B=12
+            int templateIndex = (i - 4) % 12 + 1;
+
+            if (i <= SECTION_1_END) {
+                // F2 - B2 (Keys 21-27) -> Use piano_five_keys
+                // Template indices will be 6(F) to 12(B)
+                relName = "key" + templateIndex;
+                sourceMap = namedFiveKeys;
+            } else if (i <= SECTION_2_END) {
+                // C3 - B4 (Keys 28-51) -> Use piano_keys (Full Octaves)
                 relName = "key" + templateIndex;
                 sourceMap = namedKeys;
             } else {
-                // Use piano_three_keys (1..5)
-                // 64(C6) -> key1
-                int templateIndex = (i - PARTIAL_OCTAVE_START_INDEX) + 1;
+                // C5 - E5 (Keys 52-56) -> Use piano_three_keys
+                // Template indices will be 1(C) to 5(E)
                 relName = "key" + templateIndex;
                 sourceMap = namedThreeKeys;
             }
@@ -191,18 +205,28 @@ public class ChordPianoView extends View {
         int wOct = (dOctave != null) ? VirtualPianoHelper.safeIntrinsicWidth(dOctave, DEFAULT_OCTAVE_W) : DEFAULT_OCTAVE_W;
         int hOct = (dOctave != null) ? VirtualPianoHelper.safeIntrinsicHeight(dOctave, DEFAULT_OCTAVE_H) : DEFAULT_OCTAVE_H;
 
-        // Estimate 3 keys width if dThreeKeys is null
-        int defaultThreeW = (int)(DEFAULT_OCTAVE_W * 3f / 7f); // Approx
+        // Estimate widths based on white key count ratio if drawable not loaded
+        // Full octave = 7 white keys
+        // Five keys (F-B) = 4 white keys -> 4/7
+        // Three keys (C-E) = 3 white keys -> 3/7
+
+        int defaultFiveW = (int)(DEFAULT_OCTAVE_W * 4f / 7f);
+        int wFive = (dFiveKeys != null) ? VirtualPianoHelper.safeIntrinsicWidth(dFiveKeys, defaultFiveW) : defaultFiveW;
+
+        int defaultThreeW = (int)(DEFAULT_OCTAVE_W * 3f / 7f);
         int wThree = (dThreeKeys != null) ? VirtualPianoHelper.safeIntrinsicWidth(dThreeKeys, defaultThreeW) : defaultThreeW;
 
         float scale = (float) contentHeightPx / (float) Math.max(hOct, 1);
 
         swOct = Math.max(1, Math.round(wOct * scale));
+        swFive = Math.max(1, Math.round(wFive * scale));
         swThree = Math.max(1, Math.round(wThree * scale));
 
-        contentWidthPx = swOct * 4 + swThree;
+        // Total Width: 1x FiveKeys + 2x FullOctave + 1x ThreeKeys
+        contentWidthPx = swFive + (swOct * 2) + swThree;
 
-        if (dOctave != null) dOctave.setBounds(0, 0, swOct, contentHeightPx);
+        if (dFiveKeys != null) dFiveKeys.setBounds(0, 0, swFive, contentHeightPx);
+        if (dOctave != null) dOctave.setBounds(0, 0, swOct, contentHeightPx); // Bounds will be shifted in onDraw
         if (dThreeKeys != null) dThreeKeys.setBounds(0, 0, swThree, contentHeightPx);
 
         setMeasuredDimension(contentWidthPx, contentHeightPx);
@@ -226,18 +250,20 @@ public class ChordPianoView extends View {
         final float octaveVW = DEFAULT_OCTAVE_W;
         final float octaveVH = DEFAULT_OCTAVE_H;
 
-        // Calculate viewport dimensions for the 3-key drawable
-        // We assume the viewport height matches the octave viewport height (323)
-        // and the width is proportional to the intrinsic aspect ratio.
-        float threeVH = octaveVH;
+        // Viewport widths for partials (proportional to white keys)
+        float fiveVW = octaveVW * 4f / 7f;
         float threeVW = octaveVW * 3f / 7f;
 
+        // Adjust if intrinsics are available
+        if (dFiveKeys != null) {
+            int iw = dFiveKeys.getIntrinsicWidth();
+            int ih = dFiveKeys.getIntrinsicHeight();
+            if (iw > 0 && ih > 0) fiveVW = octaveVH * ((float) iw / ih);
+        }
         if (dThreeKeys != null) {
             int iw = dThreeKeys.getIntrinsicWidth();
             int ih = dThreeKeys.getIntrinsicHeight();
-            if (iw > 0 && ih > 0) {
-                threeVW = threeVH * ((float) iw / (float) ih);
-            }
+            if (iw > 0 && ih > 0) threeVW = octaveVH * ((float) iw / ih);
         }
 
         for (Map.Entry<String, Path> entry : keyPrototypeMap.entrySet()) {
@@ -259,16 +285,23 @@ public class ChordPianoView extends View {
             float destW;
             float vw, vh;
 
-            if (idx < PARTIAL_OCTAVE_START_INDEX) {
-                // Octave keys
-                int relativeOctave = (idx - 16) / 12;
-                absOffsetX = relativeOctave * swOct;
+            if (idx <= SECTION_1_END) {
+                // F2-B2
+                absOffsetX = 0;
+                destW = swFive;
+                vw = fiveVW;
+                vh = octaveVH;
+            } else if (idx <= SECTION_2_END) {
+                // C3-B4 (2 Octaves)
+                // Relative octave index: 0 for C3-B3, 1 for C4-B4
+                int relativeOctave = (idx - 28) / 12;
+                absOffsetX = swFive + (relativeOctave * swOct);
                 destW = swOct;
                 vw = octaveVW;
                 vh = octaveVH;
             } else {
-                // Three keys
-                absOffsetX = 4 * swOct;
+                // C5-E5
+                absOffsetX = swFive + (2 * swOct);
                 destW = swThree;
                 vw = threeVW;
                 vh = octaveVH;
@@ -327,19 +360,27 @@ public class ChordPianoView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        // Draw 4 full octaves
+        // 1. Draw F2-B2 (Five Keys)
+        if (dFiveKeys != null) {
+            dFiveKeys.setBounds(0, 0, swFive, contentHeightPx);
+            dFiveKeys.draw(canvas);
+        } else {
+            canvas.drawRect(0, 0, swFive, contentHeightPx, fallbackPaintOctave);
+        }
+
+        // 2. Draw C3-B4 (2 Full Octaves)
         if (dOctave != null) {
-            for (int i = 0; i < 4; i++) {
-                int left = i * swOct;
+            for (int i = 0; i < 2; i++) {
+                int left = swFive + (i * swOct);
                 dOctave.setBounds(left, 0, left + swOct, contentHeightPx);
                 dOctave.draw(canvas);
             }
         } else {
-            canvas.drawRect(0, 0, swOct * 4, contentHeightPx, fallbackPaintOctave);
+            canvas.drawRect(swFive, 0, swFive + swOct * 2, contentHeightPx, fallbackPaintOctave);
         }
 
-        // Draw partial octave
-        int leftThree = 4 * swOct;
+        // 3. Draw C5-E5 (Three Keys)
+        int leftThree = swFive + (swOct * 2);
         if (dThreeKeys != null) {
             dThreeKeys.setBounds(leftThree, 0, leftThree + swThree, contentHeightPx);
             dThreeKeys.draw(canvas);

@@ -1,48 +1,30 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="437.5dp"
-    android:height="1000dp"
-    android:viewportWidth="437.5"
-    android:viewportHeight="1000">
+    android:width="350dp"
+    android:height="740dp"
+    android:viewportWidth="350"
+    android:viewportHeight="740">
 
-  <group android:translateY="200">
+  <group android:translateY="140">
 
-    <!-- 左竖线 (保持不变) -->
+    <!-- 左竖线 -->
     <path
         android:fillColor="#FF000000"
         android:pathData="M80,-100 h31 v700 h-31 z"/>
 
-    <!-- 右竖线 (保持不变) -->
+    <!-- 右竖线 -->
     <path
         android:fillColor="#FF000000"
         android:pathData="M240,-140 h31 v700 h-31 z"/>
 
-    <!-- 横线部分 -->
-
     <!-- 上横线 -->
-    <!-- translateY: 从 -55 改为 -70，防止变粗后粘连 -->
     <group android:translateY="-70">
-      <!--
-           pathData 修改逻辑:
-           M0,160   : 起点不变
-           L350,70  : 右上角 Y 从 105 改为 70 (上升更多，倾角更大)
-           L350,160 : 右下角 Y 从 170 改为 160 (厚度 160-70=90)
-           L0,250   : 左下角 Y 从 225 改为 250 (厚度 250-160=90)
-      -->
       <path
           android:fillColor="#FF000000"
           android:pathData="M0,160 L350,70 L350,160 L0,250 z"/>
     </group>
 
     <!-- 下横线 -->
-    <!-- translateY: 从 55 改为 70 -->
     <group android:translateY="70">
-      <!--
-           pathData 修改逻辑 (同上):
-           M0,290   : 起点不变
-           L350,200 : 右上角 Y 从 235 改为 200
-           L350,290 : 右下角 Y 从 300 改为 290
-           L0,380   : 左下角 Y 从 355 改为 380
-      -->
       <path
           android:fillColor="#FF000000"
           android:pathData="M0,290 L350,200 L350,290 L0,380 z"/>
