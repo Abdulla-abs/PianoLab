@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import com.example.pianolab.R;
 import com.example.pianolab.feature.chord.viewmodel.ChordViewModel;
+import com.google.android.material.switchmaterial.SwitchMaterial;
 
 public class ChordActivity extends AppCompatActivity {
     private SeekBar seekBar;
@@ -22,6 +23,7 @@ public class ChordActivity extends AppCompatActivity {
     private StaffView staffFClef;
     private TextView tvChordName;
     private ChordViewModel viewModel;
+    private SwitchMaterial switchAccidentalMode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,9 +48,17 @@ public class ChordActivity extends AppCompatActivity {
         staffGClef = findViewById(R.id.staff_g_clef);
         staffFClef = findViewById(R.id.staff_f_clef);
         tvChordName = findViewById(R.id.tv_chord_name);
+        switchAccidentalMode = findViewById(R.id.switch_accidental_mode);
 
         staffGClef.setClefType(StaffView.ClefType.TREBLE);
         staffFClef.setClefType(StaffView.ClefType.BASS);
+
+        switchAccidentalMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            // isChecked = true -> use flats (降号)
+            // isChecked = false -> use sharps (升号)
+            staffGClef.setUseFlats(isChecked);
+            staffFClef.setUseFlats(isChecked);
+        });
 
         buttonBack.setOnClickListener(v -> finish());
         buttonReset.setOnClickListener(v -> viewModel.reset());

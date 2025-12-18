@@ -1,0 +1,34 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="350dp"
+    android:height="740dp"
+    android:viewportWidth="350"
+    android:viewportHeight="740">
+
+    <group android:translateY="140">
+
+        <!-- 左竖线 -->
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M80,-100 h31 v700 h-31 z"/>
+
+        <!-- 右竖线 -->
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M240,-140 h31 v700 h-31 z"/>
+
+        <!-- 上横线 -->
+        <group android:translateY="-70">
+            <path
+                android:fillColor="#FFFFFFFF"
+                android:pathData="M0,160 L350,70 L350,160 L0,250 z"/>
+        </group>
+
+        <!-- 下横线 -->
+        <group android:translateY="70">
+            <path
+                android:fillColor="#FFFFFFFF"
+                android:pathData="M0,290 L350,200 L350,290 L0,380 z"/>
+        </group>
+    </group>
+
+</vector>

@@ -22,6 +22,9 @@ public class StaffView extends View {
     private ClefType clefType = ClefType.TREBLE;
     private Drawable clefDrawable;
     private Drawable noteDrawable;
+    private Drawable c4NoteDrawable;
+    private Drawable sharpDrawable;
+    private boolean useFlats = false;
     private final List<String> noteKeys = new ArrayList<>();
 
     // Viewport heights from XML
@@ -42,6 +45,7 @@ public class StaffView extends View {
     private float bassClefShiftY = 30f;
     private float flatSpacingRatio = 1.2f;
     private float flatNotePadding = 10f;
+    private float c4Scale = 1.4f;
 
     public StaffView(Context context) {
         super(context);
@@ -60,6 +64,8 @@ public class StaffView extends View {
 
     private void init(Context context) {
         noteDrawable = ContextCompat.getDrawable(context, R.drawable.whole_note);
+        c4NoteDrawable = ContextCompat.getDrawable(context, R.drawable.c4_note);
+        sharpDrawable = ContextCompat.getDrawable(context, R.drawable.sharp);
     }
 
     public void setClefType(ClefType type) {
@@ -80,8 +86,13 @@ public class StaffView extends View {
         invalidate();
     }
 
+    public void setUseFlats(boolean useFlats) {
+        this.useFlats = useFlats;
+        invalidate();
+    }
+
     // Inner class for rendering info
-    private static class NoteRenderInfo implements Comparable<NoteRenderInfo> {
+    private class NoteRenderInfo implements Comparable<NoteRenderInfo> {
         int rawIndex;
         int visualIndex;
         boolean isBlack;
@@ -99,9 +110,19 @@ public class StaffView extends View {
             // Black keys are at indices 1, 3, 6, 8, 10 relative to C
             this.isBlack = (semitone == 1 || semitone == 3 || semitone == 6 || semitone == 8 || semitone == 10);
 
-            // If black key, treat as flat of the next white key (e.g., C# -> Db)
-            // Visual position moves up one semitone to the white key line
-            this.visualIndex = this.isBlack ? rawIndex + 1 : rawIndex;
+            if (this.isBlack) {
+                if (useFlats) {
+                    // Treat as flat of the next white key (e.g., C# -> Db)
+                    // Visual position moves up one semitone to the white key line
+                    this.visualIndex = rawIndex + 1;
+                } else {
+                    // Treat as sharp of the previous white key (e.g., Db -> C#)
+                    // Visual position moves down one semitone to the white key line
+                    this.visualIndex = rawIndex - 1;
+                }
+            } else {
+                this.visualIndex = rawIndex;
+            }
         }
 
         @Override
@@ -183,15 +204,15 @@ public class StaffView extends View {
         int refNoteIndex = (clefType == ClefType.TREBLE) ? TREBLE_BOTTOM_LINE_NOTE_INDEX : BASS_BOTTOM_LINE_NOTE_INDEX;
 
         Drawable flatDrawable = ContextCompat.getDrawable(getContext(), R.drawable.flat);
-        List<PlacedFlat> placedFlats = new ArrayList<>();
+        List<PlacedFlat> placedAccidentals = new ArrayList<>();
 
         if (noteDrawable != null) {
             int noteH = (int) lineSpacingPx;
             int noteW = (int) (noteH * 1.5f);
 
-            // Flat dimensions
-            int flatW = (int) (noteW * 0.6f);
-            int flatH = (int) (noteH * 2.5f);
+            // Accidental dimensions
+            int accW = (int) (noteW * 0.6f);
+            int accH = (int) (noteH * 2.5f);
 
             int xBase = (w - noteW) / 2 + (int) globalNoteShiftX;
             int prevOffset = 0;
@@ -221,45 +242,70 @@ public class StaffView extends View {
                 int xShift = (currentOffset == 1) ? (int)(noteW * secondNoteShiftRatio) : 0;
                 int xPos = xBase + xShift;
 
-                noteDrawable.setBounds(xPos, top, xPos + noteW, top + noteH);
-                noteDrawable.draw(canvas);
+                // Draw Note Head
+                // Use c4NoteDrawable for C4 (Key 40), otherwise use standard noteDrawable
+                Drawable drawableToDraw = (currentNote.visualIndex == 40 && c4NoteDrawable != null) ? c4NoteDrawable : noteDrawable;
+                if (drawableToDraw == c4NoteDrawable) {
+                    // [修改] 针对 C4 进行暴力缩放
+                    int scaledW = (int) (noteW * c4Scale);
+                    int scaledH = (int) (noteH * c4Scale);
 
-                // Draw Flat if needed
-                if (currentNote.isBlack && flatDrawable != null) {
-                    // Find available shift index for flat
-                    int flatShiftIndex = 0;
-                    while (true) {
-                        boolean collision = false;
-                        for (PlacedFlat pf : placedFlats) {
-                            if (pf.shiftIndex == flatShiftIndex) {
-                                // Check vertical distance (less than octave = 7 steps)
-                                if (Math.abs(pf.diatonicPos - distFromRef) < 7) {
-                                    collision = true;
-                                    break;
+                    // 计算中心点，确保缩放后依然居中
+                    int centerX = xPos + noteW / 2;
+                    int centerY = top + noteH / 2;
+
+                    drawableToDraw.setBounds(
+                            centerX - scaledW / 2,
+                            centerY - scaledH / 2,
+                            centerX + scaledW / 2,
+                            centerY + scaledH / 2
+                    );
+                } else {
+                    // 普通音符正常绘制
+                    drawableToDraw.setBounds(xPos, top, xPos + noteW, top + noteH);
+                }
+                drawableToDraw.draw(canvas);
+
+                // Draw Accidental (Flat or Sharp) if needed
+                if (currentNote.isBlack) {
+                    Drawable accidentalDrawable = useFlats ? flatDrawable : sharpDrawable;
+
+                    if (accidentalDrawable != null) {
+                        // Find available shift index for accidental
+                        int accShiftIndex = 0;
+                        while (true) {
+                            boolean collision = false;
+                            for (PlacedFlat pf : placedAccidentals) {
+                                if (pf.shiftIndex == accShiftIndex) {
+                                    // Check vertical distance (less than octave = 7 steps)
+                                    if (Math.abs(pf.diatonicPos - distFromRef) < 7) {
+                                        collision = true;
+                                        break;
+                                    }
                                 }
                             }
+                            if (!collision) {
+                                break;
+                            }
+                            accShiftIndex++;
                         }
-                        if (!collision) {
-                            break;
-                        }
-                        flatShiftIndex++;
+
+                        placedAccidentals.add(new PlacedFlat(distFromRef, accShiftIndex));
+
+                        // Calculate Accidental X Position
+                        // Base is to the left of the main note column (xBase), ignoring second shift
+                        int accRight = xBase - (int)flatNotePadding;
+                        int accXOffset = (int) (accShiftIndex * accW * flatSpacingRatio);
+
+                        int accL = accRight - accW - accXOffset;
+                        int accR = accL + accW;
+
+                        // Adjust Accidental Y to align center/belly with line
+                        int accTop = (int) (yPos - accH * 0.65f);
+
+                        accidentalDrawable.setBounds(accL, accTop, accR, accTop + accH);
+                        accidentalDrawable.draw(canvas);
                     }
-
-                    placedFlats.add(new PlacedFlat(distFromRef, flatShiftIndex));
-
-                    // Calculate Flat X Position
-                    // Base is to the left of the main note column (xBase), ignoring second shift
-                    int flatRight = xBase - (int)flatNotePadding;
-                    int flatXOffset = (int) (flatShiftIndex * flatW * flatSpacingRatio);
-
-                    int flatL = flatRight - flatW - flatXOffset;
-                    int flatR = flatL + flatW;
-
-                    // Adjust Flat Y to align center/belly with line
-                    int flatTop = (int) (yPos - flatH * 0.65f);
-
-                    flatDrawable.setBounds(flatL, flatTop, flatR, flatTop + flatH);
-                    flatDrawable.draw(canvas);
                 }
 
                 prevOffset = currentOffset;

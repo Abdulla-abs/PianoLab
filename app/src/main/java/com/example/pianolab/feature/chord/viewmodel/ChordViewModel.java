@@ -16,7 +16,7 @@ public class ChordViewModel extends ViewModel {
     private final MutableLiveData<List<String>> _selectedKeys = new MutableLiveData<>(new LinkedList<>());
     public LiveData<List<String>> selectedKeys = _selectedKeys;
 
-    private final MutableLiveData<String> _chordText = new MutableLiveData<>("");
+    private final MutableLiveData<String> _chordText = new MutableLiveData<>("--");
     public LiveData<String> chordText = _chordText;
 
     private final LinkedList<String> currentKeys = new LinkedList<>();
@@ -49,7 +49,7 @@ public class ChordViewModel extends ViewModel {
 
     private void identifyChord() {
         if (currentKeys.isEmpty()) {
-            _chordText.setValue("");
+            _chordText.setValue("--");
             return;
         }
 
@@ -61,7 +61,7 @@ public class ChordViewModel extends ViewModel {
         Collections.sort(indices);
 
         if (indices.isEmpty()) {
-            _chordText.setValue("");
+            _chordText.setValue("--");
             return;
         }
 

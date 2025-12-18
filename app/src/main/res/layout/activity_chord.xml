@@ -22,12 +22,56 @@
             android:scaleType="center"
             android:adjustViewBounds="true" />
 
+        <!-- 修改：权重从 8 减小到 6，腾出空间 -->
         <SeekBar
             android:id="@+id/seekBar"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="8"
+            android:layout_weight="6"
             android:max="1000" />
+
+        <!-- 修改：权重从 2.5 增加到 3.5，确保内容完整显示 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="3.5"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="升降模式"
+                android:textColor="@color/white"
+                android:textSize="12sp"
+                android:gravity="center"
+                android:layout_marginEnd="4dp"/>
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/sharp_white"
+                android:contentDescription="升号"
+                android:scaleType="fitCenter"/>
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switch_accidental_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:thumbTint="@color/white"
+                android:trackTint="#88FFFFFF" />
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/flat_white"
+                android:contentDescription="降号"
+                android:scaleType="fitCenter"/>
+
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="0dp"
@@ -41,9 +85,9 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:gravity="center"
                 android:text="撤回"
-                android:textColor="@color/white"
-                android:gravity="center" />
+                android:textColor="@color/white" />
 
             <ImageButton
                 android:id="@+id/button_backout"
@@ -58,7 +102,6 @@
 
         </LinearLayout>
 
-        <!-- 音名：标签 + 开关（成组，权重 1.4），左侧留一点间距与前一组分开 -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
@@ -77,15 +120,15 @@
                 android:gravity="center" />
 
             <ImageButton
-            android:id="@+id/button_reset"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/reset"
-            android:padding="4dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="重置"
-            android:scaleType="fitCenter"
-            android:adjustViewBounds="true" />
+                android:id="@+id/button_reset"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/reset"
+                android:padding="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="重置"
+                android:scaleType="fitCenter"
+                android:adjustViewBounds="true" />
 
         </LinearLayout>
 
@@ -162,8 +205,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="16dp"
-                    android:text="Chord Name"
-                    android:textColor="#FFFFFF"
+                    android:text="--"
+                    android:textColor="#000000"
                     android:textSize="18sp" />
 
                 <Button
