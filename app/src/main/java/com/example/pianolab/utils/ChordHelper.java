@@ -120,4 +120,109 @@ public class ChordHelper {
 
         return toDiatonic - fromDiatonic;
     }
+
+    public static List<String> getChordKeys(String chordName) {
+        List<String> keys = new ArrayList<>();
+        if (chordName == null || chordName.isEmpty()) return keys;
+
+        // Parse Root, Accidental, Type
+        // Example: "C#maj7", "Bbmin", "C7"
+        String root = "";
+        String accidental = "";
+        String type = "";
+
+        // 1. Extract Root (First char)
+        root = chordName.substring(0, 1);
+        String remainder = chordName.substring(1);
+
+        // 2. Extract Accidental (# or b)
+        if (remainder.startsWith("#") || remainder.startsWith("b")) {
+            accidental = remainder.substring(0, 1);
+            remainder = remainder.substring(1);
+        }
+
+        // 3. The rest is Type
+        type = remainder;
+
+        // Calculate Root Index (Base C4 is key 40)
+        // C4 MIDI is 60. Our key index 40 corresponds to MIDI 60.
+        // Let's map root note name to offset from C.
+        int rootOffset = 0;
+        switch (root) {
+            case "C": rootOffset = 0; break;
+            case "D": rootOffset = 2; break;
+            case "E": rootOffset = 4; break;
+            case "F": rootOffset = 5; break;
+            case "G": rootOffset = 7; break;
+            case "A": rootOffset = 9; break;
+            case "B": rootOffset = 11; break;
+        }
+
+        if (accidental.equals("#")) rootOffset += 1;
+        if (accidental.equals("b")) rootOffset -= 1;
+
+        // Requirement: "Root note parsing rule: If user selects C, root is C4. If user selects Bb, root is Bb4."
+        // C4 is key 40.
+        // If user selects B (rootOffset 11), it is B4 (key 51).
+        // If user selects Bb (rootOffset 10), it is Bb4 (key 50).
+        // If user selects C (rootOffset 0), it is C4 (key 40).
+        // So rootIndex = 40 + rootOffset is correct for C4 base.
+
+        int rootIndex = 40 + rootOffset; // 40 is C4
+
+        // Get Intervals based on Type
+        int[] intervals = getIntervalsForType(type);
+
+        for (int interval : intervals) {
+            int noteIndex = rootIndex + interval;
+            keys.add(getKeyName(noteIndex));
+        }
+
+        return keys;
+    }
+
+    private static int[] getIntervalsForType(String type) {
+        switch (type) {
+            case "maj": return new int[]{0, 4, 7};
+            case "min": return new int[]{0, 3, 7};
+            case "dim": return new int[]{0, 3, 6};
+            case "aug": return new int[]{0, 4, 8};
+            case "maj7": return new int[]{0, 4, 7, 11};
+            case "min7": return new int[]{0, 3, 7, 10};
+            case "7": return new int[]{0, 4, 7, 10};
+            case "dim7": return new int[]{0, 3, 6, 9};
+            case "m7b5": return new int[]{0, 3, 6, 10};
+            default: return new int[]{0}; // Should not happen with fixed picker
+        }
+    }
+
+    private static String getKeyName(int index) {
+        // Determine if white or black
+        // Key 4 is C1.
+        // (index - 4) % 12 gives pitch class relative to C=0
+        int pitchClass = (index - 4) % 12;
+        if (pitchClass < 0) pitchClass += 12;
+
+        boolean isBlack = (pitchClass == 1 || pitchClass == 3 || pitchClass == 6 || pitchClass == 8 || pitchClass == 10);
+
+        // Special handling for split black keys if needed, but standard naming:
+        // key{index}_white or key{index}_black
+        // However, your resource naming convention seems to be:
+        // key{index}_white for white keys
+        // key{index}_black for black keys
+        // Let's verify with a known key. C4 is key 40. 40-4=36. 36%12=0 (C). White. -> key40_white
+        // C#4 is key 41. 41-4=37. 37%12=1 (C#). Black. -> key41_black
+
+        // Note: Your black keys might have _part2 suffix in some XMLs, but usually the ID or tag used for logic is simpler.
+        // Based on "piano_three_keys.xml" description: "key2_black", "key2_black_part2".
+        // The logic in PianoView likely handles the click detection.
+        // For highlighting, we usually need the base name.
+        // Assuming the standard naming convention holds for the generated keys.
+
+        if (isBlack) {
+            return "key" + index + "_black";
+        } else {
+            return "key" + index + "_white";
+        }
+    }
 }

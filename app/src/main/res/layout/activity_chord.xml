@@ -30,6 +30,36 @@
             android:layout_weight="6"
             android:max="1000" />
 
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingEnd="10dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="检测和弦"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switch_chord_func_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="构造和弦"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+
         <!-- 修改：权重从 2.5 增加到 3.5，确保内容完整显示 -->
         <LinearLayout
             android:layout_width="0dp"
@@ -200,6 +230,7 @@
                 android:gravity="center"
                 android:orientation="vertical">
 
+
                 <TextView
                     android:id="@+id/tv_chord_name"
                     android:layout_width="wrap_content"
@@ -210,10 +241,10 @@
                     android:textSize="18sp" />
 
                 <Button
-                    android:id="@+id/btn_action"
+                    android:id="@+id/btn_play_chord"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Action" />
+                    android:text="播放和弦" />
 
             </LinearLayout>
 

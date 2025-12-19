@@ -2,6 +2,7 @@ package com.example.pianolab.feature.chord.view;
 
 import android.os.Bundle;
 import android.view.ViewTreeObserver;
+import android.widget.Button;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
@@ -24,6 +25,8 @@ public class ChordActivity extends AppCompatActivity {
     private TextView tvChordName;
     private ChordViewModel viewModel;
     private SwitchMaterial switchAccidentalMode;
+    private SwitchMaterial switchChordFuncMode;
+    private Button btnPlayChord;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +52,8 @@ public class ChordActivity extends AppCompatActivity {
         staffFClef = findViewById(R.id.staff_f_clef);
         tvChordName = findViewById(R.id.tv_chord_name);
         switchAccidentalMode = findViewById(R.id.switch_accidental_mode);
+        switchChordFuncMode = findViewById(R.id.switch_chord_func_mode);
+        btnPlayChord = findViewById(R.id.btn_play_chord);
 
         staffGClef.setClefType(StaffView.ClefType.TREBLE);
         staffFClef.setClefType(StaffView.ClefType.BASS);
@@ -60,9 +65,16 @@ public class ChordActivity extends AppCompatActivity {
             staffFClef.setUseFlats(isChecked);
         });
 
+        tvChordName.setOnClickListener(v -> {
+            if (switchChordFuncMode.isChecked()) {
+                showChordPickerDialog();
+            }
+        });
+
         buttonBack.setOnClickListener(v -> finish());
         buttonReset.setOnClickListener(v -> viewModel.reset());
         buttonBackout.setOnClickListener(v -> viewModel.backout());
+        btnPlayChord.setOnClickListener(v -> viewModel.playCurrentChord());
 
         pianoView.setOnKeyToggledListener(key -> viewModel.toggleKey(key));
 
@@ -74,6 +86,10 @@ public class ChordActivity extends AppCompatActivity {
 
         viewModel.chordText.observe(this, text -> {
             tvChordName.setText(text);
+        });
+
+        viewModel.playChordEvent.observe(this, keys -> {
+            pianoView.playChord(keys);
         });
 
         hsPiano.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -109,5 +125,12 @@ public class ChordActivity extends AppCompatActivity {
                 seekBar.setProgress(initialScroll);
             }
         });
+    }
+
+    private void showChordPickerDialog() {
+        boolean useFlats = switchAccidentalMode.isChecked();
+        new ChordPickerDialog(this, useFlats, chordName -> {
+            viewModel.generateChord(chordName);
+        }).show();
     }
 }

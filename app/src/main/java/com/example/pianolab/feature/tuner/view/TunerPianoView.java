@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat;
 
 import com.example.pianolab.R;
 import com.example.pianolab.feature.virtual_piano.engine.PianoPaintEngine;
+import com.example.pianolab.utils.MusicTheoryHelper;
 import com.example.pianolab.utils.VirtualPianoHelper;
 
 import java.util.HashMap;
@@ -86,7 +87,7 @@ public class TunerPianoView extends View {
         Map<String, Path> namedKeys = VirtualPianoHelper.loadNamedPathsFromVector(
                 getContext(), R.drawable.piano_keys, true);
 
-        String[] notes = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+        Set<Integer> white_key_idx = Set.of(0, 2, 4, 5, 7, 9, 11);
         for (int k = 1; k <= 12; k++) {
             String whiteName = "key" + k + "_white";
             String blackName = "key" + k + "_black";
@@ -95,8 +96,8 @@ public class TunerPianoView extends View {
                 keyPrototypes.put(whiteName, new Path(namedKeys.get(whiteName)));
                 keyTransformed.put(whiteName, new Path());
                 keyRegions.put(whiteName, new Region());
-                if (!notes[k - 1].contains("#")) {
-                    noteLabels.put(whiteName, notes[k - 1]);
+                if (white_key_idx.contains(k-1)) {
+                    noteLabels.put(whiteName, MusicTheoryHelper.SIMPLE_NOTE_NAME_WITH_SHARP[k - 1]);
                 }
             }
 

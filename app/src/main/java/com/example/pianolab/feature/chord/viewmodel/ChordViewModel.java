@@ -42,6 +42,30 @@ public class ChordViewModel extends ViewModel {
         }
     }
 
+    public void generateChord(String chordName) {
+        List<String> keys = ChordHelper.getChordKeys(chordName);
+        currentKeys.clear();
+        currentKeys.addAll(keys);
+        _selectedKeys.setValue(new ArrayList<>(currentKeys));
+        _chordText.setValue(chordName);
+
+        // Play the chord sound
+        // We need to expose a way to play sound from ViewModel or let Activity observe and play.
+        // Since ViewModel shouldn't hold reference to View or SoundEngine directly usually,
+        // we can use a LiveData event or similar.
+        // But here, let's just add a LiveData for "playChordEvent".
+        _playChordEvent.setValue(keys);
+    }
+
+    private final MutableLiveData<List<String>> _playChordEvent = new MutableLiveData<>();
+    public LiveData<List<String>> playChordEvent = _playChordEvent;
+
+    public void playCurrentChord() {
+        if (!currentKeys.isEmpty()) {
+            _playChordEvent.setValue(new ArrayList<>(currentKeys));
+        }
+    }
+
     private void updateState() {
         _selectedKeys.setValue(new ArrayList<>(currentKeys));
         identifyChord();

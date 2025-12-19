@@ -456,6 +456,8 @@ public class ChordPianoView extends View {
     }
 
     private void toggleKey(String keyName) {
+        stopChordPlayback(); // Stop any running chord playback
+
         // Interruption logic: Stop the last played key sound if it exists
         if (lastPlayedKey != null) {
             if (soundEngine != null) {
@@ -486,6 +488,7 @@ public class ChordPianoView extends View {
     }
 
     public void setSelectedKeys(List<String> keys) {
+        stopChordPlayback(); // Stop any running chord playback
         this.selectedKeys.clear();
         if (keys != null) {
             this.selectedKeys.addAll(keys);
@@ -575,5 +578,17 @@ public class ChordPianoView extends View {
             }
         }
         return Math.max(0, contentWidthPx / 2);
+    }
+
+    public void playChord(List<String> keyNames) {
+        if (soundEngine != null) {
+            soundEngine.playChord(keyNames);
+        }
+    }
+
+    public void stopChordPlayback() {
+        if (soundEngine != null) {
+            soundEngine.stopChordPlayback();
+        }
     }
 }

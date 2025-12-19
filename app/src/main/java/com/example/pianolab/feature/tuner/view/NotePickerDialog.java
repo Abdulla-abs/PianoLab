@@ -15,6 +15,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 
 import com.example.pianolab.R;
+import com.example.pianolab.utils.MusicTheoryHelper;
 
 public class NotePickerDialog extends AlertDialog {
     private final OnNoteSelectedListener listener;
@@ -26,7 +27,7 @@ public class NotePickerDialog extends AlertDialog {
     private NumberPicker pickerOctave;
     private static final String TAG = "NotePickerDialog";
 
-    private static final String[] NOTE_NAMES = {"C", "D", "E", "F", "G", "A", "B"};
+
     private static final int MIN_OCTAVE = 0;
     private static final int MAX_OCTAVE = 8;
 
@@ -70,8 +71,8 @@ public class NotePickerDialog extends AlertDialog {
         super.onCreate(savedInstanceState);
 
         pickerNoteName.setMinValue(0);
-        pickerNoteName.setMaxValue(NOTE_NAMES.length - 1);
-        pickerNoteName.setDisplayedValues(NOTE_NAMES);
+        pickerNoteName.setMaxValue(MusicTheoryHelper.SIMPLE_NOTE_NAME.length - 1);
+        pickerNoteName.setDisplayedValues(MusicTheoryHelper.SIMPLE_NOTE_NAME);
         pickerNoteName.setWrapSelectorWheel(true);
 
         pickerOctave.setMinValue(MIN_OCTAVE);
@@ -82,7 +83,7 @@ public class NotePickerDialog extends AlertDialog {
     }
 
     private String buildNoteString() {
-        String noteName = NOTE_NAMES[pickerNoteName.getValue()];
+        String noteName = MusicTheoryHelper.SIMPLE_NOTE_NAME[pickerNoteName.getValue()];
         String accidental = "";
 
         if (checkSharp!=null&&checkSharp.isChecked()) {
@@ -109,8 +110,8 @@ public class NotePickerDialog extends AlertDialog {
 
         // 解析音名
         String noteName = note.replaceAll("[#b]", "").replaceAll("\\d", "");
-        for (int i = 0; i < NOTE_NAMES.length; i++) {
-            if (NOTE_NAMES[i].equals(noteName)) {
+        for (int i = 0; i < MusicTheoryHelper.SIMPLE_NOTE_NAME.length; i++) {
+            if (MusicTheoryHelper.SIMPLE_NOTE_NAME[i].equals(noteName)) {
                 pickerNoteName.setValue(i);
                 break;
             }

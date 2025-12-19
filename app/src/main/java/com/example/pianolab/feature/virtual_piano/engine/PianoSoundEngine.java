@@ -585,4 +585,88 @@ public class PianoSoundEngine {
             }
         });
     }
+
+
+    private final List<Integer> chordPlaybackStreamIds = Collections.synchronizedList(new ArrayList<>());
+
+
+
+    public void playChord(List<String> keyNames) {
+        if (keyNames == null || keyNames.isEmpty()) return;
+
+        stopChordPlayback(); // Stop previous chord playback if any
+
+        List<Integer> resIdsToPlay = new ArrayList<>();
+
+        for (String keyName : keyNames) {
+            final int resId = resolveResIdForKey(keyName);
+            if (resId == 0) continue;
+
+            // We use a special pointerId for manual chord playback to distinguish
+            int syntheticPointerId = -1000 - keyName.hashCode();
+
+            Integer soundId = resToSoundId.get(resId);
+            Boolean ready = resReady.get(resId);
+
+            if (soundId != null && Boolean.TRUE.equals(ready)) {
+                resIdsToPlay.add(resId);
+            } else {
+                ensureLoadedAsync(resId);
+                queuePendingPlay(resId, syntheticPointerId);
+            }
+        }
+
+        if (resIdsToPlay.isEmpty()) return;
+
+        // Use the executor and latch to ensure simultaneous start, similar to flushChordQueue
+        if (resIdsToPlay.size() == 1) {
+            final int singleRes = resIdsToPlay.get(0);
+            playExecutor.execute(() -> playSampleForChord(singleRes));
+            return;
+        }
+
+        CountDownLatch startGate = new CountDownLatch(1);
+        for (Integer resId : resIdsToPlay) {
+            try {
+                playExecutor.execute(() -> {
+                    try {
+                        startGate.await();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                    playSampleForChord(resId);
+                });
+            } catch (RejectedExecutionException ex) {
+                playSampleForChord(resId);
+            }
+        }
+        startGate.countDown();
+    }
+
+    private void playSampleForChord(final int resId) {
+        if (released || soundPool == null) return;
+        Integer sid = resToSoundId.get(resId);
+        if (sid == null || !Boolean.TRUE.equals(resReady.get(resId))) return;
+        try {
+            int stream = soundPool.play(sid, 1f, 1f, 1, 0, 1f);
+            if (stream != 0) {
+                chordPlaybackStreamIds.add(stream);
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "playSampleForChord exception res=" + resId, e);
+        }
+    }
+
+
+    public void stopChordPlayback() {
+        synchronized (chordPlaybackStreamIds) {
+            for (Integer streamId : chordPlaybackStreamIds) {
+                if (streamId != null && soundPool != null) {
+                    soundPool.stop(streamId);
+                }
+            }
+            chordPlaybackStreamIds.clear();
+        }
+    }
 }
