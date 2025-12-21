@@ -1,8 +1,38 @@
 package com.example.pianolab.utils;
 
 import java.sql.Struct;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MusicTheoryHelper {
+
+    public static final Map<String, Integer> NOTE_TO_INDEX;
+
+
+    static {
+
+        Map<String, Integer> tempMap = new HashMap<>();
+        tempMap.put("C", 1);
+        tempMap.put("#C", 2);
+        tempMap.put("bD", 2);
+        tempMap.put("D", 3);
+        tempMap.put("#D", 4);
+        tempMap.put("bE", 4);
+        tempMap.put("E", 5);
+        tempMap.put("F", 6);
+        tempMap.put("#F", 7);
+        tempMap.put("bG", 7);
+        tempMap.put("G", 8);
+        tempMap.put("#G", 9);
+        tempMap.put("bA", 9);
+        tempMap.put("A", 10);
+        tempMap.put("#A", 11);
+        tempMap.put("bB", 11);
+        tempMap.put("B", 12);
+
+        NOTE_TO_INDEX = Collections.unmodifiableMap(tempMap);
+    }
 
     public static final Note[] ALL_PIANO_NOTES = {
             //占位符

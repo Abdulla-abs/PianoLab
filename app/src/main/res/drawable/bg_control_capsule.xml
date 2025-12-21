@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <!-- 足够大的圆角半径，形成胶囊形状 -->
+    <corners android:radius="100dp" />
+
+    <!-- 半透明白色填充 (约15%不透明度) -->
+    <solid android:color="#26FFFFFF" />
+
+    <!-- 稍微亮一点的描边 (约30%不透明度) -->
+    <stroke android:width="1dp" android:color="#4DFFFFFF" />
+</shape>

@@ -39,10 +39,13 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1.2"
-                android:gravity="center_vertical"
+                android:background="@drawable/bg_control_capsule"
+                android:gravity="center"
                 android:orientation="horizontal"
                 android:paddingStart="4dp"
-                android:paddingEnd="4dp">
+                android:paddingEnd="4dp"
+                android:alpha="@{viewModel.tunerState.listening ? 0.5f : 1.0f}"
+                >
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -64,11 +67,14 @@
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="1.2"
-                android:gravity="center_vertical"
+                android:layout_weight="1.1"
+                android:gravity="center"
                 android:orientation="horizontal"
                 android:paddingStart="4dp"
-                android:paddingEnd="4dp">
+                android:background="@drawable/bg_control_capsule"
+                android:paddingEnd="1dp"
+                android:alpha="@{viewModel.tunerState.listening ? 0.5f : 1.0f}"
+                >
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -92,24 +98,27 @@
                 android:id="@+id/ref_standard_group"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
+                android:background="@drawable/bg_clickable_ic_dark"
                 android:layout_weight="0"
-                android:gravity="center_vertical"
+                android:gravity="center"
                 android:orientation="horizontal"
                 android:paddingStart="4dp"
-                android:paddingEnd="4dp">
+                android:paddingEnd="4dp"
+                android:alpha="@{viewModel.tunerState.listening ? 0.5f : 1.0f}"
+                >
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:maxLines="1"
-                    android:text="标准频率: "
+                    android:text="@string/standard_freq"
                     android:textColor="@android:color/white"
                     android:textSize="12sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="440HZ"
+                    android:text="@string/freq_440"
                     android:textColor="@android:color/white"
                     android:textSize="12sp"
                     android:maxLines="1" />
@@ -122,12 +131,12 @@
                     android:checked="false"
                     android:showText="true"
                     android:enabled="@{!viewModel.tunerState.listening}"
-                    android:textOff="440Hz"
-                    android:textOn="442Hz" />
+                    android:textOff="@string/freq_440"
+                    android:textOn="@string/freq_442" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="442HZ"
+                    android:text="@string/freq_442"
                     android:textColor="@android:color/white"
                     android:textSize="12sp"
                     android:maxLines="1" />
@@ -136,15 +145,18 @@
                 android:id="@+id/wave_display_group"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:gravity="center_vertical"
+                android:gravity="center"
                 android:orientation="horizontal"
+                android:background="@drawable/bg_clickable_ic_dark"
                 android:paddingStart="8dp"
-                android:paddingEnd="8dp">
+                android:paddingEnd="8dp"
+                android:alpha="@{viewModel.tunerState.listening ? 0.5f : 1.0f}"
+                >
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="波形显示:"
+                    android:text="@string/wave_display"
                     android:textColor="@android:color/white"
                     android:textSize="12sp"
                     android:maxLines="1" />
@@ -153,7 +165,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="4dp"
-                    android:text="频域"
+                    android:text="@string/freq_dom"
                     android:textColor="@android:color/white"
                     android:textSize="12sp"
                     android:maxLines="1" />
@@ -166,14 +178,14 @@
                     android:checked="false"
                     android:showText="true"
                     android:enabled="@{!viewModel.tunerState.listening}"
-                    android:textOn="频域"
-                    android:textOff="时域" />
+                    android:textOn="@string/freq_dom"
+                    android:textOff="@string/time_dom" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="4dp"
-                    android:text="时域"
+                    android:text="@string/time_dom"
                     android:textColor="@android:color/white"
                     android:textSize="12sp"
                     android:maxLines="1" />
@@ -234,22 +246,26 @@
                 </FrameLayout>
             </HorizontalScrollView>
 
+
             <TextView
                 android:id="@+id/text_current_note"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="12dp"
                 android:layout_weight="0.25"
+                android:layout_marginLeft="30dp"
+                android:layout_marginRight="30dp"
+                android:background="@{!viewModel.tunerState.autoDetectEnabled ? @drawable/bg_manual_note_blue : null}"
+                android:clickable="@{!viewModel.tunerState.autoDetectEnabled}"
+                android:focusable="@{!viewModel.tunerState.autoDetectEnabled}"
+                android:gravity="center"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
                 android:text='@{viewModel.tunerState.displayNote}'
                 android:textColor="@android:color/white"
                 android:textSize="48sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:clickable="@{!viewModel.tunerState.autoDetectEnabled}"
-                android:focusable="@{!viewModel.tunerState.autoDetectEnabled}"
-                android:alpha="@{viewModel.tunerState.autoDetectEnabled ? 1.0f : 0.8f}"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp" />
-
+                android:textStyle="bold" />
 
             <LinearLayout
                 android:id="@+id/note_info_column"
@@ -268,7 +284,7 @@
                     android:layout_weight="1"
                     android:layout_marginTop="12dp"
                     android:text='@{@string/tuner_detectedNote_frequency(viewModel.tunerState.displayFrequency)}'
-                    android:textColor="@android:color/white" />
+                    android:textColor="@android:color/holo_green_dark" />
 
                 <TextView
                     android:id="@+id/text_curr_freq"
@@ -276,7 +292,7 @@
                     android:layout_height="0dp"
                     android:layout_weight="1"
                     android:layout_marginTop="12dp"
-                    android:textColor="@android:color/holo_red_light"
+                    android:textColor="@android:color/white"
                     android:text='@{@string/tuner_current_frequency(viewModel.tunerState.measuredFrequency)}' />
                 <TextView
                     android:id="@+id/text_deviation"
@@ -299,8 +315,11 @@
                 android:orientation="vertical">
                 <ToggleButton
                     android:id="@+id/toggle_listening_button"
-                    android:layout_width="wrap_content"
+                    android:background="@drawable/bg_play_button"
+                    android:textColor="@color/white"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:textStyle="bold"
                     android:textOn='@string/tuner_stop_listening'
                     android:textOff='@string/tuner_start_listening'
                     android:checked='@{viewModel.tunerState.listening}' />
@@ -310,7 +329,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:enabled="@{!viewModel.tunerState.listening}"
-                    android:text='播放当前参考音' />
+                    android:text="@string/play_curr_ref_note" />
 
 
                 <Button

@@ -47,5 +47,37 @@
         <item >马林巴琴</item>
     </string-array>
 
+    <string name="trivia_icon">💡</string>
+    <string name="trivia_title">每日小知识</string>
+    <string name="footer_text">Designed with ❤️ by KhasAlushird\nv1.0.0 Beta</string>
+    <string name="title_desc">简单实用的钢琴工具库</string>
+
+    <string name="special_rhy">特殊节奏型</string>
+    <string name="equal"> = </string>
+    <string name="bpm_equal">BPM = </string>
+    <string name="emphasize_heavy">强调重拍</string>
+    <string name="tenuto">延音</string>
+    <string name="pitch_name">音名</string>
+    <string name="detect_chord">检测和弦</string>
+    <string name="construct_chord">构造和弦</string>
+    <string name="accidental_mode">升降模式</string>
+    <string name="sharp">升号</string>
+    <string name="flat">降号</string>
+    <string name="back_out">撤回</string>
+    <string name="reset">重置</string>
+    <string name="back">返回</string>
+    <string name="play_chord">播放和弦</string>
+    <string name="none_symbol">--</string>
+    <string name="standard_freq">标准频率: </string>
+    <string name="freq_440">440Hz</string>
+    <string name="freq_442">442Hz</string>
+    <string name="wave_display">波形显示: </string>
+    <string name="time_dom">时域</string>
+    <string name="freq_dom">频域</string>
+    <string name="play_curr_ref_note">播放当前参考音</string>
+    <string name="stop">停止</string>
+    <string name="start">开始</string>
+
+
 
 </resources>

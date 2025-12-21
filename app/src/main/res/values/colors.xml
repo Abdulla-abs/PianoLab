@@ -1,13 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
+    <!-- 主色调：海洋科技蓝 -->
+    <!-- Primary: 用于AppBar, 标题栏, 核心图标 -->
+    <color name="piano_primary">#1976D2</color> <!-- 沉稳明亮的蓝 -->
+    <color name="piano_primary_light">#63A4FF</color> <!-- 较亮的蓝，可用于渐变 -->
+    <color name="piano_primary_dark">#004BA0</color> <!-- 状态栏深蓝 -->
+
+    <!-- 强调色：薄荷青绿 -->
+    <!-- Accent: 用于FAB悬浮按钮, 选中状态, 进度条 -->
+    <!-- 这个颜色介于绿和青之间，非常年轻且醒目 -->
+    <color name="piano_accent">#00BFA5</color>
+    <color name="piano_accent_light">#5DF2D6</color>
+
+    <!-- 背景色：清爽灰白 -->
+    <!-- 既然是年轻化，建议使用浅色背景，比纯黑更具亲和力 -->
+    <color name="piano_background">#F5F6F8</color>
+    <color name="piano_surface">#FFFFFF</color> <!-- 卡片背景纯白 -->
+
+    <!-- 文字颜色 -->
+    <color name="text_primary">#263238</color> <!-- 蓝灰色系的深黑，比纯黑柔和，阅读舒适 -->
+    <color name="text_secondary">#78909C</color> <!-- 蓝灰色��的浅灰 -->
+    <color name="text_on_primary">#FFFFFF</color> <!-- 蓝底上的白字 -->
+
+    <!-- 功能色 -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="tuner_cursor_green">#4CAF50</color>
     <color name="tuner_cursor_yellow">#FFC107</color>
     <color name="tuner_cursor_red">#F44336</color>
+
+    <!-- 兼容旧代码引用 -->
+    <color name="purple_200">@color/piano_accent</color>
+    <color name="purple_500">@color/piano_primary</color>
+    <color name="purple_700">@color/piano_primary_dark</color>
+    <color name="teal_200">@color/piano_accent</color>
+    <color name="teal_700">@color/piano_primary_dark</color>
+
+    <!-- 映射旧的黑金变量到新颜色，防止布局报错 -->
+    <color name="piano_black">@color/text_primary</color>
+    <color name="piano_dark_gray">@color/piano_surface</color>
+    <color name="piano_light_gray">@color/piano_background</color>
+    <color name="elegant_gold">@color/piano_accent</color>
+    <color name="elegant_gold_dark">@color/piano_accent</color>
 </resources>

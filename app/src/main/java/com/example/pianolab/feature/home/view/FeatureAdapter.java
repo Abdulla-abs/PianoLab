@@ -1,54 +1,59 @@
 package com.example.pianolab.feature.home.view;
 
-import android.content.Context;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
-import android.widget.TextView;
-import com.example.pianolab.R;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+import com.example.pianolab.databinding.ItemFeatureCardBinding;
 import com.example.pianolab.feature.home.model.FeatureItem;
 import java.util.List;
 
+public class FeatureAdapter extends RecyclerView.Adapter<FeatureAdapter.FeatureViewHolder> {
 
-public class FeatureAdapter extends ArrayAdapter<FeatureItem> {
-    private final LayoutInflater inflater;
-    private final int resourceId;
+    private final List<FeatureItem> items;
+    private final OnItemClickListener listener;
 
-    public FeatureAdapter(Context context, int resource, List<FeatureItem> items) {
-        super(context, resource, items);
-        this.inflater = LayoutInflater.from(context);
-        this.resourceId = resource;
+    public interface OnItemClickListener {
+        void onItemClick(FeatureItem item);
+    }
+
+    public FeatureAdapter(List<FeatureItem> items, OnItemClickListener listener) {
+        this.items = items;
+        this.listener = listener;
+    }
+
+    @NonNull
+    @Override
+    public FeatureViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
+        ItemFeatureCardBinding binding = ItemFeatureCardBinding.inflate(layoutInflater, parent, false);
+        return new FeatureViewHolder(binding);
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        ViewHolder holder;
-        if (convertView == null) {
-
-            convertView = inflater.inflate(resourceId, parent, false);
-
-            holder = new ViewHolder();
-            holder.ivIcon = convertView.findViewById(R.id.iv_feature_icon);
-            holder.tvName = convertView.findViewById(R.id.tv_feature_name);
-            convertView.setTag(holder);
-        } else {
-            holder = (ViewHolder) convertView.getTag();
-        }
-
-
-        FeatureItem item = getItem(position);
-        if (item != null) {
-            holder.ivIcon.setImageResource(item.getIconResId());
-            holder.tvName.setText(item.getName());
-        }
-        return convertView;
+    public void onBindViewHolder(@NonNull FeatureViewHolder holder, int position) {
+        FeatureItem item = items.get(position);
+        holder.bind(item, listener);
     }
 
+    @Override
+    public int getItemCount() {
+        return items != null ? items.size() : 0;
+    }
 
-    static class ViewHolder {
-        ImageView ivIcon;
-        TextView tvName;
+    public static class FeatureViewHolder extends RecyclerView.ViewHolder {
+        private final ItemFeatureCardBinding binding;
+
+        public FeatureViewHolder(ItemFeatureCardBinding binding) {
+            super(binding.getRoot());
+            this.binding = binding;
+        }
+
+        public void bind(FeatureItem item, OnItemClickListener listener) {
+            binding.setItem(item);
+            binding.ivFeatureIcon.setImageResource(item.getIconResId());
+            binding.executePendingBindings();
+            itemView.setOnClickListener(v -> listener.onItemClick(item));
+        }
     }
 }

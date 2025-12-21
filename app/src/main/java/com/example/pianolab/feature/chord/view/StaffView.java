@@ -40,12 +40,13 @@ public class StaffView extends View {
     private static final int BASS_BOTTOM_LINE_NOTE_INDEX = 23;   // G2 (Key 23)
 
     // Hyperparameters
-    private float secondNoteShiftRatio = 0.85f;
-    private float globalNoteShiftX = 60f;
-    private float bassClefShiftY = 30f;
-    private float flatSpacingRatio = 1.2f;
-    private float flatNotePadding = 10f;
-    private float c4Scale = 1.4f;
+    private final float  secondNoteShiftRatio = 0.85f;
+    private final float globalNoteShiftX = 60f;
+    private final float bassClefShiftY = 30f;
+    private final float flatSpacingRatio = 1.2f;
+    private final float flatNotePadding = 10f;
+    private final float c4Scale = 1.4f;
+    private final float accidentalScale = 0.8f;
 
     public StaffView(Context context) {
         super(context);
@@ -103,21 +104,15 @@ public class StaffView extends View {
             this.keyName = keyName;
 
             // Determine if black key based on index (0=C, 1=C#...)
-            // C=0, C#=1, D=2, D#=3, E=4, F=5, F#=6, G=7, G#=8, A=9, A#=10, B=11
             int semitone = (rawIndex - 4) % 12;
             if (semitone < 0) semitone += 12;
 
-            // Black keys are at indices 1, 3, 6, 8, 10 relative to C
             this.isBlack = (semitone == 1 || semitone == 3 || semitone == 6 || semitone == 8 || semitone == 10);
 
             if (this.isBlack) {
                 if (useFlats) {
-                    // Treat as flat of the next white key (e.g., C# -> Db)
-                    // Visual position moves up one semitone to the white key line
                     this.visualIndex = rawIndex + 1;
                 } else {
-                    // Treat as sharp of the previous white key (e.g., Db -> C#)
-                    // Visual position moves down one semitone to the white key line
                     this.visualIndex = rawIndex - 1;
                 }
             } else {
@@ -211,8 +206,8 @@ public class StaffView extends View {
             int noteW = (int) (noteH * 1.5f);
 
             // Accidental dimensions
-            int accW = (int) (noteW * 0.6f);
-            int accH = (int) (noteH * 2.5f);
+            int accW = (int) (noteW * 0.6f*accidentalScale);
+            int accH = (int) (noteH * 2.5f*accidentalScale);
 
             int xBase = (w - noteW) / 2 + (int) globalNoteShiftX;
             int prevOffset = 0;
@@ -300,8 +295,10 @@ public class StaffView extends View {
                         int accL = accRight - accW - accXOffset;
                         int accR = accL + accW;
 
+                        float alignRatio = useFlats ? 0.65f : 0.50f;
+
                         // Adjust Accidental Y to align center/belly with line
-                        int accTop = (int) (yPos - accH * 0.65f);
+                        int accTop = (int) (yPos - accH * alignRatio);
 
                         accidentalDrawable.setBounds(accL, accTop, accR, accTop + accH);
                         accidentalDrawable.draw(canvas);

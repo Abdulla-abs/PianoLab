@@ -1,34 +1,131 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 启用DataBinding：根标签为layout -->
-<layout xmlns:android="http://schemas.android.com/apk/res/android">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <data>
-        <!-- 绑定HomeViewModel -->
         <variable
             name="viewModel"
             type="com.example.pianolab.feature.home.viewmodel.HomeViewModel" />
     </data>
 
-    <!-- 主布局：垂直排列，顶部标题+功能列表 -->
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:background="@color/piano_background">
 
-        <!-- 标题 -->
-        <TextView
+        <!-- 1. 顶部Banner区域 (保持不变) -->
+        <View
+            android:id="@+id/header_bg"
             android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:background="@color/piano_primary"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tv_app_title"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="PianoLab"
-            android:textSize="24sp"
+            android:textColor="@color/text_on_primary"
+            android:textSize="40sp"
             android:textStyle="bold"
-            android:paddingBottom="16dp" />
+            android:fontFamily="serif"
+            app:layout_constraintBottom_toBottomOf="@id/header_bg"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/header_bg"
+            app:layout_constraintVertical_bias="0.35" />
 
-        <!-- 功能列表：GridView -->
-        <GridView
-            android:id="@+id/gv_features"
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/title_desc"
+            android:textColor="@color/piano_accent_light"
+            android:textSize="14sp"
+            android:letterSpacing="0.05"
+            app:layout_constraintTop_toBottomOf="@id/tv_app_title"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- 2. 功能列表 (改为 wrap_content，紧凑布局) -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_features"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:columnWidth="120dp"/>
-    </LinearLayout>
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginHorizontal="16dp"
+            android:paddingBottom="8dp"
+            android:clipToPadding="false"
+            app:layout_constraintTop_toBottomOf="@id/header_bg"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- 3. 新增：每日冷知识卡片 (填充中间空白) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_trivia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/piano_surface"
+            app:strokeColor="@color/piano_primary_light"
+            app:strokeWidth="1dp"
+            app:layout_constraintTop_toBottomOf="@id/rv_features">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/trivia_icon"
+                        android:textSize="18sp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/trivia_title"
+                        android:textColor="@color/piano_primary"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:layout_marginStart="8dp"/>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@{viewModel.dailyTrivia}"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp"
+                    android:lineSpacingExtra="4dp"
+                    android:layout_marginTop="8dp"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 4. 新增：底部版本信息 (视觉锚点) -->
+        <TextView
+            android:id="@+id/tv_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/footer_text"
+            android:gravity="center"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:alpha="0.6"
+            android:layout_marginBottom="24dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

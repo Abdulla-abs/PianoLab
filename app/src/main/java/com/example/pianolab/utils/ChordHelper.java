@@ -192,6 +192,8 @@ public class ChordHelper {
             case "7": return new int[]{0, 4, 7, 10};
             case "dim7": return new int[]{0, 3, 6, 9};
             case "m7b5": return new int[]{0, 3, 6, 10};
+            case "sus2": return new int[]{0, 2, 7};
+            case "sus4": return new int[]{0, 5, 7};
             default: return new int[]{0}; // Should not happen with fixed picker
         }
     }
@@ -204,20 +206,6 @@ public class ChordHelper {
         if (pitchClass < 0) pitchClass += 12;
 
         boolean isBlack = (pitchClass == 1 || pitchClass == 3 || pitchClass == 6 || pitchClass == 8 || pitchClass == 10);
-
-        // Special handling for split black keys if needed, but standard naming:
-        // key{index}_white or key{index}_black
-        // However, your resource naming convention seems to be:
-        // key{index}_white for white keys
-        // key{index}_black for black keys
-        // Let's verify with a known key. C4 is key 40. 40-4=36. 36%12=0 (C). White. -> key40_white
-        // C#4 is key 41. 41-4=37. 37%12=1 (C#). Black. -> key41_black
-
-        // Note: Your black keys might have _part2 suffix in some XMLs, but usually the ID or tag used for logic is simpler.
-        // Based on "piano_three_keys.xml" description: "key2_black", "key2_black_part2".
-        // The logic in PianoView likely handles the click detection.
-        // For highlighting, we usually need the base name.
-        // Assuming the standard naming convention holds for the generated keys.
 
         if (isBlack) {
             return "key" + index + "_black";

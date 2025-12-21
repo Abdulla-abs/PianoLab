@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.databinding.DataBindingUtil;
 import com.example.pianolab.R;
 import com.example.pianolab.databinding.ActivityHomeBinding;
-import com.example.pianolab.feature.home.model.FeatureItem;
 import com.example.pianolab.feature.home.viewmodel.HomeViewModel;
 
 
@@ -31,32 +30,33 @@ public class HomeActivity extends AppCompatActivity {
         binding.setViewModel(homeViewModel);
         binding.setLifecycleOwner(this);
 
-        // 4. 初始化GridView适配器
-        initGridView();
+        // 4. 初始化RecyclerView适配器
+        initRecyclerView();
     }
 
-    // 初始化GridView：观察ViewModel的数据变化，更新列表
-    private void initGridView() {
+    // 初始化RecyclerView：观察ViewModel的数据变化，更新列表
+    private void initRecyclerView() {
+        // 设置布局管理器（网格布局，2列）
+        binding.rvFeatures.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(this, 2));
+
         // 观察功能列表数据
         homeViewModel.getFeatureItems().observe(this, featureItems -> {
             if (featureItems != null) {
-                // 创建适配器（参数：上下文、item布局、数据列表）
-                featureAdapter = new FeatureAdapter(
-                        HomeActivity.this,
-                        R.layout.item_feature, // 单个功能项的布局
-                        featureItems
-                );
-                // 设置适配器到GridView
-                binding.gvFeatures.setAdapter(featureAdapter);
+                // 创建适配器
+                featureAdapter = new FeatureAdapter(featureItems, item -> {
+                    homeViewModel.onFeatureItemClick(HomeActivity.this, item);
+                });
+                // 设置适配器到RecyclerView
+                binding.rvFeatures.setAdapter(featureAdapter);
             }
         });
+    }
 
-        // 绑定GridView的点击事件（点击item时调用ViewModel的方法）
-        binding.gvFeatures.setOnItemClickListener((parent, view, position, id) -> {
-            if (featureAdapter != null) {
-                FeatureItem item = featureAdapter.getItem(position);
-                homeViewModel.onFeatureItemClick(HomeActivity.this, item);
-            }
-        });
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (homeViewModel != null) {
+            homeViewModel.refreshTrivia();
+        }
     }
 }

@@ -8,6 +8,7 @@ import android.graphics.Path;
 import android.graphics.Region;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 
 import androidx.core.content.ContextCompat;
@@ -31,6 +32,7 @@ import java.util.Set;
 public class TunerPianoView extends View {
     private static final int DEFAULT_OCTAVE_W = 375;
     private static final int DEFAULT_OCTAVE_H = 323;
+    private static final String TAG = "TunerPianoView";
 
     private final PianoPaintEngine paintEngine;
     private Drawable octaveDrawable;
@@ -205,23 +207,19 @@ public class TunerPianoView extends View {
      * 设置当前检测到的音符(如 "C4", "D#5")
      */
     public void setDetectedNote(String note) {
-        if (note == null || note.equals(currentNote)) return;
+        if (note == null || note.equals(currentNote) || note.equals("--")) return;
+//        Log.d(TAG, "note is " + note);
 
         currentNote = note;
         highlightedKeys.clear();
 
         String noteName = note.replaceAll("\\d", "");
+        boolean is_black = noteName.contains("#") || noteName.contains("b");
+        int keyIndex = MusicTheoryHelper.NOTE_TO_INDEX.get(note.replaceAll("\\d+$", ""));
 
-        String[] noteOrder = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-        for (int i = 0; i < noteOrder.length; i++) {
-            if (noteOrder[i].equals(noteName)) {
-                int keyIndex = i + 1;
-                String keyName = "key" + keyIndex + (noteName.contains("#") ? "_black" : "_white");
-                if (keyTransformed.containsKey(keyName)) {
-                    highlightedKeys.add(keyName);
-                }
-                break;
-            }
+        String keyName = "key" + keyIndex + (is_black ? "_black" : "_white");
+        if (keyTransformed.containsKey(keyName)) {
+            highlightedKeys.add(keyName);
         }
 
         invalidate();

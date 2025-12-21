@@ -21,7 +21,7 @@ public class ChordPickerDialog extends AlertDialog {
     private NumberPicker npChordType;
 
     private static final String[] ROOT_NOTES = {"C", "D", "E", "F", "G", "A", "B"};
-    private static final String[] CHORD_TYPES = {"maj", "min", "dim", "aug", "maj7", "min7", "7", "dim7", "m7b5"};
+    private static final String[] CHORD_TYPES = {"maj", "min", "dim", "aug", "maj7", "min7", "7", "dim7", "m7b5","sus2","sus4"};
 
     public interface OnChordSelectedListener {
         void onChordSelected(String chordName);
@@ -79,13 +79,6 @@ public class ChordPickerDialog extends AlertDialog {
         });
         setButton(BUTTON_NEGATIVE, "Cancel", (dialog, which) -> dismiss());
 
-        // Play chord sound when OK is clicked
-        // Actually, the listener handles generation, which triggers playback in ViewModel/Activity.
-        // But we also want to play sound when user changes selection in the dialog?
-        // The requirement says: "In 'construct chord' mode, when user constructs a chord... play chord sound".
-        // This usually means after they confirm the selection.
-        // So the current implementation where listener.onChordSelected is called on OK is correct.
-        // The listener (Activity) calls ViewModel.generateChord, which updates keys and triggers playback.
 
         super.onCreate(savedInstanceState);
     }
@@ -93,12 +86,10 @@ public class ChordPickerDialog extends AlertDialog {
     private void updateAccidentalVisibility(String note) {
         boolean show = false;
         if (useFlats) {
-            // Show for D, E, G, A, B
             if (note.equals("D") || note.equals("E") || note.equals("G") || note.equals("A") || note.equals("B")) {
                 show = true;
             }
         } else {
-            // Show for C, D, F, G, A
             if (note.equals("C") || note.equals("D") || note.equals("F") || note.equals("G") || note.equals("A")) {
                 show = true;
             }
