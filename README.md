@@ -1,6 +1,6 @@
 # PianoLab (钢琴实验室)
 
-![Home](home.png)
+![Home](screenshots/home.png)
 
 > 基于 Android 开发的钢琴常用小工具合集。
 
@@ -15,22 +15,22 @@
 PianoLab 集成了四个核心功能模块，满足日常练习的多种需求：
 
 ### 1. 节拍器 (Metronome)
-![Beat](beat.png)
+![Beat](screenshots/home.png)
 *   *(在此处补充节拍器的具体介绍，例如：支持多种拍号、BPM 调节范围、不同的音效等)*
 *   ...
 
 ### 2. 调音器 (Tuner)
-![Tuner](tuner.png)
+![Tuner](screenshots/home.png)
 *   *(在此处补充调音器的具体介绍，例如：基于什么算法、识别精度、支持的音域范围等)*
 *   ...
 
 ### 3. 虚拟钢琴 (Virtual Piano)
-![Piano](piano.png)
+![Piano](screenshots/home.png)
 *   *(在此处补充虚拟钢琴的具体介绍，例如：支持多点触控、88键全键盘滚动、按键回馈等)*
 *   ...
 
 ### 4. 和弦工具 (Chord Tool)
-![Chord](chord.png)
+![Chord](screenshots/home.png)
 *   *(在此处补充和弦工具的具体介绍，例如：和弦查询、和弦构成音展示、转位查询等)*
 *   ...
 
