@@ -121,7 +121,15 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
 
         String note;
         if (mode) {
-            note = safeState().getDisplayNote();
+            TunerState current = safeState();
+            if(current.isAutoDetectEnabled()){
+                note = safeState().getDisplayNote();
+            }
+            else {
+                note = safeState().getManualNote();
+            }
+
+//            Log.d(TAG, "curr_note"+note);
         } else {
             note = "A4";
         }

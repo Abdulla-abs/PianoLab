@@ -19,6 +19,8 @@ public class ChordViewModel extends ViewModel {
     private final MutableLiveData<String> _chordText = new MutableLiveData<>("--");
     public LiveData<String> chordText = _chordText;
 
+    public final MutableLiveData<Boolean> isChordFuncMode = new MutableLiveData<>(false);
+
     private final LinkedList<String> currentKeys = new LinkedList<>();
 
     public void toggleKey(String keyName) {
@@ -49,11 +51,6 @@ public class ChordViewModel extends ViewModel {
         _selectedKeys.setValue(new ArrayList<>(currentKeys));
         _chordText.setValue(chordName);
 
-        // Play the chord sound
-        // We need to expose a way to play sound from ViewModel or let Activity observe and play.
-        // Since ViewModel shouldn't hold reference to View or SoundEngine directly usually,
-        // we can use a LiveData event or similar.
-        // But here, let's just add a LiveData for "playChordEvent".
         _playChordEvent.setValue(keys);
     }
 
@@ -89,13 +86,9 @@ public class ChordViewModel extends ViewModel {
             return;
         }
 
-        // Basic Chord Logic
-        // Normalize to C=0...B=11
         List<Integer> notes = new ArrayList<>();
         for (int idx : indices) {
-            // Key 4 is C1 (MIDI 24). Key 16 is C2 (MIDI 36).
-            // MIDI note = idx + 20.
-            // Pitch class = (idx + 20) % 12.
+
             int pitchClass = (idx + 20) % 12;
             if (!notes.contains(pitchClass)) {
                 notes.add(pitchClass);

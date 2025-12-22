@@ -93,29 +93,56 @@ public class BeatHelper {
     
     public static String getBpmDescription(int bpm){
         if (bpm <= 40) {
-            return "Grave(庄板)";
+            return "Grave";
         } else if (bpm <= 45) {
-            return "Lento(慢板)";
+            return "Lento";
         } else if (bpm <= 50) {
-            return "Largo(广板)";
+            return "Largo";
         } else if (bpm <= 60) {
-            return "Adagio(柔板)";
+            return "Adagio";
         } else if (bpm <= 70) {
-            return "Adagietto(小柔板)";
+            return "Adagietto";
         } else if (bpm <= 85) {
-            return "Andante(行板)";
+            return "Andante";
         } else if (bpm <= 97) {
-            return "Moderato(中板)";
+            return "Moderato";
         } else if (bpm <= 109) {
-            return "Allegretto(小快板)";
+            return "Allegretto";
         } else if (bpm <= 132) {
-            return "Allegro(快板)";
+            return "Allegro";
         } else if (bpm <= 140) {
-            return "Vivace(活泼的快板)";
+            return "Vivace";
         } else if (bpm <= 177) {
-            return "Presto(急板)";
+            return "Presto";
         } else {
-            return "Prestissimo(最急板)";
+            return "Prestissimo";
+        }
+    }
+    public static String getBpmDescriptionExtra(int bpm){
+        if (bpm <= 40) {
+            return "庄板";
+        } else if (bpm <= 45) {
+            return "慢板";
+        } else if (bpm <= 50) {
+            return "广板";
+        } else if (bpm <= 60) {
+            return "柔板";
+        } else if (bpm <= 70) {
+            return "小柔板";
+        } else if (bpm <= 85) {
+            return "行板";
+        } else if (bpm <= 97) {
+            return "中板";
+        } else if (bpm <= 109) {
+            return "小快板";
+        } else if (bpm <= 132) {
+            return "快板";
+        } else if (bpm <= 140) {
+            return "活泼的快板";
+        } else if (bpm <= 177) {
+            return "急板";
+        } else {
+            return "最急板";
         }
     }
 

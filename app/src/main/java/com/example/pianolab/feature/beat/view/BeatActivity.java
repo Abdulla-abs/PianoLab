@@ -32,9 +32,10 @@ public class BeatActivity extends AppCompatActivity {
     private BeatViewModel viewModel;
 
     private TextView tvBpmValue;
-    private TextView tvCrochetValue; // 新增：四分音符数值显示
+    private TextView tvCrochetValue;
     private SeekBar seekbarBpm;
     private TextView tvTempoMarking;
+    private TextView tvTempoMarkingExtra;
     private TextView tvBeatsValue;
     private ImageView buttonBack;
     private ToggleButton togglePlay;
@@ -73,6 +74,7 @@ public class BeatActivity extends AppCompatActivity {
         tvBpmValue = findViewById(R.id.tv_bpm_value);
         tvCrochetValue = findViewById(R.id.tv_crochet_value);
         tvTempoMarking = findViewById(R.id.tv_tempo_marking);
+        tvTempoMarkingExtra = findViewById(R.id.tv_tempo_marking_extra);
         spinnerSpecial = findViewById(R.id.spinner_special_rhythm);
         spinnerTone = findViewById(R.id.spinner_tone);
 
@@ -118,6 +120,7 @@ public class BeatActivity extends AppCompatActivity {
 
             tvBpmValue.setText(String.valueOf(value));
             tvTempoMarking.setText(BeatHelper.getBpmDescription(value));
+            tvTempoMarkingExtra.setText(BeatHelper.getBpmDescriptionExtra(value));
 
             int cpm = BeatHelper.BPM_TO_CPM(value,base);
             tvCrochetValue.setText(String.valueOf(cpm));
@@ -136,6 +139,7 @@ public class BeatActivity extends AppCompatActivity {
                 int curCpm = BeatHelper.BPM_TO_CPM(curBpm,b);
                 tvBpmValue.setText(String.valueOf(curBpm));
                 tvTempoMarking.setText(BeatHelper.getBpmDescription(curBpm));
+                tvTempoMarkingExtra.setText(BeatHelper.getBpmDescriptionExtra(curBpm));
                 tvCrochetValue.setText(String.valueOf(curCpm));
             }
         });
@@ -385,6 +389,7 @@ public class BeatActivity extends AppCompatActivity {
             Integer base = viewModel.getBaseBeat().getValue() != null ? viewModel.getBaseBeat().getValue() : 4;
             int initCpm = BeatHelper.BPM_TO_CPM(initBpm,base);
             tvTempoMarking.setText(BeatHelper.getBpmDescription(initBpm));
+            tvTempoMarkingExtra.setText(BeatHelper.getBpmDescriptionExtra(initBpm));
             tvBpmValue.setText(String.valueOf(initBpm));
             tvCrochetValue.setText(String.valueOf(initCpm));
         }

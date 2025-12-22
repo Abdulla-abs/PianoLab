@@ -8,12 +8,15 @@ import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.databinding.DataBindingUtil;
 import androidx.lifecycle.ViewModelProvider;
 import com.example.pianolab.R;
+import com.example.pianolab.databinding.ActivityChordBinding;
 import com.example.pianolab.feature.chord.viewmodel.ChordViewModel;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
 public class ChordActivity extends AppCompatActivity {
+    private ActivityChordBinding binding;
     private SeekBar seekBar;
     private HorizontalScrollView hsPiano;
     private ChordPianoView pianoView;
@@ -31,9 +34,11 @@ public class ChordActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_chord);
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_chord);
+        binding.setLifecycleOwner(this);
 
         viewModel = new ViewModelProvider(this).get(ChordViewModel.class);
+        binding.setViewModel(viewModel);
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
@@ -53,6 +58,11 @@ public class ChordActivity extends AppCompatActivity {
         tvChordName = findViewById(R.id.tv_chord_name);
         switchAccidentalMode = findViewById(R.id.switch_accidental_mode);
         switchChordFuncMode = findViewById(R.id.switch_chord_func_mode);
+
+        switchChordFuncMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            viewModel.isChordFuncMode.setValue(isChecked);
+        });
+
         btnPlayChord = findViewById(R.id.btn_play_chord);
 
         staffGClef.setClefType(StaffView.ClefType.TREBLE);
