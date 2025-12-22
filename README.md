@@ -17,27 +17,27 @@
 
 PianoLab 集成了四个核心功能模块，满足日常练习的多种需求：
 
-### 1. 节拍器 (Metronome)
-![Beat](screenshots/home.jpg)
+### 1. 节拍器 
+![Beat](screenshots/beat.jpg)
 *   *支持BPM或是每分钟四分音符的个数双模式调整速度*
 *   *支持不同拍号*
 *   *支持特殊节奏型的练习*
 *   *支持切换各种音色*
 
-### 2. 调音器 (Tuner)
-![Tuner](screenshots/home.jpg)
+### 2. 调音器
+![Tuner](screenshots/tuner.jpg)
 *   *支持自动检测音高和手动检测音高双模式*
 *   *提供自动截止检测的功能*
 *   *实时显示频域图或时域图*
 *   *可视化音分偏差*
 
-### 3. 虚拟钢琴 (Virtual Piano)
-![Piano](screenshots/home.jpg)
+### 3. 虚拟钢琴 
+![Piano](screenshots/piano.jpg)
 *   *支持88键全滚动*
 *   *提供延音和音名显示功能*
 
-### 4. 和弦工具 (Chord Tool)
-![Chord](screenshots/home.jpg)
+### 4. 和弦工具 
+![Chord](screenshots/chord.jpg)
 *   *提供检测和弦和构造和弦双功能*
 *   *支持常见和弦及其转位*
 *   *提供播放和弦的功能*
