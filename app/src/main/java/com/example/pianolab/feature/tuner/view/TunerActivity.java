@@ -20,6 +20,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.pianolab.R;
 import com.example.pianolab.databinding.ActivityTunerBinding;
 import com.example.pianolab.feature.tuner.viewmodel.TunerViewModel;
+import com.example.pianolab.utils.ImmersiveUiHelper;
 
 public class TunerActivity extends AppCompatActivity {
     private static final String PERMISSION = Manifest.permission.RECORD_AUDIO;
@@ -34,6 +35,7 @@ public class TunerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_tuner);
         binding.setLifecycleOwner(this);
+        ImmersiveUiHelper.enableImmersiveMode(getWindow());
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().hide();
@@ -168,6 +170,14 @@ public class TunerActivity extends AppCompatActivity {
     private void updateDeviationIndicator(float cents) {
         if (binding.deviationRuler instanceof DeviationRulerView) {
             ((DeviationRulerView) binding.deviationRuler).setDeviation(cents);
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            ImmersiveUiHelper.applyImmersiveSystemUi(getWindow());
         }
     }
 }

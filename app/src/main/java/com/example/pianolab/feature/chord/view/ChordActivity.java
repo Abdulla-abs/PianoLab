@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.pianolab.R;
 import com.example.pianolab.databinding.ActivityChordBinding;
 import com.example.pianolab.feature.chord.viewmodel.ChordViewModel;
+import com.example.pianolab.utils.ImmersiveUiHelper;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
 public class ChordActivity extends AppCompatActivity {
@@ -36,6 +37,7 @@ public class ChordActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_chord);
         binding.setLifecycleOwner(this);
+        ImmersiveUiHelper.enableImmersiveMode(getWindow());
 
         viewModel = new ViewModelProvider(this).get(ChordViewModel.class);
         binding.setViewModel(viewModel);
@@ -142,5 +144,13 @@ public class ChordActivity extends AppCompatActivity {
         new ChordPickerDialog(this, useFlats, chordName -> {
             viewModel.generateChord(chordName);
         }).show();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            ImmersiveUiHelper.applyImmersiveSystemUi(getWindow());
+        }
     }
 }

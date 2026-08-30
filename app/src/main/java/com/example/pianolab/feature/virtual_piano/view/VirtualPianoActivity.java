@@ -15,6 +15,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.pianolab.R;
 import com.example.pianolab.feature.virtual_piano.viewmodel.VirtualPianoViewModel;
+import com.example.pianolab.utils.ImmersiveUiHelper;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
 /**
@@ -40,6 +41,7 @@ public class VirtualPianoActivity extends AppCompatActivity {
         setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
 
         setContentView(R.layout.activity_virtual_piano);
+        ImmersiveUiHelper.enableImmersiveMode(getWindow());
 
         seekBar = findViewById(R.id.seekBar);
         hsPiano = findViewById(R.id.hs_piano);
@@ -120,5 +122,13 @@ public class VirtualPianoActivity extends AppCompatActivity {
                 });
             }
         });
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            ImmersiveUiHelper.applyImmersiveSystemUi(getWindow());
+        }
     }
 }
