@@ -61,10 +61,12 @@ public class PianoSoundEngine {
     private final Map<String, Integer> keyNameCache = Collections.synchronizedMap(new HashMap<>());
 
     private static final long CHORD_DISPATCH_WINDOW_MS = 15L;
+    private static final int PRELOAD_PRIORITY_FROM = 48;
+    private static final int PRELOAD_PRIORITY_TO = 72;
 
-
-
-
+    private final Set<Integer> pendingChordPlaybackResIds =
+            Collections.synchronizedSet(new HashSet<>());
+    private final Object pendingChordLock = new Object();
     public PianoSoundEngine(Context ctx) {
         this.context = ctx.getApplicationContext();
         Log.i(TAG, "PianoSoundEngine ctor");
@@ -108,6 +110,7 @@ public class PianoSoundEngine {
                         }
                     }
                 }
+                tryFlushPendingChordPlayback();
             });
         } catch (Exception e) {
             Log.e(TAG, "initSoundPool failed", e);
@@ -143,17 +146,37 @@ public class PianoSoundEngine {
         loader.execute(() -> {
             long batchStart = SystemClock.elapsedRealtimeNanos();
             int count = 0;
-            for (int i = fromInclusive; i <= toInclusive && !released; i++) {
-                String name = String.format("k%03d", i);
-                int res = context.getResources().getIdentifier(name, "raw", context.getPackageName());
-                if (res == 0) continue;
-                ensureLoadedAsync(res);
-                count++;
+            count += preloadMidiRange(PRELOAD_PRIORITY_FROM, PRELOAD_PRIORITY_TO);
+            if (fromInclusive < PRELOAD_PRIORITY_FROM) {
+                count += preloadMidiRange(fromInclusive, PRELOAD_PRIORITY_FROM - 1);
+            }
+            if (toInclusive > PRELOAD_PRIORITY_TO) {
+                count += preloadMidiRange(PRELOAD_PRIORITY_TO + 1, toInclusive);
             }
             allPreloaded = true;
             long batchEnd = SystemClock.elapsedRealtimeNanos();
-            Log.i(TAG, "preloadMappedRangeAsync finished count=" + count + " costMs=" + ((batchEnd - batchStart) / 1000000L));
+            Log.i(
+                    TAG,
+                    "preloadMappedRangeAsync finished count="
+                            + count
+                            + " costMs="
+                            + ((batchEnd - batchStart) / 1000000L));
         });
+    }
+
+    private int preloadMidiRange(int fromInclusive, int toInclusive) {
+        int count = 0;
+        for (int i = fromInclusive; i <= toInclusive && !released; i++) {
+            String name = String.format("k%03d", i);
+            int res =
+                    context.getResources().getIdentifier(name, "raw", context.getPackageName());
+            if (res == 0) {
+                continue;
+            }
+            ensureLoadedAsync(res);
+            count++;
+        }
+        return count;
     }
 
     private int resolveResIdForKey(String keyName) {
@@ -594,16 +617,14 @@ public class PianoSoundEngine {
     public void playChord(List<String> keyNames) {
         if (keyNames == null || keyNames.isEmpty()) return;
 
-        stopChordPlayback(); // Stop previous chord playback if any
+        stopChordPlayback();
 
         List<Integer> resIdsToPlay = new ArrayList<>();
+        List<Integer> resIdsPending = new ArrayList<>();
 
         for (String keyName : keyNames) {
             final int resId = resolveResIdForKey(keyName);
             if (resId == 0) continue;
-
-            // We use a special pointerId for manual chord playback to distinguish
-            int syntheticPointerId = -1000 - keyName.hashCode();
 
             Integer soundId = resToSoundId.get(resId);
             Boolean ready = resReady.get(resId);
@@ -612,13 +633,48 @@ public class PianoSoundEngine {
                 resIdsToPlay.add(resId);
             } else {
                 ensureLoadedAsync(resId);
-                queuePendingPlay(resId, syntheticPointerId);
+                resIdsPending.add(resId);
             }
         }
 
-        if (resIdsToPlay.isEmpty()) return;
+        if (!resIdsPending.isEmpty()) {
+            synchronized (pendingChordLock) {
+                pendingChordPlaybackResIds.addAll(resIdsPending);
+            }
+        }
 
-        // Use the executor and latch to ensure simultaneous start, similar to flushChordQueue
+        if (!resIdsToPlay.isEmpty()) {
+            startChordPlayback(resIdsToPlay);
+        } else {
+            tryFlushPendingChordPlayback();
+        }
+    }
+
+    private void tryFlushPendingChordPlayback() {
+        List<Integer> readyResIds;
+        synchronized (pendingChordLock) {
+            if (pendingChordPlaybackResIds.isEmpty()) {
+                return;
+            }
+            readyResIds = new ArrayList<>();
+            for (Integer resId : pendingChordPlaybackResIds) {
+                if (Boolean.TRUE.equals(resReady.get(resId))) {
+                    readyResIds.add(resId);
+                }
+            }
+            if (readyResIds.size() != pendingChordPlaybackResIds.size()) {
+                return;
+            }
+            pendingChordPlaybackResIds.clear();
+        }
+        startChordPlayback(readyResIds);
+    }
+
+    private void startChordPlayback(List<Integer> resIdsToPlay) {
+        if (resIdsToPlay.isEmpty()) {
+            return;
+        }
+
         if (resIdsToPlay.size() == 1) {
             final int singleRes = resIdsToPlay.get(0);
             playExecutor.execute(() -> playSampleForChord(singleRes));
@@ -628,15 +684,16 @@ public class PianoSoundEngine {
         CountDownLatch startGate = new CountDownLatch(1);
         for (Integer resId : resIdsToPlay) {
             try {
-                playExecutor.execute(() -> {
-                    try {
-                        startGate.await();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        return;
-                    }
-                    playSampleForChord(resId);
-                });
+                playExecutor.execute(
+                        () -> {
+                            try {
+                                startGate.await();
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                return;
+                            }
+                            playSampleForChord(resId);
+                        });
             } catch (RejectedExecutionException ex) {
                 playSampleForChord(resId);
             }
@@ -660,6 +717,9 @@ public class PianoSoundEngine {
 
 
     public void stopChordPlayback() {
+        synchronized (pendingChordLock) {
+            pendingChordPlaybackResIds.clear();
+        }
         synchronized (chordPlaybackStreamIds) {
             for (Integer streamId : chordPlaybackStreamIds) {
                 if (streamId != null && soundPool != null) {

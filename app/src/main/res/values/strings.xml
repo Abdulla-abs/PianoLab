@@ -135,6 +135,15 @@
     <string name="detect_chord">检测和弦</string>
     <string name="construct_chord">构造和弦</string>
     <string name="accidental_mode">升降模式</string>
+    <string name="chord_open_settings">打开设置</string>
+    <string name="chord_settings_title">和弦设置</string>
+    <string name="chord_section_mode">工作模式</string>
+    <string name="chord_mode_label">和弦模式</string>
+    <string name="chord_section_accidental">升降号</string>
+    <string name="chord_mode_detect_desc">根据所选琴键自动识别和弦</string>
+    <string name="chord_mode_construct_desc">手动选择和弦名称生成音组</string>
+    <string name="chord_accidental_sharp_desc">五线谱与和弦名使用升号记谱</string>
+    <string name="chord_accidental_flat_desc">五线谱与和弦名使用降号记谱</string>
     <string name="sharp">升号</string>
     <string name="flat">降号</string>
     <string name="back_out">撤回</string>

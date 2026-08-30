@@ -51,16 +51,20 @@ public class ChordViewModel extends ViewModel {
         _selectedKeys.setValue(new ArrayList<>(currentKeys));
         _chordText.setValue(chordName);
 
-        _playChordEvent.setValue(keys);
+        requestChordPlayback();
     }
 
-    private final MutableLiveData<List<String>> _playChordEvent = new MutableLiveData<>();
-    public LiveData<List<String>> playChordEvent = _playChordEvent;
+    private final MutableLiveData<Long> _playChordNonce = new MutableLiveData<>();
+    public LiveData<Long> playChordNonce = _playChordNonce;
 
     public void playCurrentChord() {
         if (!currentKeys.isEmpty()) {
-            _playChordEvent.setValue(new ArrayList<>(currentKeys));
+            _playChordNonce.setValue(System.nanoTime());
         }
+    }
+
+    private void requestChordPlayback() {
+        _playChordNonce.setValue(System.nanoTime());
     }
 
     private void updateState() {

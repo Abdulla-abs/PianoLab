@@ -1,149 +1,90 @@
 package com.example.pianolab.feature.chord.view;
 
 import android.os.Bundle;
+import android.view.View;
 import android.view.ViewTreeObserver;
-import android.widget.Button;
-import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
-import android.widget.SeekBar;
 import android.widget.TextView;
+
+import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.databinding.DataBindingUtil;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.lifecycle.ViewModelProvider;
+
 import com.example.pianolab.R;
-import com.example.pianolab.databinding.ActivityChordBinding;
 import com.example.pianolab.feature.chord.viewmodel.ChordViewModel;
+import com.example.pianolab.feature.virtual_piano.view.PianoRangeOverviewView;
+import com.example.pianolab.feature.virtual_piano.view.SlicePianoKeyboardView;
 import com.example.pianolab.utils.ImmersiveUiHelper;
-import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.button.MaterialButtonToggleGroup;
+import com.google.android.material.card.MaterialCardView;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class ChordActivity extends AppCompatActivity {
-    private ActivityChordBinding binding;
-    private SeekBar seekBar;
-    private HorizontalScrollView hsPiano;
-    private ChordPianoView pianoView;
-    private ImageButton buttonBack;
-    private ImageButton buttonReset;
-    private ImageButton buttonBackout;
+    private static final int MIDI_CENTER_DEFAULT = 60;
+
+    private ChordViewModel viewModel;
+    private DrawerLayout drawerLayout;
+    private SlicePianoKeyboardView pianoView;
+    private PianoRangeOverviewView rangeOverviewView;
     private StaffView staffGClef;
     private StaffView staffFClef;
     private TextView tvChordName;
-    private ChordViewModel viewModel;
-    private SwitchMaterial switchAccidentalMode;
-    private SwitchMaterial switchChordFuncMode;
-    private Button btnPlayChord;
+    private TextView textChordModeDesc;
+    private TextView textAccidentalDesc;
+    private MaterialButtonToggleGroup toggleGroupChordMode;
+    private MaterialButtonToggleGroup toggleGroupAccidental;
+    private MaterialCardView cardPlayChord;
+    private boolean chordModeProgrammatic;
+    private boolean accidentalProgrammatic;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding = DataBindingUtil.setContentView(this, R.layout.activity_chord);
-        binding.setLifecycleOwner(this);
-        ImmersiveUiHelper.enableImmersiveMode(getWindow());
+        ImmersiveUiHelper.enableStandardSystemBars(getWindow());
+        setContentView(R.layout.activity_chord);
+        ImmersiveUiHelper.suppressSystemBarInsets(findViewById(R.id.drawer_layout));
 
         viewModel = new ViewModelProvider(this).get(ChordViewModel.class);
-        binding.setViewModel(viewModel);
 
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().hide();
-        }
-
-        seekBar = findViewById(R.id.seekBar);
-        // The HorizontalScrollView in activity_chord.xml is actually a NonScrollableHorizontalScrollView
-        // but we can cast it to HorizontalScrollView or use findViewById with the correct type if we had access to it.
-        // Since NonScrollableHorizontalScrollView extends HorizontalScrollView, this is fine.
-        hsPiano = findViewById(R.id.hs_piano);
+        drawerLayout = findViewById(R.id.drawer_layout);
         pianoView = findViewById(R.id.piano_view);
-        buttonBack = findViewById(R.id.button_back);
-        buttonReset = findViewById(R.id.button_reset);
-        buttonBackout = findViewById(R.id.button_backout);
+        rangeOverviewView = findViewById(R.id.piano_range_overview);
         staffGClef = findViewById(R.id.staff_g_clef);
         staffFClef = findViewById(R.id.staff_f_clef);
         tvChordName = findViewById(R.id.tv_chord_name);
-        switchAccidentalMode = findViewById(R.id.switch_accidental_mode);
-        switchChordFuncMode = findViewById(R.id.switch_chord_func_mode);
+        textChordModeDesc = findViewById(R.id.text_chord_mode_desc);
+        textAccidentalDesc = findViewById(R.id.text_accidental_desc);
+        toggleGroupChordMode = findViewById(R.id.toggle_group_chord_mode);
+        toggleGroupAccidental = findViewById(R.id.toggle_group_accidental);
+        cardPlayChord = findViewById(R.id.card_play_chord);
 
-        switchChordFuncMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            viewModel.isChordFuncMode.setValue(isChecked);
-        });
+        setupToolbar();
+        setupDrawer();
+        setupPiano();
+        setupSettings();
+        setupActions();
+        observeViewModel();
+        setupInitialScroll();
 
-        btnPlayChord = findViewById(R.id.btn_play_chord);
-
-        staffGClef.setClefType(StaffView.ClefType.TREBLE);
-        staffFClef.setClefType(StaffView.ClefType.BASS);
-
-        switchAccidentalMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            // isChecked = true -> use flats (降号)
-            // isChecked = false -> use sharps (升号)
-            staffGClef.setUseFlats(isChecked);
-            staffFClef.setUseFlats(isChecked);
-        });
-
-        tvChordName.setOnClickListener(v -> {
-            if (switchChordFuncMode.isChecked()) {
-                showChordPickerDialog();
-            }
-        });
-
-        buttonBack.setOnClickListener(v -> finish());
-        buttonReset.setOnClickListener(v -> viewModel.reset());
-        buttonBackout.setOnClickListener(v -> viewModel.backout());
-        btnPlayChord.setOnClickListener(v -> viewModel.playCurrentChord());
-
-        pianoView.setOnKeyToggledListener(key -> viewModel.toggleKey(key));
-
-        viewModel.selectedKeys.observe(this, keys -> {
-            pianoView.setSelectedKeys(keys);
-            staffGClef.setNotes(keys);
-            staffFClef.setNotes(keys);
-        });
-
-        viewModel.chordText.observe(this, text -> {
-            tvChordName.setText(text);
-        });
-
-        viewModel.playChordEvent.observe(this, keys -> {
-            pianoView.playChord(keys);
-        });
-
-        hsPiano.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
-            public void onGlobalLayout() {
-                hsPiano.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                int contentW = pianoView.getContentWidth();
-                int visibleW = hsPiano.getWidth();
-                int maxScroll = Math.max(0, contentW - visibleW);
-                seekBar.setMax(maxScroll);
-
-                seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                    @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                        if (fromUser) {
-                            hsPiano.scrollTo(progress, 0);
-                        }
-                    }
-                    @Override public void onStartTrackingTouch(SeekBar seekBar) { }
-                    @Override public void onStopTrackingTouch(SeekBar seekBar) { }
-                });
-
-                hsPiano.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-                    seekBar.setProgress(scrollX);
-                });
-
-                // Center on C4 (key 40)
-                // C2 is key 16. C4 is key 40.
-                // key40_white
-                int centerX = pianoView.getKeyCenterX("key40_white");
-                int initialScroll = Math.max(0, centerX - visibleW / 2);
-                initialScroll = Math.min(initialScroll, maxScroll);
-                hsPiano.scrollTo(initialScroll, 0);
-                seekBar.setProgress(initialScroll);
+            public void handleOnBackPressed() {
+                if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
+                    drawerLayout.closeDrawer(GravityCompat.END);
+                } else {
+                    setEnabled(false);
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
             }
         });
-    }
-
-    private void showChordPickerDialog() {
-        boolean useFlats = switchAccidentalMode.isChecked();
-        new ChordPickerDialog(this, useFlats, chordName -> {
-            viewModel.generateChord(chordName);
-        }).show();
     }
 
     @Override
@@ -152,5 +93,163 @@ public class ChordActivity extends AppCompatActivity {
         if (hasFocus) {
             ImmersiveUiHelper.applyImmersiveSystemUi(getWindow());
         }
+    }
+
+    private void setupToolbar() {
+        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+        }
+
+        ImageButton btnUndo = findViewById(R.id.btn_toolbar_undo);
+        ImageButton btnReset = findViewById(R.id.btn_toolbar_reset);
+        ImageButton btnMenu = findViewById(R.id.btn_toolbar_menu);
+
+        btnUndo.setOnClickListener(v -> viewModel.backout());
+        btnReset.setOnClickListener(v -> viewModel.reset());
+        btnMenu.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.END));
+    }
+
+    @Override
+    public boolean onSupportNavigateUp() {
+        if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.END)) {
+            drawerLayout.closeDrawer(GravityCompat.END);
+            return true;
+        }
+        finish();
+        return true;
+    }
+
+    private void setupDrawer() {
+        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED, GravityCompat.END);
+        drawerLayout.addDrawerListener(new DrawerLayout.SimpleDrawerListener() {
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                if (drawerView.getId() == R.id.drawer_settings) {
+                    drawerView.scrollTo(0, 0);
+                }
+            }
+        });
+    }
+
+    private void setupPiano() {
+        pianoView.setSelectionMode(true);
+        pianoView.setOnKeyToggledListener(key -> viewModel.toggleKey(key));
+
+        pianoView.setOnScrollStateChangedListener(
+                (scrollX, contentWidth, viewportWidth) ->
+                        rangeOverviewView.updateViewport(scrollX, contentWidth, viewportWidth));
+        rangeOverviewView.setOnViewportScrollListener(pianoView::setKeyboardScrollX);
+    }
+
+    private void setupSettings() {
+        staffGClef.setClefType(StaffView.ClefType.TREBLE);
+        staffFClef.setClefType(StaffView.ClefType.BASS);
+
+        toggleGroupChordMode.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (chordModeProgrammatic || !isChecked) {
+                return;
+            }
+            viewModel.isChordFuncMode.setValue(checkedId == R.id.btn_mode_construct);
+        });
+
+        toggleGroupAccidental.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (accidentalProgrammatic || !isChecked) {
+                return;
+            }
+            applyAccidentalMode(checkedId == R.id.btn_accidental_flat);
+        });
+    }
+
+    private void setupActions() {
+        tvChordName.setOnClickListener(v -> {
+            Boolean constructMode = viewModel.isChordFuncMode.getValue();
+            if (constructMode != null && constructMode) {
+                showChordPickerDialog();
+            }
+        });
+
+        cardPlayChord.setOnClickListener(v -> playSelectedChord());
+    }
+
+    private void setupInitialScroll() {
+        pianoView.getViewTreeObserver().addOnGlobalLayoutListener(
+                new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        pianoView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        pianoView.scrollToMidiCenter(MIDI_CENTER_DEFAULT);
+                    }
+                });
+    }
+
+    private void observeViewModel() {
+        viewModel.selectedKeys.observe(this, keys -> {
+            pianoView.setSelectedKeys(keys);
+            staffGClef.setNotes(keys);
+            staffFClef.setNotes(keys);
+            updateRangeOverviewSelection(keys);
+        });
+
+        viewModel.chordText.observe(this, text -> tvChordName.setText(text));
+
+        viewModel.playChordNonce.observe(this, nonce -> playSelectedChord());
+
+        viewModel.isChordFuncMode.observe(this, constructMode -> {
+            boolean enabled = constructMode != null && constructMode;
+            int modeButtonId = enabled ? R.id.btn_mode_construct : R.id.btn_mode_detect;
+            if (toggleGroupChordMode.getCheckedButtonId() != modeButtonId) {
+                chordModeProgrammatic = true;
+                toggleGroupChordMode.check(modeButtonId);
+                chordModeProgrammatic = false;
+            }
+            textChordModeDesc.setText(
+                    enabled ? R.string.chord_mode_construct_desc : R.string.chord_mode_detect_desc);
+            updateChordNameInteractiveState(enabled);
+        });
+    }
+
+    private void playSelectedChord() {
+        List<String> keys = viewModel.selectedKeys.getValue();
+        if (keys != null && !keys.isEmpty()) {
+            pianoView.playChord(new ArrayList<>(keys));
+        }
+    }
+
+    private void updateChordNameInteractiveState(boolean constructMode) {
+        if (constructMode) {
+            tvChordName.setBackgroundResource(R.drawable.bg_manual_note_blue);
+            tvChordName.setClickable(true);
+            tvChordName.setFocusable(true);
+        } else {
+            tvChordName.setBackground(null);
+            tvChordName.setClickable(false);
+            tvChordName.setFocusable(false);
+        }
+    }
+
+    private void updateRangeOverviewSelection(List<String> keys) {
+        Set<Integer> midis = new HashSet<>(SlicePianoKeyboardView.midisFromKeyNames(keys));
+        rangeOverviewView.setActiveMidis(midis);
+    }
+
+    private void applyAccidentalMode(boolean useFlats) {
+        staffGClef.setUseFlats(useFlats);
+        staffFClef.setUseFlats(useFlats);
+        textAccidentalDesc.setText(
+                useFlats ? R.string.chord_accidental_flat_desc : R.string.chord_accidental_sharp_desc);
+        int accidentalButtonId = useFlats ? R.id.btn_accidental_flat : R.id.btn_accidental_sharp;
+        if (toggleGroupAccidental.getCheckedButtonId() != accidentalButtonId) {
+            accidentalProgrammatic = true;
+            toggleGroupAccidental.check(accidentalButtonId);
+            accidentalProgrammatic = false;
+        }
+    }
+
+    private void showChordPickerDialog() {
+        boolean useFlats = toggleGroupAccidental.getCheckedButtonId() == R.id.btn_accidental_flat;
+        new ChordPickerDialog(this, useFlats, chordName -> viewModel.generateChord(chordName)).show();
     }
 }

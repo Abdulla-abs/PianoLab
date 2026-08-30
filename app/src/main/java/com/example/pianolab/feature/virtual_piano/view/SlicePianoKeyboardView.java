@@ -19,9 +19,11 @@ import com.example.pianolab.feature.virtual_piano.engine.PianoSoundEngine;
 import com.example.pianolab.feature.virtual_piano.model.PianoKeyboardKey;
 import com.example.pianolab.feature.virtual_piano.model.PianoKeyboardLayout;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,6 +34,12 @@ import java.util.Set;
 public class SlicePianoKeyboardView extends View {
     private static final long SCROLL_ANIM_MS = 280L;
     private static final int COLOR_LABEL_WHITE = 0xFF727785;
+    private static final int COLOR_SELECTION_WHITE = 0x99FF9800;
+    private static final int COLOR_SELECTION_BLACK = 0x995400FF;
+
+    public interface OnKeyToggledListener {
+        void onKeyToggled(String keyName);
+    }
 
     public interface OnScrollStateChangedListener {
         void onScrollStateChanged(float scrollX, float contentWidth, float viewportWidth);
@@ -44,11 +52,17 @@ public class SlicePianoKeyboardView extends View {
     private final PianoKeyboardLayout layout = new PianoKeyboardLayout();
     private final PianoSoundEngine soundEngine;
     private final Paint whiteLabelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint selectionWhitePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint selectionBlackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final SparseIntArray pointerToMidi = new SparseIntArray();
     private final SparseArray<Drawable> drawableCache = new SparseArray<>();
     private final Set<Integer> activeMidiNotes = new HashSet<>();
+    private final Set<Integer> selectedMidiNotes = new HashSet<>();
     private final Map<Integer, Integer> midiRefCount = new HashMap<>();
 
+    private boolean selectionMode;
+    private String lastToggledKeyName;
+    private OnKeyToggledListener keyToggledListener;
     private float keyScale = 1f;
     private float scrollX;
     private float maxScrollX;
@@ -72,6 +86,10 @@ public class SlicePianoKeyboardView extends View {
         soundEngine = new PianoSoundEngine(context);
         whiteLabelPaint.setColor(COLOR_LABEL_WHITE);
         whiteLabelPaint.setTextAlign(Paint.Align.CENTER);
+        selectionWhitePaint.setStyle(Paint.Style.FILL);
+        selectionWhitePaint.setColor(COLOR_SELECTION_WHITE);
+        selectionBlackPaint.setStyle(Paint.Style.FILL);
+        selectionBlackPaint.setColor(COLOR_SELECTION_BLACK);
         setClickable(true);
         setFocusable(true);
     }
@@ -84,6 +102,49 @@ public class SlicePianoKeyboardView extends View {
     public void setOnActiveKeysChangedListener(@Nullable OnActiveKeysChangedListener listener) {
         activeKeysListener = listener;
         notifyActiveKeysChanged();
+    }
+
+    public void setOnKeyToggledListener(@Nullable OnKeyToggledListener listener) {
+        keyToggledListener = listener;
+    }
+
+    public void setSelectionMode(boolean enabled) {
+        selectionMode = enabled;
+        if (enabled) {
+            clearActivePointers();
+        }
+        invalidate();
+    }
+
+    public void setSelectedKeys(@Nullable List<String> keyNames) {
+        stopChordPlayback();
+        if (keyNames == null || keyNames.isEmpty()) {
+            if (lastToggledKeyName != null) {
+                soundEngine.onKeyUp(lastToggledKeyName, 0);
+                lastToggledKeyName = null;
+            }
+        }
+        selectedMidiNotes.clear();
+        if (keyNames != null) {
+            for (String keyName : keyNames) {
+                int midi = midiFromKeyName(keyName);
+                if (midi != -1) {
+                    selectedMidiNotes.add(midi);
+                }
+            }
+        }
+        invalidate();
+    }
+
+    public void playChord(@Nullable List<String> keyNames) {
+        if (keyNames == null || keyNames.isEmpty()) {
+            return;
+        }
+        soundEngine.playChord(keyNames);
+    }
+
+    public void stopChordPlayback() {
+        soundEngine.stopChordPlayback();
     }
 
     public void setKeyboardScrollX(float target) {
@@ -230,8 +291,17 @@ public class SlicePianoKeyboardView extends View {
         for (PianoKeyboardKey key : layout.getWhiteKeys()) {
             drawKey(canvas, key);
         }
+
+        if (selectionMode) {
+            drawWhiteSelectionHighlights(canvas);
+        }
+
         for (PianoKeyboardKey key : layout.getBlackKeys()) {
             drawKey(canvas, key);
+        }
+
+        if (selectionMode) {
+            drawBlackSelectionHighlights(canvas);
         }
 
         if (showPitchNames) {
@@ -263,8 +333,24 @@ public class SlicePianoKeyboardView extends View {
         canvas.drawText(key.label, cx, baseline, paint);
     }
 
+    private void drawWhiteSelectionHighlights(Canvas canvas) {
+        for (PianoKeyboardKey key : layout.getWhiteKeys()) {
+            if (selectedMidiNotes.contains(key.midi)) {
+                canvas.drawRect(key.bounds, selectionWhitePaint);
+            }
+        }
+    }
+
+    private void drawBlackSelectionHighlights(Canvas canvas) {
+        for (PianoKeyboardKey key : layout.getBlackKeys()) {
+            if (selectedMidiNotes.contains(key.midi)) {
+                canvas.drawRect(key.bounds, selectionBlackPaint);
+            }
+        }
+    }
+
     private void drawKey(Canvas canvas, PianoKeyboardKey key) {
-        boolean pressed = activeMidiNotes.contains(key.midi);
+        boolean pressed = !selectionMode && activeMidiNotes.contains(key.midi);
         int resId = pressed ? key.pitch.pressedRes : key.pitch.normalRes;
         Drawable drawable = getCachedDrawable(resId);
         if (drawable == null) {
@@ -296,6 +382,10 @@ public class SlicePianoKeyboardView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         if (!layoutReady) {
             return super.onTouchEvent(event);
+        }
+
+        if (selectionMode) {
+            return handleSelectionTouch(event);
         }
 
         final int action = event.getActionMasked();
@@ -336,11 +426,44 @@ public class SlicePianoKeyboardView extends View {
         }
 
         if (action == MotionEvent.ACTION_CANCEL) {
-            releaseAllPointers();
+            clearActivePointers();
             return true;
         }
 
         return super.onTouchEvent(event);
+    }
+
+    private boolean handleSelectionTouch(MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            performClick();
+            PianoKeyboardKey hit = hitTest(event.getX(), event.getY());
+            if (hit != null) {
+                toggleSelectedKey(hit);
+            }
+            return true;
+        }
+        return true;
+    }
+
+    private void toggleSelectedKey(PianoKeyboardKey key) {
+        stopChordPlayback();
+        if (lastToggledKeyName != null) {
+            soundEngine.onKeyUp(lastToggledKeyName, 0);
+            lastToggledKeyName = null;
+        }
+
+        if (selectedMidiNotes.contains(key.midi)) {
+            selectedMidiNotes.remove(key.midi);
+        } else {
+            selectedMidiNotes.add(key.midi);
+            soundEngine.onKeyDown(key.soundKeyName, 0);
+            lastToggledKeyName = key.soundKeyName;
+        }
+
+        if (keyToggledListener != null) {
+            keyToggledListener.onKeyToggled(key.soundKeyName);
+        }
+        invalidate();
     }
 
     private void handlePointerDown(int pointerId, float x, float y) {
@@ -383,7 +506,7 @@ public class SlicePianoKeyboardView extends View {
         }
     }
 
-    private void releaseAllPointers() {
+    private void clearActivePointers() {
         for (int i = 0; i < pointerToMidi.size(); i++) {
             int pointerId = pointerToMidi.keyAt(i);
             int midi = pointerToMidi.valueAt(i);
@@ -395,9 +518,13 @@ public class SlicePianoKeyboardView extends View {
         pointerToMidi.clear();
         activeMidiNotes.clear();
         midiRefCount.clear();
-        soundEngine.releaseAll();
         invalidate();
         notifyActiveKeysChanged();
+    }
+
+    private void releaseAllPointers() {
+        clearActivePointers();
+        soundEngine.releaseAll();
     }
 
     private PianoKeyboardKey hitTest(float viewX, float viewY) {
@@ -425,6 +552,35 @@ public class SlicePianoKeyboardView extends View {
 
     private static float clamp(float value, float min, float max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    private static int midiFromKeyName(String keyName) {
+        if (keyName == null || !keyName.startsWith("key")) {
+            return -1;
+        }
+        int underscore = keyName.indexOf('_');
+        if (underscore <= 3) {
+            return -1;
+        }
+        try {
+            return Integer.parseInt(keyName.substring(3, underscore)) + 20;
+        } catch (NumberFormatException ignored) {
+            return -1;
+        }
+    }
+
+    public static List<Integer> midisFromKeyNames(@Nullable List<String> keyNames) {
+        List<Integer> midis = new ArrayList<>();
+        if (keyNames == null) {
+            return midis;
+        }
+        for (String keyName : keyNames) {
+            int midi = midiFromKeyName(keyName);
+            if (midi != -1) {
+                midis.add(midi);
+            }
+        }
+        return midis;
     }
 
     @Override
