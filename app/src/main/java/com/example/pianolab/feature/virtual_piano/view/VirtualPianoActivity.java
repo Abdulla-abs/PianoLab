@@ -1,134 +1,216 @@
-// java
 package com.example.pianolab.feature.virtual_piano.view;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
-import android.widget.HorizontalScrollView;
 import android.widget.ImageButton;
-import android.widget.SeekBar;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.pianolab.R;
 import com.example.pianolab.feature.virtual_piano.viewmodel.VirtualPianoViewModel;
 import com.example.pianolab.utils.ImmersiveUiHelper;
-import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.materialswitch.MaterialSwitch;
+import com.google.android.material.slider.Slider;
 
-/**
- * 横屏 Activity：显示可滑动的 88 键钢琴（用滑块同步滚动）
- */
 public class VirtualPianoActivity extends AppCompatActivity {
-    private static final String TAG = "VirtualPianoActivity";
-    private SeekBar seekBar;
-    private HorizontalScrollView hsPiano;
-    private PianoView pianoView;
+    private static final int MIDI_CENTER_DEFAULT = 60;
+
+    private SlicePianoKeyboardView pianoView;
     private VirtualPianoViewModel viewModel;
-    private ImageButton buttonBack;
-    private SwitchMaterial switchShowNote;
-    private SwitchMaterial switchSustain;
-    private static final String DEFAULT_CENTER_KEY = "key45_white";
+    private DrawerLayout drawerLayout;
+    private MaterialSwitch switchShowNote;
+    private MaterialSwitch switchSustain;
+    private Slider sliderKeyScale;
 
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    private boolean noteProgrammatic = false;
+    private boolean sustainProgrammatic = false;
+    private boolean keyScaleProgrammatic = false;
 
-        supportRequestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
-        if (getSupportActionBar() != null) getSupportActionBar().hide();
-        setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+  @Override
+  protected void onCreate(@Nullable Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    ImmersiveUiHelper.enableImmersiveMode(getWindow());
+    setContentView(R.layout.activity_virtual_piano);
+    ImmersiveUiHelper.suppressSystemBarInsets(findViewById(R.id.drawer_layout));
 
-        setContentView(R.layout.activity_virtual_piano);
-        ImmersiveUiHelper.enableImmersiveMode(getWindow());
+    viewModel = new ViewModelProvider(this).get(VirtualPianoViewModel.class);
 
-        seekBar = findViewById(R.id.seekBar);
-        hsPiano = findViewById(R.id.hs_piano);
-        pianoView = findViewById(R.id.piano_view);
-        buttonBack = findViewById(R.id.button_back);
-        buttonBack.setOnClickListener(v -> finish());
-        viewModel = new ViewModelProvider(this).get(VirtualPianoViewModel.class);
+    drawerLayout = findViewById(R.id.drawer_layout);
+    pianoView = findViewById(R.id.piano_view);
+    switchShowNote = findViewById(R.id.switch_show_note);
+    switchSustain = findViewById(R.id.switch_sustain);
+    sliderKeyScale = findViewById(R.id.slider_key_scale);
 
-        switchShowNote = findViewById(R.id.switch_show_note);
-        switchShowNote.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            Boolean current = viewModel.getShowNoteNames().getValue();
-            if (current != null && current == isChecked) return;
-            viewModel.setShowNoteNames(isChecked);
-        });
+    setupToolbar();
+    setupDrawer();
+    setupScrollButtons();
+    setupNoteSwitch();
+    setupSustainSwitch();
+    setupKeyScaleSlider();
+    setupInitialScroll();
+    observeViewModel();
 
-        switchSustain = findViewById(R.id.switch_sustain);
-        switchSustain.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            Boolean current = viewModel.getSustainEnabled().getValue();
-            if (current != null && current == isChecked) return;
-            viewModel.setSustainEnabled(isChecked);
-        });
-
-        viewModel.getShowNoteNames().observe(this, show -> {
-           boolean showNames = show == null || show;
-            if (switchShowNote.isChecked() != showNames) {
-                switchShowNote.setChecked(showNames);
-            }
-            pianoView.setShowPitchNames(showNames);
-        });
-
-        viewModel.getSustainEnabled().observe(this, enabled -> {
-            boolean sustain = enabled != null && enabled;
-            if (switchSustain.isChecked() != sustain) {
-                switchSustain.setChecked(sustain);
-            }
-            pianoView.setSustainEnabled(sustain);
-        });
-
-        hsPiano.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                try {
-                    hsPiano.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                    int contentW = pianoView.getContentWidth();
-                    int visibleW = hsPiano.getWidth();
-                    int maxScroll = Math.max(0, contentW - visibleW);
-                    seekBar.setMax(maxScroll);
-
-                    seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                        @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                            if (fromUser) {
-                                hsPiano.scrollTo(progress, 0);
-                            }
-                        }
-                        @Override public void onStartTrackingTouch(SeekBar seekBar) { }
-                        @Override public void onStopTrackingTouch(SeekBar seekBar) { }
-                    });
-
-                    hsPiano.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-                        seekBar.setProgress(scrollX);
-                    });
-
-                    int centerX = pianoView.getKeyCenterX(DEFAULT_CENTER_KEY);
-                    int initialScroll = Math.max(0, centerX - visibleW / 2);
-                    initialScroll = Math.min(initialScroll, maxScroll);
-                    hsPiano.scrollTo(initialScroll, 0);
-                    seekBar.setProgress(initialScroll);
-                } catch (Exception e) {
-                    Log.e(TAG, "onGlobalLayout error", e);
+    getOnBackPressedDispatcher()
+        .addCallback(
+            this,
+            new OnBackPressedCallback(true) {
+              @Override
+              public void handleOnBackPressed() {
+                if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
+                  drawerLayout.closeDrawer(GravityCompat.END);
+                } else {
+                  setEnabled(false);
+                  getOnBackPressedDispatcher().onBackPressed();
                 }
+              }
+            });
+  }
 
-                pianoView.post(() -> {
-                    try {
-                        pianoView.debugValidateInitKeyHitTest();
-                    } catch (Exception e) {
-                        Log.e(TAG, "debugValidateInitKeyHitTest error", e);
-                    }
-                });
+  @Override
+  public void onWindowFocusChanged(boolean hasFocus) {
+    super.onWindowFocusChanged(hasFocus);
+    if (hasFocus) {
+      ImmersiveUiHelper.applyImmersiveSystemUi(getWindow());
+    }
+  }
+
+  private void setupToolbar() {
+    MaterialToolbar toolbar = findViewById(R.id.toolbar);
+    setSupportActionBar(toolbar);
+    if (getSupportActionBar() != null) {
+      getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+      getSupportActionBar().setDisplayShowHomeEnabled(true);
+    }
+
+    ImageButton btnMenu = findViewById(R.id.btn_toolbar_menu);
+    btnMenu.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.END));
+  }
+
+  @Override
+  public boolean onSupportNavigateUp() {
+    if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.END)) {
+      drawerLayout.closeDrawer(GravityCompat.END);
+      return true;
+    }
+    finish();
+    return true;
+  }
+
+  private void setupDrawer() {
+    drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED, GravityCompat.END);
+    drawerLayout.addDrawerListener(
+        new DrawerLayout.SimpleDrawerListener() {
+          @Override
+          public void onDrawerClosed(View drawerView) {
+            if (drawerView.getId() == R.id.drawer_settings) {
+              drawerView.scrollTo(0, 0);
             }
+          }
         });
-    }
+  }
 
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) {
-            ImmersiveUiHelper.applyImmersiveSystemUi(getWindow());
-        }
-    }
+  private void setupScrollButtons() {
+    findViewById(R.id.btn_scroll_left)
+        .setOnClickListener(v -> pianoView.animateScrollByOctaves(-1));
+    findViewById(R.id.btn_scroll_right)
+        .setOnClickListener(v -> pianoView.animateScrollByOctaves(1));
+  }
+
+  private void setupNoteSwitch() {
+    switchShowNote.setOnCheckedChangeListener(
+        (buttonView, isChecked) -> {
+          if (noteProgrammatic) {
+            return;
+          }
+          viewModel.setShowNoteNames(isChecked);
+        });
+  }
+
+  private void setupSustainSwitch() {
+    switchSustain.setOnCheckedChangeListener(
+        (buttonView, isChecked) -> {
+          if (sustainProgrammatic) {
+            return;
+          }
+          viewModel.setSustainEnabled(isChecked);
+        });
+  }
+
+  private void setupKeyScaleSlider() {
+    sliderKeyScale.addOnChangeListener(
+        (slider, value, fromUser) -> {
+          if (!fromUser || keyScaleProgrammatic) {
+            return;
+          }
+          viewModel.setKeyScale(value);
+        });
+  }
+
+  private void setupInitialScroll() {
+    pianoView
+        .getViewTreeObserver()
+        .addOnGlobalLayoutListener(
+            new ViewTreeObserver.OnGlobalLayoutListener() {
+              @Override
+              public void onGlobalLayout() {
+                pianoView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                pianoView.scrollToMidiCenter(MIDI_CENTER_DEFAULT);
+              }
+            });
+  }
+
+  private void observeViewModel() {
+    viewModel
+        .getShowNoteNames()
+        .observe(
+            this,
+            show -> {
+              boolean showNames = show == null || show;
+              if (switchShowNote.isChecked() != showNames) {
+                noteProgrammatic = true;
+                switchShowNote.setChecked(showNames);
+                noteProgrammatic = false;
+              }
+              pianoView.setShowPitchNames(showNames);
+            });
+
+    viewModel
+        .getSustainEnabled()
+        .observe(
+            this,
+            enabled -> {
+              boolean sustain = enabled != null && enabled;
+              if (switchSustain.isChecked() != sustain) {
+                sustainProgrammatic = true;
+                switchSustain.setChecked(sustain);
+                sustainProgrammatic = false;
+              }
+              pianoView.setSustainEnabled(sustain);
+            });
+
+    viewModel
+        .getKeyScale()
+        .observe(
+            this,
+            scale -> {
+              if (scale == null) {
+                return;
+              }
+              if (Math.abs(pianoView.getKeyScale() - scale) > 0.001f) {
+                pianoView.setKeyScale(scale);
+              }
+              if (Math.abs(sliderKeyScale.getValue() - scale) > 0.001f) {
+                keyScaleProgrammatic = true;
+                sliderKeyScale.setValue(scale);
+                keyScaleProgrammatic = false;
+              }
+            });
+  }
 }

@@ -37,7 +37,12 @@
             android:name="com.example.pianolab.feature.virtual_piano.view.VirtualPianoActivity"
             android:exported="false"
             android:theme="@style/Theme.PianoLab.Tool"
-            android:parentActivityName="com.example.pianolab.feature.home.view.HomeActivity" />
+            android:parentActivityName="com.example.pianolab.feature.home.view.HomeActivity"
+            android:screenOrientation="sensorLandscape">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.example.pianolab.feature.home.view.HomeActivity" />
+        </activity>
 
         <activity
             android:name="com.example.pianolab.feature.tuner.view.TunerActivity"

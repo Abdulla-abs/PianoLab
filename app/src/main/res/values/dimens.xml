@@ -7,4 +7,5 @@
     <dimen name="card_corner_radius">24dp</dimen>
     <dimen name="button_corner_radius">999dp</dimen>
     <dimen name="beat_bottom_sheet_peek_height">380dp</dimen>
+    <dimen name="virtual_piano_drawer_width">320dp</dimen>
 </resources>

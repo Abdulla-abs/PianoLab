@@ -65,6 +65,15 @@ public final class ImmersiveUiHelper {
     }
 
     /**
+     * 阻止系统栏 insets 向下传递，避免内容随状态栏显隐产生 padding 或布局抖动。
+     * 配合 {@link #enableImmersiveMode(Window)} 与 {@link #applyImmersiveSystemUi(Window)} 使用。
+     */
+    public static void suppressSystemBarInsets(@NonNull View view) {
+        ViewCompat.setOnApplyWindowInsetsListener(
+                view, (v, windowInsets) -> WindowInsetsCompat.CONSUMED);
+    }
+
+    /**
      * 在 {@link android.app.Activity#onWindowFocusChanged(boolean)} 中调用，确保从系统栏返回后仍保持沉浸。
      */
     public static void applyImmersiveSystemUi(@NonNull Window window) {

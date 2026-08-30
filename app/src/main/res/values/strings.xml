@@ -104,6 +104,13 @@
     <string name="emphasize_heavy">强调重拍</string>
     <string name="tenuto">延音</string>
     <string name="pitch_name">音名</string>
+    <string name="virtual_piano_open_settings">打开设置</string>
+    <string name="virtual_piano_settings_title">钢琴设置</string>
+    <string name="virtual_piano_section_display">显示</string>
+    <string name="virtual_piano_section_keyboard">键盘</string>
+    <string name="virtual_piano_key_size">琴键大小</string>
+    <string name="virtual_piano_scroll_left">向左滚动键盘</string>
+    <string name="virtual_piano_scroll_right">向右滚动键盘</string>
     <string name="detect_chord">检测和弦</string>
     <string name="construct_chord">构造和弦</string>
     <string name="accidental_mode">升降模式</string>
