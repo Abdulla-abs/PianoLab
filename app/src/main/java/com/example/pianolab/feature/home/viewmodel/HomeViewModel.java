@@ -29,7 +29,7 @@ public class HomeViewModel extends ViewModel {
             R.drawable.ic_feature_beat,
             R.string.home_feature_metronome,
             R.string.home_feature_metronome_desc,
-            R.drawable.bg_feature_card_primary,
+            R.drawable.bg_feature_card_primary_ripple,
             R.drawable.bg_feature_icon_circle_primary,
             R.color.md_theme_light_onPrimaryFixedVariant,
             BeatActivity.class));
@@ -39,7 +39,7 @@ public class HomeViewModel extends ViewModel {
             R.drawable.ic_feature_piano,
             R.string.home_feature_piano,
             R.string.home_feature_piano_desc,
-            R.drawable.bg_feature_card_tertiary,
+            R.drawable.bg_feature_card_tertiary_ripple,
             R.drawable.bg_feature_icon_circle_tertiary,
             R.color.md_theme_light_tertiary,
             VirtualPianoActivity.class));
@@ -49,7 +49,7 @@ public class HomeViewModel extends ViewModel {
             R.drawable.ic_feature_tuner,
             R.string.home_feature_tuner,
             R.string.home_feature_tuner_desc,
-            R.drawable.bg_feature_card_error,
+            R.drawable.bg_feature_card_error_ripple,
             R.drawable.bg_feature_icon_circle_error,
             R.color.md_theme_light_error,
             TunerActivity.class));
@@ -59,7 +59,7 @@ public class HomeViewModel extends ViewModel {
             R.drawable.ic_feature_chord,
             R.string.home_feature_chord,
             R.string.home_feature_chord_desc,
-            R.drawable.bg_feature_card_secondary,
+            R.drawable.bg_feature_card_secondary_ripple,
             R.drawable.bg_feature_icon_circle_secondary,
             R.color.md_theme_light_secondary,
             ChordActivity.class));

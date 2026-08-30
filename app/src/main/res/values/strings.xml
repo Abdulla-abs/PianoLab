@@ -108,8 +108,7 @@
 
     <!-- Home screen -->
     <string name="home_subtitle">Your Professional Piano Toolkit</string>
-    <string name="home_version_badge">v%1$s Material</string>
-    <string name="home_settings">设置</string>
+    <string name="home_version_badge">Design by KhasAlushird</string>
     <string name="home_app_logo">PianoLab 标志</string>
     <string name="home_feature_metronome">节拍器</string>
     <string name="home_feature_metronome_desc">视觉与听觉节拍提示</string>

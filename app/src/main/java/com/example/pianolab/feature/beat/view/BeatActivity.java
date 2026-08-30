@@ -624,11 +624,19 @@ public class BeatActivity extends AppCompatActivity {
   }
 
   @Override
+  protected void onStop() {
+    super.onStop();
+    if (!isChangingConfigurations() && viewModel != null) {
+      viewModel.stop();
+    }
+  }
+
+  @Override
   protected void onDestroy() {
-    super.onDestroy();
     if (countdownTimer != null) {
       countdownTimer.cancel();
       countdownTimer = null;
     }
+    super.onDestroy();
   }
 }

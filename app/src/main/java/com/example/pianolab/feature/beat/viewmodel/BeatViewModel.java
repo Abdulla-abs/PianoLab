@@ -211,7 +211,8 @@ public class BeatViewModel extends AndroidViewModel {
 
     @Override
     protected void onCleared() {
-        super.onCleared();
+        stop();
         engine.release();
+        super.onCleared();
     }
 }

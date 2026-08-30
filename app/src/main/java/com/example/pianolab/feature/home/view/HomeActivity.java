@@ -1,6 +1,5 @@
 package com.example.pianolab.feature.home.view;
 
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.databinding.DataBindingUtil;
@@ -31,14 +30,7 @@ public class HomeActivity extends AppCompatActivity {
   }
 
   private void initVersionBadge() {
-    String versionName = "1.0";
-    try {
-      versionName =
-          getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-    } catch (PackageManager.NameNotFoundException ignored) {
-      // Keep default version label.
-    }
-    binding.tvVersionBadge.setText(getString(R.string.home_version_badge, versionName));
+    binding.tvVersionBadge.setText(R.string.home_version_badge);
   }
 
   private void initRecyclerView() {
