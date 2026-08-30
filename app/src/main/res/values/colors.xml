@@ -67,6 +67,7 @@
     <color name="tuner_cursor_green">#4CAF50</color>
     <color name="tuner_cursor_yellow">#FFC107</color>
     <color name="tuner_cursor_red">#F44336</color>
+    <color name="tuner_in_tune_zone">#264CAF50</color>
 
     <!-- Legacy template aliases -->
     <color name="purple_200">@color/md_theme_light_tertiaryFixedDim</color>

@@ -27,6 +27,28 @@
     <string name="tuner_note_name">音名</string>
     <string name="tuner_accidental">升降号</string>
     <string name="tuner_octave">八度</string>
+    <string name="tuner_setting_auto_detect_desc">锁定最近琴键频率</string>
+    <string name="tuner_setting_auto_stop_desc">静音时门限自动过滤</string>
+    <string name="tuner_status_signal_ready">信号源就绪</string>
+    <string name="tuner_status_signal_active">信号采集开</string>
+    <string name="tuner_ref_freq_a4">基准频率 (A4)</string>
+    <string name="tuner_freq_440">440 Hz</string>
+    <string name="tuner_freq_442">442 Hz</string>
+    <string name="tuner_start_mic">开启麦克风调音</string>
+    <string name="tuner_oscilloscope_idle">示波器静音门限关</string>
+    <string name="tuner_meter_placeholder">音准刻度区</string>
+    <string name="tuner_keyboard_placeholder">钢琴键盘区</string>
+    <string name="tuner_deviation_signed">偏差: %1$+.1f 音分</string>
+    <string name="tuner_status_chip">调音状态</string>
+    <string name="tuner_desc_meter">音准表盘</string>
+    <string name="tuner_desc_waveform">波形监视</string>
+    <string name="tuner_desc_keyboard">钢琴交互键盘区</string>
+    <string name="tuner_open_settings">打开设置</string>
+    <string name="tuner_label_ref_freq">参考频率</string>
+    <string name="tuner_label_measured_freq">测量频率</string>
+    <string name="tuner_label_deviation">偏差音分</string>
+    <string name="tuner_freq_hz_value">%1$.2f Hz</string>
+    <string name="tuner_cents_value">%1$+.1f 音分</string>
     <string name="select_special_rhythm">选择特殊节奏型</string>
 
     <string name="beat_switch_tone">切换音色</string>
@@ -130,6 +152,18 @@
     <string name="stop">停止</string>
     <string name="start">开始</string>
 
-
+    <string-array name="tuner_meter_ticks">
+        <item>-50</item>
+        <item>-40</item>
+        <item>-30</item>
+        <item>-20</item>
+        <item>-10</item>
+        <item>0</item>
+        <item>+10</item>
+        <item>+20</item>
+        <item>+30</item>
+        <item>+40</item>
+        <item>+50</item>
+    </string-array>
 
 </resources>
