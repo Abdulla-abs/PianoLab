@@ -3,6 +3,7 @@ package com.example.pianolab.feature.virtual_piano.view;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.SparseArray;
@@ -17,8 +18,8 @@ import androidx.core.content.ContextCompat;
 import com.example.pianolab.feature.virtual_piano.engine.PianoSoundEngine;
 import com.example.pianolab.feature.virtual_piano.model.PianoKeyboardKey;
 import com.example.pianolab.feature.virtual_piano.model.PianoKeyboardLayout;
-import com.example.pianolab.feature.virtual_piano.model.PianoPitch;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -29,11 +30,20 @@ import java.util.Set;
  * animated horizontal scrolling, and multi-touch playback via {@link PianoSoundEngine}.
  */
 public class SlicePianoKeyboardView extends View {
-    private static final int MIDI_CENTER_DEFAULT = 60; // Middle C
     private static final long SCROLL_ANIM_MS = 280L;
+    private static final int COLOR_LABEL_WHITE = 0xFF727785;
+
+    public interface OnScrollStateChangedListener {
+        void onScrollStateChanged(float scrollX, float contentWidth, float viewportWidth);
+    }
+
+    public interface OnActiveKeysChangedListener {
+        void onActiveKeysChanged(Set<Integer> activeMidiNotes);
+    }
 
     private final PianoKeyboardLayout layout = new PianoKeyboardLayout();
     private final PianoSoundEngine soundEngine;
+    private final Paint whiteLabelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final SparseIntArray pointerToMidi = new SparseIntArray();
     private final SparseArray<Drawable> drawableCache = new SparseArray<>();
     private final Set<Integer> activeMidiNotes = new HashSet<>();
@@ -46,6 +56,8 @@ public class SlicePianoKeyboardView extends View {
     private boolean sustainEnabled = false;
     private boolean layoutReady;
     private ValueAnimator scrollAnimator;
+    private OnScrollStateChangedListener scrollStateListener;
+    private OnActiveKeysChangedListener activeKeysListener;
 
     public SlicePianoKeyboardView(Context context) {
         this(context, null);
@@ -58,8 +70,24 @@ public class SlicePianoKeyboardView extends View {
     public SlicePianoKeyboardView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         soundEngine = new PianoSoundEngine(context);
+        whiteLabelPaint.setColor(COLOR_LABEL_WHITE);
+        whiteLabelPaint.setTextAlign(Paint.Align.CENTER);
         setClickable(true);
         setFocusable(true);
+    }
+
+    public void setOnScrollStateChangedListener(@Nullable OnScrollStateChangedListener listener) {
+        scrollStateListener = listener;
+        notifyScrollStateChanged();
+    }
+
+    public void setOnActiveKeysChangedListener(@Nullable OnActiveKeysChangedListener listener) {
+        activeKeysListener = listener;
+        notifyActiveKeysChanged();
+    }
+
+    public void setKeyboardScrollX(float target) {
+        setScrollXImmediate(target);
     }
 
     public void setKeyScale(float scale) {
@@ -93,6 +121,10 @@ public class SlicePianoKeyboardView extends View {
         return Math.round(layout.getContentWidth());
     }
 
+    public float getKeyboardScrollX() {
+        return scrollX;
+    }
+
     public int getKeyCenterX(int midi) {
         PianoKeyboardKey key = layout.findByMidi(midi);
         if (key == null) {
@@ -114,10 +146,6 @@ public class SlicePianoKeyboardView extends View {
         animateScrollTo(scrollX + delta);
     }
 
-    public void animateScrollByOctaves(int octaveDelta) {
-        animateScrollBy(layout.getOctaveWidth() * octaveDelta);
-    }
-
     public void animateScrollByViewportFraction(float fraction) {
         int width = getWidth();
         if (width <= 0) {
@@ -136,35 +164,47 @@ public class SlicePianoKeyboardView extends View {
             scrollAnimator.cancel();
         }
         if (Math.abs(clampedTarget - scrollX) < 1f) {
-            scrollX = clampedTarget;
-            invalidate();
+            setScrollXImmediate(clampedTarget);
             return;
         }
         scrollAnimator = ValueAnimator.ofFloat(scrollX, clampedTarget);
         scrollAnimator.setDuration(SCROLL_ANIM_MS);
         scrollAnimator.setInterpolator(new DecelerateInterpolator());
         scrollAnimator.addUpdateListener(
-                animation -> {
-                    scrollX = (float) animation.getAnimatedValue();
-                    invalidate();
-                });
+                animation -> setScrollXImmediate((float) animation.getAnimatedValue()));
         scrollAnimator.start();
     }
 
     private void setScrollXImmediate(float target) {
-        if (scrollAnimator != null) {
-            scrollAnimator.cancel();
-        }
         scrollX = clamp(target, 0f, maxScrollX);
         invalidate();
+        notifyScrollStateChanged();
     }
 
     private void rebuildLayout() {
-        float gapPx = dp(2f);
-        layout.layout(getHeight(), keyScale, gapPx);
+        if (getWidth() <= 0 || getHeight() <= 0) {
+            layoutReady = false;
+            return;
+        }
+        layout.layout(getHeight(), keyScale, dp(2f));
         maxScrollX = Math.max(0f, layout.getContentWidth() - getWidth());
         clampScroll();
-        layoutReady = getWidth() > 0 && getHeight() > 0;
+        layoutReady = true;
+        notifyScrollStateChanged();
+    }
+
+    private void notifyScrollStateChanged() {
+        if (scrollStateListener == null || !layoutReady) {
+            return;
+        }
+        scrollStateListener.onScrollStateChanged(scrollX, layout.getContentWidth(), getWidth());
+    }
+
+    private void notifyActiveKeysChanged() {
+        if (activeKeysListener == null) {
+            return;
+        }
+        activeKeysListener.onActiveKeysChanged(Collections.unmodifiableSet(new HashSet<>(activeMidiNotes)));
     }
 
     private void clampScroll() {
@@ -194,7 +234,33 @@ public class SlicePianoKeyboardView extends View {
             drawKey(canvas, key);
         }
 
+        if (showPitchNames) {
+            drawNoteLabels(canvas);
+        }
+
         canvas.restore();
+    }
+
+    private void drawNoteLabels(Canvas canvas) {
+        float textSize = Math.max(sp(12f), layout.getWhiteKeyHeight() * 0.08f);
+        whiteLabelPaint.setTextSize(textSize);
+        Paint.FontMetrics whiteFm = whiteLabelPaint.getFontMetrics();
+
+        for (PianoKeyboardKey key : layout.getWhiteKeys()) {
+            drawKeyLabel(canvas, key, whiteLabelPaint, whiteFm, 0.12f);
+        }
+    }
+
+    private void drawKeyLabel(
+            Canvas canvas,
+            PianoKeyboardKey key,
+            Paint paint,
+            Paint.FontMetrics fontMetrics,
+            float bottomPaddingFraction) {
+        float cx = key.bounds.centerX();
+        float baseline =
+                key.bounds.bottom - key.bounds.height() * bottomPaddingFraction - fontMetrics.bottom;
+        canvas.drawText(key.label, cx, baseline, paint);
     }
 
     private void drawKey(Canvas canvas, PianoKeyboardKey key) {
@@ -209,7 +275,7 @@ public class SlicePianoKeyboardView extends View {
                 Math.round(key.bounds.top),
                 Math.round(key.bounds.right),
                 Math.round(key.bounds.bottom));
-        drawable.setAlpha(showPitchNames ? 255 : 235);
+        drawable.setAlpha(255);
         drawable.draw(canvas);
     }
 
@@ -291,6 +357,7 @@ public class SlicePianoKeyboardView extends View {
             activeMidiNotes.add(key.midi);
             soundEngine.onKeyDown(key.soundKeyName, pointerId);
             invalidate();
+            notifyActiveKeysChanged();
         }
         midiRefCount.put(key.midi, count + 1);
     }
@@ -310,6 +377,7 @@ public class SlicePianoKeyboardView extends View {
                 soundEngine.onKeyUp(key.soundKeyName, pointerId);
             }
             invalidate();
+            notifyActiveKeysChanged();
         } else {
             midiRefCount.put(midi, next);
         }
@@ -329,6 +397,7 @@ public class SlicePianoKeyboardView extends View {
         midiRefCount.clear();
         soundEngine.releaseAll();
         invalidate();
+        notifyActiveKeysChanged();
     }
 
     private PianoKeyboardKey hitTest(float viewX, float viewY) {
@@ -348,6 +417,10 @@ public class SlicePianoKeyboardView extends View {
 
     private float dp(float value) {
         return value * getResources().getDisplayMetrics().density;
+    }
+
+    private float sp(float value) {
+        return value * getResources().getDisplayMetrics().scaledDensity;
     }
 
     private static float clamp(float value, float min, float max) {

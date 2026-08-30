@@ -109,8 +109,7 @@
     <string name="virtual_piano_section_display">显示</string>
     <string name="virtual_piano_section_keyboard">键盘</string>
     <string name="virtual_piano_key_size">琴键大小</string>
-    <string name="virtual_piano_scroll_left">向左滚动键盘</string>
-    <string name="virtual_piano_scroll_right">向右滚动键盘</string>
+    <string name="virtual_piano_range_overview">键盘音域范围预览</string>
     <string name="detect_chord">检测和弦</string>
     <string name="construct_chord">构造和弦</string>
     <string name="accidental_mode">升降模式</string>

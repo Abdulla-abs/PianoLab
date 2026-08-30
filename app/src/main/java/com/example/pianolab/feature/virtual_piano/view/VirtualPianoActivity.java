@@ -23,6 +23,7 @@ public class VirtualPianoActivity extends AppCompatActivity {
     private static final int MIDI_CENTER_DEFAULT = 60;
 
     private SlicePianoKeyboardView pianoView;
+    private PianoRangeOverviewView rangeOverviewView;
     private VirtualPianoViewModel viewModel;
     private DrawerLayout drawerLayout;
     private MaterialSwitch switchShowNote;
@@ -44,13 +45,14 @@ public class VirtualPianoActivity extends AppCompatActivity {
 
     drawerLayout = findViewById(R.id.drawer_layout);
     pianoView = findViewById(R.id.piano_view);
+    rangeOverviewView = findViewById(R.id.piano_range_overview);
     switchShowNote = findViewById(R.id.switch_show_note);
     switchSustain = findViewById(R.id.switch_sustain);
     sliderKeyScale = findViewById(R.id.slider_key_scale);
 
     setupToolbar();
     setupDrawer();
-    setupScrollButtons();
+    setupPianoRangeOverview();
     setupNoteSwitch();
     setupSustainSwitch();
     setupKeyScaleSlider();
@@ -116,11 +118,12 @@ public class VirtualPianoActivity extends AppCompatActivity {
         });
   }
 
-  private void setupScrollButtons() {
-    findViewById(R.id.btn_scroll_left)
-        .setOnClickListener(v -> pianoView.animateScrollByOctaves(-1));
-    findViewById(R.id.btn_scroll_right)
-        .setOnClickListener(v -> pianoView.animateScrollByOctaves(1));
+  private void setupPianoRangeOverview() {
+    pianoView.setOnScrollStateChangedListener(
+        (scrollX, contentWidth, viewportWidth) ->
+            rangeOverviewView.updateViewport(scrollX, contentWidth, viewportWidth));
+    rangeOverviewView.setOnViewportScrollListener(pianoView::setKeyboardScrollX);
+    pianoView.setOnActiveKeysChangedListener(rangeOverviewView::setActiveMidis);
   }
 
   private void setupNoteSwitch() {

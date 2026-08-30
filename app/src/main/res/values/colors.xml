@@ -78,6 +78,8 @@
     <color name="piano_dark_gray">@color/md_theme_light_surfaceContainerLowest</color>
     <color name="piano_light_gray">@color/md_theme_light_background</color>
     <color name="piano_stage_background">@color/md_theme_light_onTertiaryFixed</color>
+    <color name="virtual_piano_overview_white_key_highlight">@color/md_theme_light_primary</color>
+    <color name="virtual_piano_overview_black_key_highlight">#BF360C</color>
     <color name="elegant_gold">@color/md_theme_light_tertiaryContainer</color>
     <color name="elegant_gold_dark">@color/md_theme_light_tertiaryContainer</color>
 </resources>

@@ -43,41 +43,25 @@
             android:layout_weight="1"
             android:background="@color/piano_stage_background">
 
-            <com.example.pianolab.feature.virtual_piano.view.SlicePianoKeyboardView
-                android:id="@+id/piano_view"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_gravity="bottom"
-                android:contentDescription="@string/desc_piano_keys" />
+                android:orientation="vertical">
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginBottom="24dp"
-                android:gravity="center"
-                android:orientation="horizontal">
+                <com.example.pianolab.feature.virtual_piano.view.PianoRangeOverviewView
+                    android:id="@+id/piano_range_overview"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/virtual_piano_overview_height"
+                    android:layout_marginTop="@dimen/virtual_piano_overview_margin_top"
+                    android:layout_marginBottom="@dimen/virtual_piano_overview_gap_below"
+                    android:contentDescription="@string/virtual_piano_range_overview" />
 
-                <ImageButton
-                    android:id="@+id/btn_scroll_left"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:background="@drawable/bg_piano_scroll_button"
-                    android:contentDescription="@string/virtual_piano_scroll_left"
-                    android:padding="12dp"
-                    android:src="@drawable/ic_chevron_left"
-                    app:tint="@color/md_theme_light_inversePrimary" />
-
-                <ImageButton
-                    android:id="@+id/btn_scroll_right"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginStart="24dp"
-                    android:background="@drawable/bg_piano_scroll_button"
-                    android:contentDescription="@string/virtual_piano_scroll_right"
-                    android:padding="12dp"
-                    android:src="@drawable/ic_chevron_right"
-                    app:tint="@color/md_theme_light_inversePrimary" />
+                <com.example.pianolab.feature.virtual_piano.view.SlicePianoKeyboardView
+                    android:id="@+id/piano_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:contentDescription="@string/desc_piano_keys" />
             </LinearLayout>
         </FrameLayout>
     </LinearLayout>
