@@ -1,45 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 主色调：海洋科技蓝 -->
-    <!-- Primary: 用于AppBar, 标题栏, 核心图标 -->
-    <color name="piano_primary">#1976D2</color> <!-- 沉稳明亮的蓝 -->
-    <color name="piano_primary_light">#63A4FF</color> <!-- 较亮的蓝，可用于渐变 -->
-    <color name="piano_primary_dark">#004BA0</color> <!-- 状态栏深蓝 -->
+    <!-- M3 Light Color Roles (from design/DESIGN.md) -->
+    <color name="md_theme_light_primary">#005bbf</color>
+    <color name="md_theme_light_onPrimary">#ffffff</color>
+    <color name="md_theme_light_primaryContainer">#1a73e8</color>
+    <color name="md_theme_light_onPrimaryContainer">#ffffff</color>
+    <color name="md_theme_light_inversePrimary">#adc7ff</color>
+    <color name="md_theme_light_secondary">#5b5f64</color>
+    <color name="md_theme_light_onSecondary">#ffffff</color>
+    <color name="md_theme_light_secondaryContainer">#dde0e6</color>
+    <color name="md_theme_light_onSecondaryContainer">#5f6368</color>
+    <color name="md_theme_light_tertiary">#006875</color>
+    <color name="md_theme_light_onTertiary">#ffffff</color>
+    <color name="md_theme_light_tertiaryContainer">#008394</color>
+    <color name="md_theme_light_onTertiaryContainer">#000608</color>
+    <color name="md_theme_light_error">#ba1a1a</color>
+    <color name="md_theme_light_onError">#ffffff</color>
+    <color name="md_theme_light_errorContainer">#ffdad6</color>
+    <color name="md_theme_light_onErrorContainer">#93000a</color>
+    <color name="md_theme_light_background">#f8f9fa</color>
+    <color name="md_theme_light_onBackground">#191c1d</color>
+    <color name="md_theme_light_surface">#f8f9fa</color>
+    <color name="md_theme_light_onSurface">#191c1d</color>
+    <color name="md_theme_light_surfaceVariant">#e1e3e4</color>
+    <color name="md_theme_light_onSurfaceVariant">#414754</color>
+    <color name="md_theme_light_surfaceDim">#d9dadb</color>
+    <color name="md_theme_light_surfaceBright">#f8f9fa</color>
+    <color name="md_theme_light_surfaceContainerLowest">#ffffff</color>
+    <color name="md_theme_light_surfaceContainerLow">#f3f4f5</color>
+    <color name="md_theme_light_surfaceContainer">#edeeef</color>
+    <color name="md_theme_light_surfaceContainerHigh">#e7e8e9</color>
+    <color name="md_theme_light_surfaceContainerHighest">#e1e3e4</color>
+    <color name="md_theme_light_inverseSurface">#2e3132</color>
+    <color name="md_theme_light_inverseOnSurface">#f0f1f2</color>
+    <color name="md_theme_light_outline">#727785</color>
+    <color name="md_theme_light_outlineVariant">#c1c6d6</color>
+    <color name="md_theme_light_surfaceTint">#005bc0</color>
+    <color name="md_theme_light_primaryFixed">#d8e2ff</color>
+    <color name="md_theme_light_primaryFixedDim">#adc7ff</color>
+    <color name="md_theme_light_onPrimaryFixed">#001a41</color>
+    <color name="md_theme_light_onPrimaryFixedVariant">#004493</color>
+    <color name="md_theme_light_secondaryFixed">#dfe3e8</color>
+    <color name="md_theme_light_secondaryFixedDim">#c3c7cc</color>
+    <color name="md_theme_light_onSecondaryFixed">#181c20</color>
+    <color name="md_theme_light_onSecondaryFixedVariant">#43474c</color>
+    <color name="md_theme_light_tertiaryFixed">#9fefff</color>
+    <color name="md_theme_light_tertiaryFixedDim">#50d7ee</color>
+    <color name="md_theme_light_onTertiaryFixed">#001f24</color>
+    <color name="md_theme_light_onTertiaryFixedVariant">#004e59</color>
 
-    <!-- 强调色：薄荷青绿 -->
-    <!-- Accent: 用于FAB悬浮按钮, 选中状态, 进度条 -->
-    <!-- 这个颜色介于绿和青之间，非常年轻且醒目 -->
-    <color name="piano_accent">#00BFA5</color>
-    <color name="piano_accent_light">#5DF2D6</color>
+    <!-- Legacy aliases (backward compatibility) -->
+    <color name="piano_primary">@color/md_theme_light_primaryContainer</color>
+    <color name="piano_primary_light">@color/md_theme_light_primaryFixedDim</color>
+    <color name="piano_primary_dark">@color/md_theme_light_primary</color>
+    <color name="piano_accent">@color/md_theme_light_tertiaryContainer</color>
+    <color name="piano_accent_light">@color/md_theme_light_tertiaryFixedDim</color>
+    <color name="piano_background">@color/md_theme_light_background</color>
+    <color name="piano_surface">@color/md_theme_light_surfaceContainerLowest</color>
+    <color name="text_primary">@color/md_theme_light_onSurface</color>
+    <color name="text_secondary">@color/md_theme_light_onSurfaceVariant</color>
+    <color name="text_on_primary">@color/md_theme_light_onPrimary</color>
 
-    <!-- 背景色：清爽灰白 -->
-    <!-- 既然是年轻化，建议使用浅色背景，比纯黑更具亲和力 -->
-    <color name="piano_background">#F5F6F8</color>
-    <color name="piano_surface">#FFFFFF</color> <!-- 卡片背景纯白 -->
-
-    <!-- 文字颜色 -->
-    <color name="text_primary">#263238</color> <!-- 蓝灰色系的深黑，比纯黑柔和，阅读舒适 -->
-    <color name="text_secondary">#78909C</color> <!-- 蓝灰色��的浅灰 -->
-    <color name="text_on_primary">#FFFFFF</color> <!-- 蓝底上的白字 -->
-
-    <!-- 功能色 -->
+    <!-- Functional colors (unchanged) -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="tuner_cursor_green">#4CAF50</color>
     <color name="tuner_cursor_yellow">#FFC107</color>
     <color name="tuner_cursor_red">#F44336</color>
 
-    <!-- 兼容旧代码引用 -->
-    <color name="purple_200">@color/piano_accent</color>
-    <color name="purple_500">@color/piano_primary</color>
-    <color name="purple_700">@color/piano_primary_dark</color>
-    <color name="teal_200">@color/piano_accent</color>
-    <color name="teal_700">@color/piano_primary_dark</color>
-
-    <!-- 映射旧的黑金变量到新颜色，防止布局报错 -->
-    <color name="piano_black">@color/text_primary</color>
-    <color name="piano_dark_gray">@color/piano_surface</color>
-    <color name="piano_light_gray">@color/piano_background</color>
-    <color name="elegant_gold">@color/piano_accent</color>
-    <color name="elegant_gold_dark">@color/piano_accent</color>
+    <!-- Legacy template aliases -->
+    <color name="purple_200">@color/md_theme_light_tertiaryFixedDim</color>
+    <color name="purple_500">@color/md_theme_light_primaryContainer</color>
+    <color name="purple_700">@color/md_theme_light_primary</color>
+    <color name="teal_200">@color/md_theme_light_tertiaryFixedDim</color>
+    <color name="teal_700">@color/md_theme_light_primary</color>
+    <color name="piano_black">@color/md_theme_light_onSurface</color>
+    <color name="piano_dark_gray">@color/md_theme_light_surfaceContainerLowest</color>
+    <color name="piano_light_gray">@color/md_theme_light_background</color>
+    <color name="elegant_gold">@color/md_theme_light_tertiaryContainer</color>
+    <color name="elegant_gold_dark">@color/md_theme_light_tertiaryContainer</color>
 </resources>

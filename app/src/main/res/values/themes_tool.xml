@@ -1,0 +1,38 @@
+<resources>
+    <style name="Theme.PianoLab.Tool" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/md_theme_tool_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_tool_onPrimary</item>
+        <item name="colorPrimaryContainer">@color/md_theme_tool_primaryContainer</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_tool_onPrimaryContainer</item>
+        <item name="colorSecondary">@color/md_theme_tool_secondary</item>
+        <item name="colorOnSecondary">@color/md_theme_tool_onSecondary</item>
+        <item name="colorSecondaryContainer">@color/md_theme_tool_secondaryContainer</item>
+        <item name="colorOnSecondaryContainer">@color/md_theme_tool_onSecondaryContainer</item>
+        <item name="colorTertiary">@color/md_theme_tool_tertiary</item>
+        <item name="colorOnTertiary">@color/md_theme_tool_onTertiary</item>
+        <item name="colorTertiaryContainer">@color/md_theme_tool_tertiaryContainer</item>
+        <item name="colorOnTertiaryContainer">@color/md_theme_tool_onTertiaryContainer</item>
+        <item name="colorError">@color/md_theme_tool_error</item>
+        <item name="colorOnError">@color/md_theme_tool_onError</item>
+        <item name="colorSurface">@color/md_theme_tool_surface</item>
+        <item name="colorOnSurface">@color/md_theme_tool_onSurface</item>
+        <item name="colorSurfaceVariant">@color/md_theme_tool_surfaceVariant</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_tool_onSurfaceVariant</item>
+        <item name="colorSurfaceContainer">@color/md_theme_tool_surfaceContainer</item>
+        <item name="colorSurfaceContainerHigh">@color/md_theme_tool_surfaceContainerHigh</item>
+        <item name="colorSurfaceContainerHighest">@color/md_theme_tool_surfaceContainerHighest</item>
+        <item name="colorOutline">@color/md_theme_tool_outline</item>
+        <item name="colorOutlineVariant">@color/md_theme_tool_outlineVariant</item>
+        <item name="android:colorBackground">@color/md_theme_tool_background</item>
+        <item name="colorOnBackground">@color/md_theme_tool_onBackground</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/md_theme_tool_surface</item>
+        <!-- Typography + widget defaults (shared with light theme) -->
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.PianoLab.BodyLarge</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.PianoLab.BodyMedium</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.PianoLab.LabelLarge</item>
+        <item name="materialCardViewStyle">@style/Widget.PianoLab.CardView</item>
+        <item name="materialButtonStyle">@style/Widget.PianoLab.Button</item>
+    </style>
+</resources>

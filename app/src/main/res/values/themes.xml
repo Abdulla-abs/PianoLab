@@ -1,18 +1,71 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Theme.PianoLab" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/piano_primary</item>
-        <item name="colorPrimaryVariant">@color/piano_primary_dark</item>
-        <item name="colorOnPrimary">@color/text_on_primary</item>
-        <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/piano_accent</item>
-        <item name="colorSecondaryVariant">@color/piano_accent_light</item>
-        <item name="colorOnSecondary">@color/white</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor">@color/piano_primary_dark</item>
-        <!-- Background color -->
-        <item name="android:windowBackground">@color/piano_background</item>
-        <!-- Customize your theme here. -->
+    <style name="Theme.PianoLab" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Primary -->
+        <item name="colorPrimary">@color/md_theme_light_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_light_onPrimary</item>
+        <item name="colorPrimaryContainer">@color/md_theme_light_primaryContainer</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_light_onPrimaryContainer</item>
+        <item name="colorPrimaryFixed">@color/md_theme_light_primaryFixed</item>
+        <item name="colorPrimaryFixedDim">@color/md_theme_light_primaryFixedDim</item>
+        <item name="colorOnPrimaryFixed">@color/md_theme_light_onPrimaryFixed</item>
+        <item name="colorOnPrimaryFixedVariant">@color/md_theme_light_onPrimaryFixedVariant</item>
+        <!-- Secondary -->
+        <item name="colorSecondary">@color/md_theme_light_secondary</item>
+        <item name="colorOnSecondary">@color/md_theme_light_onSecondary</item>
+        <item name="colorSecondaryContainer">@color/md_theme_light_secondaryContainer</item>
+        <item name="colorOnSecondaryContainer">@color/md_theme_light_onSecondaryContainer</item>
+        <!-- Tertiary -->
+        <item name="colorTertiary">@color/md_theme_light_tertiary</item>
+        <item name="colorOnTertiary">@color/md_theme_light_onTertiary</item>
+        <item name="colorTertiaryContainer">@color/md_theme_light_tertiaryContainer</item>
+        <item name="colorOnTertiaryContainer">@color/md_theme_light_onTertiaryContainer</item>
+        <!-- Error -->
+        <item name="colorError">@color/md_theme_light_error</item>
+        <item name="colorOnError">@color/md_theme_light_onError</item>
+        <item name="colorErrorContainer">@color/md_theme_light_errorContainer</item>
+        <item name="colorOnErrorContainer">@color/md_theme_light_onErrorContainer</item>
+        <!-- Surface -->
+        <item name="colorSurface">@color/md_theme_light_surface</item>
+        <item name="colorOnSurface">@color/md_theme_light_onSurface</item>
+        <item name="colorSurfaceVariant">@color/md_theme_light_surfaceVariant</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_light_onSurfaceVariant</item>
+        <item name="colorSurfaceDim">@color/md_theme_light_surfaceDim</item>
+        <item name="colorSurfaceBright">@color/md_theme_light_surfaceBright</item>
+        <item name="colorSurfaceContainerLowest">@color/md_theme_light_surfaceContainerLowest</item>
+        <item name="colorSurfaceContainerLow">@color/md_theme_light_surfaceContainerLow</item>
+        <item name="colorSurfaceContainer">@color/md_theme_light_surfaceContainer</item>
+        <item name="colorSurfaceContainerHigh">@color/md_theme_light_surfaceContainerHigh</item>
+        <item name="colorSurfaceContainerHighest">@color/md_theme_light_surfaceContainerHighest</item>
+        <item name="colorOutline">@color/md_theme_light_outline</item>
+        <item name="colorOutlineVariant">@color/md_theme_light_outlineVariant</item>
+        <!-- Background -->
+        <item name="android:colorBackground">@color/md_theme_light_background</item>
+        <item name="colorOnBackground">@color/md_theme_light_onBackground</item>
+        <!-- Inverse -->
+        <item name="colorSurfaceInverse">@color/md_theme_light_inverseSurface</item>
+        <item name="colorOnSurfaceInverse">@color/md_theme_light_inverseOnSurface</item>
+        <item name="colorPrimaryInverse">@color/md_theme_light_inversePrimary</item>
+        <!-- System bars -->
+        <item name="android:statusBarColor">@color/md_theme_light_surface</item>
+        <item name="android:navigationBarColor">@color/md_theme_light_surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowBackground">@color/md_theme_light_background</item>
+        <!-- Typography defaults -->
+        <item name="textAppearanceDisplayLarge">@style/TextAppearance.PianoLab.DisplayLarge</item>
+        <item name="textAppearanceHeadlineLarge">@style/TextAppearance.PianoLab.HeadlineLarge</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.PianoLab.TitleLarge</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.PianoLab.BodyLarge</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.PianoLab.BodyMedium</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.PianoLab.LabelLarge</item>
+        <item name="textAppearanceLabelSmall">@style/TextAppearance.PianoLab.LabelSmall</item>
+        <!-- Shape defaults -->
+        <item name="shapeAppearanceCornerLarge">@style/ShapeAppearance.PianoLab.LargeComponent</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.PianoLab.MediumComponent</item>
+        <item name="shapeAppearanceCornerSmall">@style/ShapeAppearance.PianoLab.SmallComponent</item>
+        <item name="shapeAppearanceCornerExtraSmall">@style/ShapeAppearance.PianoLab.ExtraSmall</item>
+        <!-- Widget defaults -->
+        <item name="materialCardViewStyle">@style/Widget.PianoLab.CardView</item>
+        <item name="materialButtonStyle">@style/Widget.PianoLab.Button</item>
     </style>
 </resources>

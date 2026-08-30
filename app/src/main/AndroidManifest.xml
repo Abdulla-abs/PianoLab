@@ -36,11 +36,13 @@
         <activity
             android:name="com.example.pianolab.feature.virtual_piano.view.VirtualPianoActivity"
             android:exported="false"
+            android:theme="@style/Theme.PianoLab.Tool"
             android:parentActivityName="com.example.pianolab.feature.home.view.HomeActivity" />
 
         <activity
             android:name="com.example.pianolab.feature.tuner.view.TunerActivity"
             android:exported="false"
+            android:theme="@style/Theme.PianoLab.Tool"
             android:parentActivityName="com.example.pianolab.feature.home.view.HomeActivity"
             android:screenOrientation="sensorLandscape">
             <meta-data
@@ -51,6 +53,7 @@
         <activity
             android:name="com.example.pianolab.feature.chord.view.ChordActivity"
             android:exported="false"
+            android:theme="@style/Theme.PianoLab.Tool"
             android:parentActivityName="com.example.pianolab.feature.home.view.HomeActivity"
             android:screenOrientation="sensorLandscape">
             <meta-data

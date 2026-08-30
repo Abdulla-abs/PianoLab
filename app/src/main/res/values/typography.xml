@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="TextAppearance.PianoLab.DisplayLarge" parent="TextAppearance.Material3.DisplayLarge">
+        <item name="android:fontFamily">@font/roboto_flex</item>
+        <item name="android:textSize">57sp</item>
+        <item name="android:lineHeight">64sp</item>
+        <item name="android:letterSpacing">-0.0044</item>
+    </style>
+    <style name="TextAppearance.PianoLab.DisplayMedium" parent="TextAppearance.Material3.DisplayMedium">
+        <item name="android:fontFamily">@font/roboto_flex</item>
+        <item name="android:textSize">45sp</item>
+        <item name="android:lineHeight">52sp</item>
+    </style>
+    <style name="TextAppearance.PianoLab.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:fontFamily">@font/roboto_flex</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:lineHeight">36sp</item>
+    </style>
+    <style name="TextAppearance.PianoLab.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:fontFamily">@font/roboto_flex</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:lineHeight">28sp</item>
+    </style>
+    <style name="TextAppearance.PianoLab.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:fontFamily">@font/roboto_flex</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineHeight">24sp</item>
+        <item name="android:letterSpacing">0.03125</item>
+    </style>
+    <style name="TextAppearance.PianoLab.BodyMedium" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">@font/roboto_flex</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:lineHeight">20sp</item>
+        <item name="android:letterSpacing">0.01786</item>
+    </style>
+    <style name="TextAppearance.PianoLab.LabelLarge" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:fontFamily">@font/roboto_flex</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:lineHeight">20sp</item>
+        <item name="android:letterSpacing">0.00714</item>
+    </style>
+    <style name="TextAppearance.PianoLab.LabelSmall" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:fontFamily">@font/roboto_flex</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:lineHeight">16sp</item>
+        <item name="android:letterSpacing">0.04545</item>
+    </style>
+</resources>
