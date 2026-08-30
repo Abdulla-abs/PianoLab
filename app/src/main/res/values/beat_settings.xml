@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="beat_settings_badge_sky_container">#C2E7FF</color>
+    <color name="beat_settings_badge_sky_tint">#004D77</color>
+    <color name="beat_settings_badge_amber_container">#FFDCBE</color>
+    <color name="beat_settings_badge_amber_tint">#7C4113</color>
+    <color name="beat_settings_badge_emerald_container">#C4EED0</color>
+    <color name="beat_settings_badge_emerald_tint">#18532A</color>
+    <color name="beat_settings_badge_rose_container">#FFD8E2</color>
+    <color name="beat_settings_badge_rose_tint">#962846</color>
+    <color name="beat_settings_badge_cyan_container">#C0EAE6</color>
+    <color name="beat_settings_badge_cyan_tint">#006A6F</color>
+
+    <color name="beat_switch_track_on">@color/beat_settings_badge_emerald_container</color>
+
+    <dimen name="beat_settings_section_spacing">4dp</dimen>
+    <dimen name="beat_settings_item_padding_h">21dp</dimen>
+    <dimen name="beat_settings_item_padding_v">16dp</dimen>
+    <dimen name="beat_settings_badge_size">40dp</dimen>
+    <dimen name="beat_settings_icon_size">24dp</dimen>
+    <dimen name="beat_settings_corner_large">24dp</dimen>
+    <dimen name="beat_settings_corner_small">6dp</dimen>
+
+    <style name="ShapeAppearance.Beat.Settings.Top" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">@dimen/beat_settings_corner_large</item>
+        <item name="cornerSizeTopRight">@dimen/beat_settings_corner_large</item>
+        <item name="cornerSizeBottomLeft">@dimen/beat_settings_corner_small</item>
+        <item name="cornerSizeBottomRight">@dimen/beat_settings_corner_small</item>
+    </style>
+
+    <style name="ShapeAppearance.Beat.Settings.Middle" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/beat_settings_corner_small</item>
+    </style>
+
+    <style name="ShapeAppearance.Beat.Settings.Bottom" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">@dimen/beat_settings_corner_small</item>
+        <item name="cornerSizeTopRight">@dimen/beat_settings_corner_small</item>
+        <item name="cornerSizeBottomLeft">@dimen/beat_settings_corner_large</item>
+        <item name="cornerSizeBottomRight">@dimen/beat_settings_corner_large</item>
+    </style>
+
+    <style name="ShapeAppearance.Beat.Settings.Single" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/beat_settings_corner_large</item>
+    </style>
+
+    <style name="Widget.PianoLab.Beat.SettingsCard" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="cardBackgroundColor">?attr/colorSurfaceContainer</item>
+    </style>
+
+    <style name="Widget.PianoLab.Beat.Switch" parent="Widget.Material3.CompoundButton.MaterialSwitch">
+        <item name="trackTint">@color/switch_track_beat</item>
+        <item name="thumbTint">@color/switch_thumb_beat</item>
+        <item name="thumbIcon">@drawable/ic_switch_check</item>
+        <item name="thumbIconTint">@color/switch_thumb_icon_beat</item>
+        <item name="thumbIconSize">16dp</item>
+    </style>
+</resources>

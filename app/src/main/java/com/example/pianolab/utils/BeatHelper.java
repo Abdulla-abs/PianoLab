@@ -16,6 +16,18 @@ public class BeatHelper {
             {1.0f, 0.9f, 3.1f}    // 马林巴琴
     };
 
+    /** Drawable IDs aligned with {@code R.array.special_rhythm_options}. */
+    public static final int[] SPECIAL_RHYTHM_IDS = {
+            R.drawable.none,
+            R.drawable.foredot,
+            R.drawable.backdot,
+            R.drawable.fore8back16,
+            R.drawable.fore16back8,
+            R.drawable.tercet,
+            R.drawable.syncopation,
+            R.drawable.quintuplet,
+    };
+
     public static final Map<Integer, double[]> RHYTHM_DATA = new HashMap<>();
 
     static {

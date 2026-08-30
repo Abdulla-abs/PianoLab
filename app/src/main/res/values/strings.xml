@@ -30,6 +30,38 @@
     <string name="select_special_rhythm">选择特殊节奏型</string>
 
     <string name="beat_switch_tone">切换音色</string>
+    <string name="beat_title">节拍器</string>
+    <string name="beat_section_tempo">节拍</string>
+    <string name="beat_section_playback">播放</string>
+    <string name="beat_section_tone">音色</string>
+    <string name="beat_bpm_label">BPM</string>
+    <string name="beat_bpm_decrease">降低 BPM</string>
+    <string name="beat_bpm_increase">提高 BPM</string>
+    <string name="beat_accent_first_beat">强调首拍</string>
+    <string name="beat_advanced_options">高级选项</string>
+    <string name="beat_time_signature">拍号</string>
+    <string name="beat_set_bpm_title">设置 BPM</string>
+    <string name="beat_bpm_cpm_subtitle">BPM %1$d / CPM %2$d</string>
+    <string name="beat_ok">确定</string>
+    <string name="beat_cancel">取消</string>
+    <string name="beat_play">开始</string>
+    <string name="beat_stop">停止</string>
+    <string-array name="beat_time_signatures">
+        <item>2/4</item>
+        <item>3/4</item>
+        <item>4/4</item>
+        <item>3/8</item>
+        <item>6/8</item>
+        <item>5/4</item>
+        <item>6/4</item>
+        <item>7/4</item>
+        <item>5/8</item>
+        <item>7/8</item>
+        <item>8/8</item>
+        <item>9/8</item>
+        <item>2/2</item>
+        <item>3/2</item>
+    </string-array>
     <string-array name="special_rhythm_options">
         <item>无</item>
         <item>前附点</item>

@@ -1,320 +1,460 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/piano_background"> <!-- 1. 应用清爽灰白背景 -->
+    android:background="@color/md_theme_light_surfaceContainerLowest">
 
-    <!-- 顶部自定义功能栏 -->
     <LinearLayout
-        android:id="@+id/ll_custom_action_bar"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="16dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:id="@+id/content_root"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <ImageButton
-            android:id="@+id/btn_back"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_arrow_back_black"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/tuner_back_home"
-            android:padding="12dp"
-            android:scaleType="fitCenter"
-            app:tint="@color/text_primary"/> <!-- 图标着色 -->
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@android:color/transparent"
+            app:contentInsetEnd="0dp"
+            app:elevation="0dp"
+            app:navigationIcon="?attr/homeAsUpIndicator"
+            app:title="@string/beat_title"
+            app:titleTextAppearance="@style/TextAppearance.PianoLab.TitleLarge">
 
-        <View
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1"/>
+            <ImageButton
+                android:id="@+id/btn_toolbar_play"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="end|center_vertical"
+                android:layout_marginEnd="@dimen/spacing_margin_mobile"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/beat_play"
+                android:padding="12dp"
+                android:src="@drawable/ic_play_arrow"
+                app:tint="?attr/colorPrimary" />
+        </com.google.android.material.appbar.MaterialToolbar>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/beat_switch_tone"
-            android:textColor="@color/piano_primary"
-            android:textStyle="bold"
-            android:layout_marginEnd="8dp"/>
-
-        <Spinner
-            android:id="@+id/spinner_tone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:entries="@array/tone_options"/>
+        <com.example.pianolab.feature.beat.view.RadialPulseView
+            android:id="@+id/radial_pulse_view"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginHorizontal="@dimen/spacing_margin_mobile"
+            android:layout_weight="1" />
     </LinearLayout>
 
-    <!-- 放射波形视图 -->
-    <!-- 高度为0dp，它会自动填充顶部栏和底部控制台之间的所有空间 -->
-    <com.example.pianolab.feature.beat.view.RadialPulseView
-        android:id="@+id/radial_pulse_view"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginVertical="8dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/ll_custom_action_bar"
-        app:layout_constraintBottom_toTopOf="@+id/cl_controls_container"/>
-
-    <!-- 底部控制区域容器 -->
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/cl_controls_container"
+    <LinearLayout
+        android:id="@+id/panel_controls"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_bottom_panel"
-        android:paddingHorizontal="24dp"
-        android:paddingTop="32dp"
-        android:paddingBottom="24dp"
+        android:background="@drawable/bg_beat_bottom_panel"
         android:elevation="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:orientation="vertical"
+        app:behavior_fitToContents="false"
+        app:behavior_hideable="false"
+        app:behavior_peekHeight="@dimen/beat_bottom_sheet_peek_height"
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
-        <!-- BPM 显示组 -->
-        <LinearLayout
-            android:id="@+id/ll_bpm_group"
+        <View
+            android:layout_width="32dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp"
+            android:alpha="0.4"
+            android:background="@drawable/bg_bottom_sheet_handle" />
+
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/scroll_panel_controls"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+            android:clipToPadding="false"
+            android:overScrollMode="never">
 
-            <!-- 左侧组：BPM -->
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:id="@+id/tv_bpm_label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/bpm_equal"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/piano_primary"/> <!-- 使用主色调 -->
-
-                <TextView
-                    android:id="@+id/tv_bpm_value"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:background="@drawable/bg_clickable_chip"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:text="120"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_primary"
-                    tools:ignore="UseCompatTextViewDrawableXml" />
-            </LinearLayout>
-
-            <!-- 术语 -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginHorizontal="8dp"
                 android:orientation="vertical"
-                android:gravity="center_vertical|start">
+                android:paddingHorizontal="@dimen/spacing_margin_mobile"
+                android:paddingBottom="24dp">
 
+                <!-- Section: Tempo -->
                 <TextView
-                    android:id="@+id/tv_tempo_marking"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Allegro"
-                    android:textStyle="italic"
-                    android:textSize="14sp"
-                    android:textColor="@color/text_secondary"
-                    android:importantForAccessibility="no" />
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/beat_section_tempo"
+                    android:textAppearance="@style/TextAppearance.PianoLab.LabelLarge"
+                    android:textColor="?attr/colorPrimary" />
 
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.PianoLab.Beat.SettingsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Beat.Settings.Top">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="@dimen/beat_settings_item_padding_h"
+                        android:paddingVertical="12dp">
+
+                        <ImageButton
+                            android:id="@+id/btn_bpm_dec"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:background="@drawable/bg_beat_bpm_button"
+                            android:contentDescription="@string/beat_bpm_decrease"
+                            android:padding="12dp"
+                            android:src="@drawable/ic_remove"
+                            app:tint="?attr/colorOnSecondaryContainer" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:gravity="bottom"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/tv_bpm_value"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textAppearance="@style/TextAppearance.PianoLab.DisplayLarge"
+                                    android:textColor="?attr/colorOnSurface"
+                                    android:textStyle="bold"
+                                    tools:text="120" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8dp"
+                                    android:layout_marginBottom="6dp"
+                                    android:text="@string/beat_bpm_label"
+                                    android:textAppearance="@style/TextAppearance.PianoLab.LabelLarge"
+                                    android:textColor="?attr/colorOnSurfaceVariant" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tv_bpm_cpm_subtitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:textAppearance="@style/TextAppearance.PianoLab.LabelSmall"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                tools:text="BPM 120 / CPM 120" />
+
+                            <TextView
+                                android:id="@+id/tv_tempo_marking"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="@style/TextAppearance.PianoLab.LabelSmall"
+                                android:textColor="?attr/colorPrimary"
+                                android:textStyle="bold"
+                                tools:text="Allegro" />
+
+                            <TextView
+                                android:id="@+id/tv_tempo_marking_extra"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="@style/TextAppearance.PianoLab.LabelSmall"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:visibility="gone"
+                                tools:text="快板"
+                                tools:visibility="visible" />
+                        </LinearLayout>
+
+                        <ImageButton
+                            android:id="@+id/btn_bpm_inc"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:background="@drawable/bg_beat_bpm_button"
+                            android:contentDescription="@string/beat_bpm_increase"
+                            android:padding="12dp"
+                            android:src="@drawable/ic_add"
+                            app:tint="?attr/colorOnSecondaryContainer" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.PianoLab.Beat.SettingsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/beat_settings_section_spacing"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Beat.Settings.Bottom">
+
+                    <com.google.android.material.slider.Slider
+                        android:id="@+id/slider_bpm"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="8dp"
+                        android:layout_marginVertical="4dp"
+                        android:stepSize="1"
+                        android:valueFrom="20"
+                        android:valueTo="240"
+                        app:thumbColor="?attr/colorPrimary"
+                        app:trackColorActive="?attr/colorPrimary"
+                        app:trackColorInactive="?attr/colorSurfaceVariant" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Section: Time signature -->
                 <TextView
-                    android:id="@+id/tv_tempo_marking_extra"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="快板"
-                    android:textSize="12sp"
-                    android:textColor="@color/text_secondary"
-                    android:alpha="0.9"
-                    android:importantForAccessibility="no" />
+                    android:paddingTop="18dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/beat_time_signature"
+                    android:textAppearance="@style/TextAppearance.PianoLab.LabelLarge"
+                    android:textColor="?attr/colorPrimary" />
+
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.PianoLab.Beat.SettingsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Beat.Settings.Single">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="@dimen/beat_settings_item_padding_h"
+                        android:paddingVertical="@dimen/beat_settings_item_padding_v">
+
+                        <FrameLayout
+                            android:layout_width="@dimen/beat_settings_badge_size"
+                            android:layout_height="@dimen/beat_settings_badge_size"
+                            android:background="@drawable/bg_beat_settings_badge_amber">
+
+                            <ImageView
+                                android:layout_width="@dimen/beat_settings_icon_size"
+                                android:layout_height="@dimen/beat_settings_icon_size"
+                                android:layout_gravity="center"
+                                android:contentDescription="@string/beat_time_signature"
+                                android:importantForAccessibility="no"
+                                android:src="@drawable/ic_beat_meter"
+                                app:tint="@color/beat_settings_badge_amber_tint" />
+                        </FrameLayout>
+
+                        <HorizontalScrollView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:layout_weight="1"
+                            android:clipToPadding="false"
+                            android:overScrollMode="never"
+                            android:scrollbars="none">
+
+                            <com.google.android.material.chip.ChipGroup
+                                android:id="@+id/chip_group_time_sig"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                app:chipSpacingHorizontal="8dp"
+                                app:singleLine="true"
+                                app:singleSelection="true" />
+                        </HorizontalScrollView>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Section: Playback -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="18dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/beat_section_playback"
+                    android:textAppearance="@style/TextAppearance.PianoLab.LabelLarge"
+                    android:textColor="?attr/colorPrimary" />
+
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.PianoLab.Beat.SettingsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Beat.Settings.Single">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="@dimen/beat_settings_item_padding_h"
+                        android:paddingVertical="@dimen/beat_settings_item_padding_v">
+
+                        <FrameLayout
+                            android:layout_width="@dimen/beat_settings_badge_size"
+                            android:layout_height="@dimen/beat_settings_badge_size"
+                            android:background="@drawable/bg_beat_settings_badge_emerald">
+
+                            <ImageView
+                                android:layout_width="@dimen/beat_settings_icon_size"
+                                android:layout_height="@dimen/beat_settings_icon_size"
+                                android:layout_gravity="center"
+                                android:contentDescription="@string/beat_accent_first_beat"
+                                android:importantForAccessibility="no"
+                                android:src="@drawable/ic_beat_accent"
+                                app:tint="@color/beat_settings_badge_emerald_tint" />
+                        </FrameLayout>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:layout_weight="1"
+                            android:text="@string/beat_accent_first_beat"
+                            android:textAppearance="@style/TextAppearance.PianoLab.BodyLarge"
+                            android:textColor="?attr/colorOnSurface" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_accent"
+                            style="@style/Widget.PianoLab.Beat.Switch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            android:minHeight="32dp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Section: Tone -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="18dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/beat_section_tone"
+                    android:textAppearance="@style/TextAppearance.PianoLab.LabelLarge"
+                    android:textColor="?attr/colorPrimary" />
+
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.PianoLab.Beat.SettingsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Beat.Settings.Single">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="@dimen/beat_settings_item_padding_h"
+                        android:paddingVertical="@dimen/beat_settings_item_padding_v">
+
+                        <FrameLayout
+                            android:layout_width="@dimen/beat_settings_badge_size"
+                            android:layout_height="@dimen/beat_settings_badge_size"
+                            android:background="@drawable/bg_beat_settings_badge_rose">
+
+                            <ImageView
+                                android:layout_width="@dimen/beat_settings_icon_size"
+                                android:layout_height="@dimen/beat_settings_icon_size"
+                                android:layout_gravity="center"
+                                android:contentDescription="@string/beat_section_tone"
+                                android:importantForAccessibility="no"
+                                android:src="@drawable/ic_beat_tone"
+                                app:tint="@color/beat_settings_badge_rose_tint" />
+                        </FrameLayout>
+
+                        <HorizontalScrollView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:layout_weight="1"
+                            android:clipToPadding="false"
+                            android:overScrollMode="never"
+                            android:scrollbars="none">
+
+                            <com.google.android.material.chip.ChipGroup
+                                android:id="@+id/chip_group_tone"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                app:chipSpacingHorizontal="8dp"
+                                app:singleLine="true"
+                                app:singleSelection="true" />
+                        </HorizontalScrollView>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Section: Special rhythm -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="18dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/special_rhy"
+                    android:textAppearance="@style/TextAppearance.PianoLab.LabelLarge"
+                    android:textColor="?attr/colorPrimary" />
+
+                <com.google.android.material.card.MaterialCardView
+                    style="@style/Widget.PianoLab.Beat.SettingsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Beat.Settings.Single">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="@dimen/beat_settings_item_padding_h"
+                        android:paddingVertical="@dimen/beat_settings_item_padding_v">
+
+                        <FrameLayout
+                            android:layout_width="@dimen/beat_settings_badge_size"
+                            android:layout_height="@dimen/beat_settings_badge_size"
+                            android:background="@drawable/bg_beat_settings_badge_cyan">
+
+                            <ImageView
+                                android:layout_width="@dimen/beat_settings_icon_size"
+                                android:layout_height="@dimen/beat_settings_icon_size"
+                                android:layout_gravity="center"
+                                android:contentDescription="@string/special_rhy"
+                                android:importantForAccessibility="no"
+                                android:src="@drawable/ic_beat_rhythm"
+                                app:tint="@color/beat_settings_badge_cyan_tint" />
+                        </FrameLayout>
+
+                        <HorizontalScrollView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:layout_weight="1"
+                            android:clipToPadding="false"
+                            android:overScrollMode="never"
+                            android:scrollbars="none">
+
+                            <com.google.android.material.chip.ChipGroup
+                                android:id="@+id/chip_group_rhythm"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                app:chipSpacingHorizontal="8dp"
+                                app:singleLine="true"
+                                app:singleSelection="true" />
+                        </HorizontalScrollView>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_play"
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:layout_marginTop="24dp"
+                    android:text="@string/beat_play"
+                    android:textAppearance="@style/TextAppearance.PianoLab.TitleLarge"
+                    app:cornerRadius="999dp"
+                    app:icon="@drawable/ic_play_arrow"
+                    app:iconGravity="textStart"
+                    app:iconPadding="12dp"
+                    app:iconSize="28dp" />
             </LinearLayout>
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="28dp"
-                android:layout_marginStart="12dp"
-                android:layout_marginEnd="12dp"
-                android:background="@android:color/darker_gray"
-                android:alpha="0.6" />
-
-            <!-- 右侧组：音符值 -->
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:id="@+id/iv_crochet_icon"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:src="@drawable/crotchet"
-                    app:tint="@color/piano_primary"/>
-
-                <TextView
-                    android:id="@+id/tv_crochet_equals"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/equal"
-                    android:textColor="@color/piano_primary"
-                    android:textStyle="bold"
-                    android:layout_marginHorizontal="4dp"/>
-
-                <TextView
-                    android:id="@+id/tv_crochet_value"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_clickable_chip"
-                    android:gravity="center"
-                    android:text="120"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_primary"
-                    android:clickable="true"
-                    android:focusable="true"
-                    tools:ignore="UseCompatTextViewDrawableXml" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- 进度条 -->
-        <!-- 调整 marginTop 为 32dp，增加间距 -->
-        <SeekBar
-            android:id="@+id/seekbar_bpm"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:max="270"
-            android:layout_marginTop="32dp"
-            android:progressTint="@color/piano_accent"
-            android:thumbTint="@color/piano_accent"
-            app:layout_constraintTop_toBottomOf="@id/ll_bpm_group"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-
-        <!-- 拍号行 -->
-        <!-- 调整 marginTop 为 24dp -->
-        <LinearLayout
-            android:id="@+id/ll_beats_row"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="24dp"
-            app:layout_constraintTop_toBottomOf="@id/seekbar_bpm"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
-
-            <TextView
-                android:id="@+id/tv_beats_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="拍号"
-                android:textColor="@color/piano_primary"
-                android:textStyle="bold"
-                android:layout_marginEnd="12dp" />
-
-            <TextView
-                android:id="@+id/tv_beats_value"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_clickable_chip"
-                android:drawableEnd="@android:drawable/arrow_down_float"
-                android:drawablePadding="4dp"
-                android:drawableTint="@color/text_secondary"
-                android:gravity="center"
-                android:text="4/4"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                android:clickable="true"
-                android:focusable="true"
-                tools:ignore="UseCompatTextViewDrawableXml" />
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
-
-            <TextView
-                android:id="@+id/tv_accent_state"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/emphasize_heavy"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="@color/piano_primary"
-                android:layout_marginEnd="8dp" />
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switch_accent"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:thumbTint="@color/piano_accent"
-                android:checked="true" />
-        </LinearLayout>
-
-        <!-- 特殊节奏型 -->
-        <!-- 调整 marginTop 为 24dp -->
-        <LinearLayout
-            android:id="@+id/ll_special_rhythm"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginTop="24dp"
-            app:layout_constraintTop_toBottomOf="@id/ll_beats_row"
-            app:layout_constraintStart_toStartOf="parent">
-
-            <TextView
-                android:id="@+id/tv_special_rhythm_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/special_rhy"
-                android:textStyle="bold"
-                android:textColor="@color/piano_primary"
-                android:layout_marginEnd="12dp" />
-
-            <Spinner
-                android:id="@+id/spinner_special_rhythm"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:entries="@array/special_rhythm_options" />
-        </LinearLayout>
-
-        <!-- 播放按钮 -->
-        <!-- 调整 marginTop 为 32dp，并应用醒目的背景 -->
-        <ToggleButton
-            android:id="@+id/toggle_play"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="32dp"
-            android:background="@drawable/bg_play_button"
-            android:textOn="@string/stop"
-            android:textOff="@string/start"
-            android:textColor="@color/text_on_primary"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            app:layout_constraintTop_toBottomOf="@id/ll_special_rhythm"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.core.widget.NestedScrollView>
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

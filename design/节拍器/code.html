@@ -1,0 +1,222 @@
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,100..1000&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface": "#f8f9fa", "on-tertiary-container": "#000608", "on-secondary-fixed": "#181c20", "inverse-surface": "#2e3132", "surface-container": "#edeeef", "outline-variant": "#c1c6d6", "on-secondary-container": "#5f6368", "secondary-fixed": "#dfe3e8", "surface-tint": "#005bc0", "secondary-container": "#dde0e6", "on-error": "#ffffff", "on-surface-variant": "#414754", "error-container": "#ffdad6", "on-error-container": "#93000a", "on-secondary-fixed-variant": "#43474c", "surface-dim": "#d9dadb", "primary-fixed": "#d8e2ff", "secondary": "#5b5f64", "inverse-primary": "#adc7ff", "on-background": "#191c1d", "surface-container-low": "#f3f4f5", "on-tertiary": "#ffffff", "surface-container-lowest": "#ffffff", "surface-container-high": "#e7e8e9", "surface-variant": "#e1e3e4", "background": "#f8f9fa", "primary-container": "#1a73e8", "surface-bright": "#f8f9fa", "primary": "#005bbf", "outline": "#727785", "on-surface": "#191c1d", "tertiary": "#006875", "on-primary-container": "#ffffff", "surface-container-highest": "#e1e3e4", "tertiary-fixed": "#9fefff", "error": "#ba1a1a", "on-secondary": "#ffffff", "on-primary": "#ffffff", "on-primary-fixed": "#001a41", "tertiary-container": "#008394" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin-desktop": "24px", "gutter": "16px", "container-max-width": "1200px", "unit": "8px", "margin-mobile": "16px" }, "fontFamily": { "headline": ["Roboto Flex"], "body": ["Roboto Flex"] } } } }</script><style>@layer base { body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; } .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); } .pt-safe { padding-top: env(safe-area-inset-top, 0px); } } .nav-pill { position: relative; transition: all 0.2s ease; } .nav-pill::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 0; height: 32px; background: currentColor; opacity: 0.12; border-radius: 16px; transition: width 0.2s ease; z-index: -1; } [data-active] .nav-pill::after { width: 64px; } </style></head><body class="bg-surface-container-lowest font-body text-on-surface"><header class="fixed top-0 w-full z-50 bg-surface-container/90 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 px-margin-mobile flex items-center justify-between"><span class="material-symbols-outlined text-primary">music_note</span><h1 class="text-title-lg font-headline font-bold text-on-surface">PianoLab</h1><a class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-on-surface/5 transition-colors" data-path="settings" href="#"><span class="material-symbols-outlined text-on-surface-variant">settings</span></a></div></header><main class="min-h-screen pt-16 pb-24 bg-surface-container-lowest"><div class="flex flex-col w-full h-full relative overflow-hidden bg-surface-container-lowest" style="min-height: calc(100vh - 4rem - 5rem);">
+<!-- Background Blur Texture from Reference Image -->
+<div class="absolute inset-0 z-0 opacity-10 pointer-events-none" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAVo2zU2r26UAGh9vHiQEmfucUxe1Ta2H3oZ4PN4b60NG747tZ38dNY7qP2ZCSzrFbtaVbPBXsmTPlgSf7HaiO5vf2oxWADAfrU7jL3XRS4Xfrgt_Rfi-34rVvzjhjQueCcdlRz_z3pCOUMS3OT9TI9tF4x-oxQiLC3UCk5cmpbY50bUKY_YD_TfMSxiga7pqHkHiPG7ftV63syt_9UTPW-x7URvvbg0FL5j9XfeS0tbGqulmVNmCAGpjdUq0XG_sPT'); background-size: cover; background-position: center; filter: blur(20px);"></div>
+<!-- Top Section: Visualizer -->
+<div class="flex-1 flex flex-col items-center justify-center p-6 z-10 relative">
+<div class="relative w-64 h-64 flex items-center justify-center">
+<!-- Pulsing Rings (Animated via JS) -->
+<div class="absolute inset-0 rounded-full bg-primary/20 scale-100 opacity-0 transition-transform duration-300 ease-out" id="pulse-ring"></div>
+<!-- Main Beat Circle -->
+<div class="relative w-48 h-48 rounded-full bg-primary-container flex flex-col items-center justify-center shadow-md">
+<span class="text-display-md text-on-primary-container font-headline tracking-tight" id="beat-indicator">1</span>
+<span class="text-label-lg text-on-primary-container/80 font-body uppercase tracking-widest mt-1" id="time-sig-display">4/4</span>
+</div>
+<!-- Small beat dots (optional visual detail) -->
+<div class="absolute w-full h-full" id="beat-dots">
+<!-- Dots generated by JS based on time signature -->
+</div>
+</div>
+</div>
+<!-- Bottom Section: Controls -->
+<div class="bg-surface-container-high rounded-t-[32px] p-6 z-20 flex flex-col gap-6 shadow-[0_-4px_24px_rgba(0,0,0,0.05)] w-full pb-8">
+<!-- BPM Display & Micro-adjustments -->
+<div class="flex items-center justify-between">
+<button class="w-14 h-14 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container active:scale-95 transition-transform" id="btn-dec">
+<span class="material-symbols-outlined text-2xl">remove</span>
+</button>
+<div class="flex flex-col items-center">
+<div class="flex items-baseline">
+<span class="text-display-lg text-on-surface font-headline font-bold" id="bpm-display">120</span>
+<span class="text-label-lg text-on-surface-variant font-body ml-2">BPM</span>
+</div>
+<span class="text-label-sm text-primary font-body uppercase tracking-wider">Allegro</span>
+</div>
+<button class="w-14 h-14 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container active:scale-95 transition-transform" id="btn-inc">
+<span class="material-symbols-outlined text-2xl">add</span>
+</button>
+</div>
+<!-- M3 Slider -->
+<div class="w-full pt-4 pb-2 relative group">
+<input class="w-full h-2 bg-surface-variant rounded-full appearance-none cursor-pointer outline-none relative z-10 [&amp;::-webkit-slider-thumb]:appearance-none [&amp;::-webkit-slider-thumb]:w-6 [&amp;::-webkit-slider-thumb]:h-6 [&amp;::-webkit-slider-thumb]:rounded-full [&amp;::-webkit-slider-thumb]:bg-primary [&amp;::-webkit-slider-thumb]:shadow-md [&amp;::-webkit-slider-thumb]:transition-transform [&amp;::-webkit-slider-thumb]:active:scale-125 [&amp;::-moz-range-thumb]:w-6 [&amp;::-moz-range-thumb]:h-6 [&amp;::-moz-range-thumb]:border-none [&amp;::-moz-range-thumb]:rounded-full [&amp;::-moz-range-thumb]:bg-primary [&amp;::-moz-range-thumb]:shadow-md [&amp;::-moz-range-thumb]:transition-transform [&amp;::-moz-range-thumb]:active:scale-125" id="bpm-slider" max="240" min="40" type="range" value="120"/>
+<!-- Active track overlay -->
+<div class="absolute top-1/2 left-0 h-2 bg-primary rounded-l-full -translate-y-1/2 pointer-events-none" id="slider-track" style="width: 40%;"></div>
+</div>
+<!-- Chips Row (Time Signature) -->
+<div class="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide snap-x">
+<button class="ts-chip snap-start px-6 py-2 rounded-lg bg-primary-container text-on-primary-container text-label-lg font-body flex-shrink-0 transition-colors" data-ts="2/4">2/4</button>
+<button class="ts-chip snap-start px-6 py-2 rounded-lg bg-surface-variant text-on-surface-variant text-label-lg font-body flex-shrink-0 transition-colors" data-ts="3/4">3/4</button>
+<button class="ts-chip snap-start px-6 py-2 rounded-lg bg-surface-variant text-on-surface-variant text-label-lg font-body flex-shrink-0 transition-colors" data-ts="4/4">4/4</button>
+<button class="ts-chip snap-start px-6 py-2 rounded-lg bg-surface-variant text-on-surface-variant text-label-lg font-body flex-shrink-0 transition-colors" data-ts="6/8">6/8</button>
+</div>
+<!-- Accent Toggle -->
+<div class="flex items-center justify-between py-2">
+<span class="text-body-lg text-on-surface font-body">Accent First Beat</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" id="accent-toggle" type="checkbox"/>
+<div class="w-14 h-8 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-outline after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary peer-checked:after:bg-on-primary"></div>
+</label>
+</div>
+<!-- Play/Stop Action -->
+<button class="w-full h-16 mt-2 rounded-full bg-primary text-on-primary flex items-center justify-center gap-3 shadow-sm hover:shadow-md transition-all active:scale-[0.98]" id="play-btn">
+<span class="material-symbols-outlined text-3xl" id="play-icon" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+<span class="text-title-lg font-headline font-bold" id="play-text">Start</span>
+</button>
+</div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const bpmDisplay = document.getElementById('bpm-display');
+        const slider = document.getElementById('bpm-slider');
+        const track = document.getElementById('slider-track');
+        const btnDec = document.getElementById('btn-dec');
+        const btnInc = document.getElementById('btn-inc');
+        const playBtn = document.getElementById('play-btn');
+        const playIcon = document.getElementById('play-icon');
+        const playText = document.getElementById('play-text');
+        const pulseRing = document.getElementById('pulse-ring');
+        const beatIndicator = document.getElementById('beat-indicator');
+        const timeSigDisplay = document.getElementById('time-sig-display');
+        const tsChips = document.querySelectorAll('.ts-chip');
+        const accentToggle = document.getElementById('accent-toggle');
+
+        let isPlaying = false;
+        let bpm = 120;
+        let beatsPerBar = 4;
+        let currentBeat = 1;
+        let intervalId = null;
+
+        // Update UI
+        function updateSliderTrack() {
+            const min = slider.min || 40;
+            const max = slider.max || 240;
+            const percent = ((bpm - min) / (max - min)) * 100;
+            track.style.width = `${percent}%`;
+        }
+
+        function updateBPM(newBPM) {
+            bpm = Math.max(40, Math.min(240, newBPM));
+            bpmDisplay.textContent = bpm;
+            slider.value = bpm;
+            updateSliderTrack();
+            if (isPlaying) {
+                stopMetronome();
+                startMetronome();
+            }
+        }
+
+        // Controls Event Listeners
+        slider.addEventListener('input', (e) => {
+            updateBPM(parseInt(e.target.value));
+        });
+
+        btnDec.addEventListener('click', () => updateBPM(bpm - 1));
+        btnInc.addEventListener('click', () => updateBPM(bpm + 1));
+
+        // Chips Selection
+        tsChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                // Reset all
+                tsChips.forEach(c => {
+                    c.classList.remove('bg-primary-container', 'text-on-primary-container');
+                    c.classList.add('bg-surface-variant', 'text-on-surface-variant');
+                });
+                // Set active
+                chip.classList.remove('bg-surface-variant', 'text-on-surface-variant');
+                chip.classList.add('bg-primary-container', 'text-on-primary-container');
+                
+                const ts = chip.getAttribute('data-ts');
+                timeSigDisplay.textContent = ts;
+                beatsPerBar = parseInt(ts.split('/')[0]);
+                
+                // Restart if playing to reset beat count
+                if (isPlaying) {
+                    stopMetronome();
+                    currentBeat = 1;
+                    beatIndicator.textContent = currentBeat;
+                    startMetronome();
+                } else {
+                    currentBeat = 1;
+                    beatIndicator.textContent = currentBeat;
+                }
+            });
+        });
+
+        // Audio Context (Mocked for visual display)
+        // In a real app, use Web Audio API for precise timing
+        
+        function tick() {
+            // Visual pulse
+            pulseRing.classList.remove('scale-100', 'opacity-0');
+            pulseRing.classList.add('scale-150', 'opacity-50', 'duration-0');
+            
+            // Highlight accent
+            const isAccent = accentToggle.checked && currentBeat === 1;
+            
+            if (isAccent) {
+                beatIndicator.classList.add('text-white');
+                pulseRing.classList.replace('bg-primary/20', 'bg-tertiary/40');
+            } else {
+                beatIndicator.classList.remove('text-white');
+                pulseRing.classList.replace('bg-tertiary/40', 'bg-primary/20');
+            }
+
+            beatIndicator.textContent = currentBeat;
+
+            // Trigger reflow to restart animation
+            void pulseRing.offsetWidth;
+            pulseRing.classList.remove('scale-150', 'opacity-50', 'duration-0');
+            pulseRing.classList.add('scale-100', 'opacity-0', 'duration-[400ms]');
+
+            // Advance beat
+            currentBeat++;
+            if (currentBeat > beatsPerBar) {
+                currentBeat = 1;
+            }
+        }
+
+        function startMetronome() {
+            isPlaying = true;
+            playIcon.textContent = 'pause';
+            playText.textContent = 'Stop';
+            playBtn.classList.replace('bg-primary', 'bg-error');
+            playBtn.classList.replace('text-on-primary', 'text-on-error');
+            
+            const msPerBeat = (60 / bpm) * 1000;
+            tick(); // First tick immediately
+            intervalId = setInterval(tick, msPerBeat);
+        }
+
+        function stopMetronome() {
+            isPlaying = false;
+            playIcon.textContent = 'play_arrow';
+            playText.textContent = 'Start';
+            playBtn.classList.replace('bg-error', 'bg-primary');
+            playBtn.classList.replace('text-on-error', 'text-on-primary');
+            clearInterval(intervalId);
+            currentBeat = 1;
+            beatIndicator.textContent = '1';
+        }
+
+        playBtn.addEventListener('click', () => {
+            if (isPlaying) {
+                stopMetronome();
+            } else {
+                startMetronome();
+            }
+        });
+
+        // Initialize slider track
+        updateSliderTrack();
+    });
+</script>
+<style>
+    /* Hide scrollbar for chips row but allow scrolling */
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+</style></main><nav class="fixed bottom-0 w-full z-50 bg-surface-container/90 backdrop-blur-xl pb-safe shadow-[0_-1px_8px_rgba(0,0,0,0.04)]" data-active-classes="text-primary font-bold"><div class="flex justify-around items-center h-20 px-2"><a class="flex flex-col items-center gap-1 group w-1/4" data-path="tools" href="#"><div class="nav-pill flex items-center justify-center w-16 h-8 text-on-surface-variant group-hover:text-primary"><span class="material-symbols-outlined">grid_view</span></div><span class="text-label-sm text-on-surface-variant group-hover:text-primary">Tools</span></a><a aria-current="page" class="flex flex-col items-center gap-1 group w-1/4 text-primary font-bold" data-path="metronome" href="#"><div class="nav-pill flex items-center justify-center w-16 h-8 text-on-surface-variant group-hover:text-primary"><span class="material-symbols-outlined">schedule</span></div><span class="text-label-sm text-on-surface-variant group-hover:text-primary">Metronome</span></a><a class="flex flex-col items-center gap-1 group w-1/4" data-path="tuner" href="#"><div class="nav-pill flex items-center justify-center w-16 h-8 text-on-surface-variant group-hover:text-primary"><span class="material-symbols-outlined">vibration</span></div><span class="text-label-sm text-on-surface-variant group-hover:text-primary">Tuner</span></a><a class="flex flex-col items-center gap-1 group w-1/4" data-path="piano" href="#"><div class="nav-pill flex items-center justify-center w-16 h-8 text-on-surface-variant group-hover:text-primary"><span class="material-symbols-outlined">piano</span></div><span class="text-label-sm text-on-surface-variant group-hover:text-primary">Piano</span></a></div></nav></body></html>
