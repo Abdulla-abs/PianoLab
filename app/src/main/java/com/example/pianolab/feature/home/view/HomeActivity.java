@@ -1,62 +1,62 @@
 package com.example.pianolab.feature.home.view;
 
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.databinding.DataBindingUtil;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.GridLayoutManager;
 import com.example.pianolab.R;
 import com.example.pianolab.databinding.ActivityHomeBinding;
 import com.example.pianolab.feature.home.viewmodel.HomeViewModel;
+import com.example.pianolab.utils.ImmersiveUiHelper;
 
-
-/**
- * 主界面：功能选择入口
- */
+/** 主界面：功能选择入口 */
 public class HomeActivity extends AppCompatActivity {
-    private ActivityHomeBinding binding; // DataBinding对象
-    private HomeViewModel homeViewModel;
-    private FeatureAdapter featureAdapter;
+  private ActivityHomeBinding binding;
+  private HomeViewModel homeViewModel;
+  private FeatureAdapter featureAdapter;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        // 1. 初始化DataBinding（绑定布局）
-        binding = DataBindingUtil.setContentView(this, R.layout.activity_home);
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    ImmersiveUiHelper.enableStandardSystemBars(getWindow());
+    binding = DataBindingUtil.setContentView(this, R.layout.activity_home);
+    ImmersiveUiHelper.applySystemBarInsets(binding.contentRoot);
 
-        // 2. 初始化ViewModel
-        homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
+    homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
 
-        // 3. 绑定ViewModel到布局，并设置生命周期所有者（让LiveData感知Activity生命周期）
-        binding.setViewModel(homeViewModel);
-        binding.setLifecycleOwner(this);
+    initVersionBadge();
+    initRecyclerView();
+  }
 
-        // 4. 初始化RecyclerView适配器
-        initRecyclerView();
+  private void initVersionBadge() {
+    String versionName = "1.0";
+    try {
+      versionName =
+          getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+    } catch (PackageManager.NameNotFoundException ignored) {
+      // Keep default version label.
     }
+    binding.tvVersionBadge.setText(getString(R.string.home_version_badge, versionName));
+  }
 
-    // 初始化RecyclerView：观察ViewModel的数据变化，更新列表
-    private void initRecyclerView() {
-        // 设置布局管理器（网格布局，2列）
-        binding.rvFeatures.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(this, 2));
+  private void initRecyclerView() {
+    int columns = getResources().getInteger(R.integer.feature_grid_columns);
+    binding.rvFeatures.setLayoutManager(new GridLayoutManager(this, columns));
 
-        // 观察功能列表数据
-        homeViewModel.getFeatureItems().observe(this, featureItems -> {
-            if (featureItems != null) {
-                // 创建适配器
-                featureAdapter = new FeatureAdapter(featureItems, item -> {
-                    homeViewModel.onFeatureItemClick(HomeActivity.this, item);
-                });
-                // 设置适配器到RecyclerView
+    homeViewModel
+        .getFeatureItems()
+        .observe(
+            this,
+            featureItems -> {
+              if (featureItems != null) {
+                featureAdapter =
+                    new FeatureAdapter(
+                        featureItems,
+                        item -> homeViewModel.onFeatureItemClick(HomeActivity.this, item));
                 binding.rvFeatures.setAdapter(featureAdapter);
-            }
-        });
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (homeViewModel != null) {
-            homeViewModel.refreshTrivia();
-        }
-    }
+              }
+            });
+  }
 }

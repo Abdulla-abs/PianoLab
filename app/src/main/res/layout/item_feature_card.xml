@@ -8,39 +8,53 @@
             type="com.example.pianolab.feature.home.model.FeatureItem" />
     </data>
 
-    <com.google.android.material.card.MaterialCardView
+    <FrameLayout
+        android:id="@+id/feature_card_root"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        app:cardBackgroundColor="@color/piano_surface"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="2dp"
-        app:strokeWidth="0dp">
+        android:layout_margin="4dp"
+        android:background="@drawable/bg_feature_card_primary"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        android:padding="20dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="24dp">
+            android:orientation="vertical">
 
-            <ImageView
-                android:id="@+id/iv_feature_icon"
-                android:layout_width="72dp"
-                android:layout_height="72dp"
-                android:contentDescription="@{item.name}"
-                app:tint="@color/piano_primary" />
+            <FrameLayout
+                android:id="@+id/icon_circle"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_feature_icon_circle_primary">
+
+                <ImageView
+                    android:id="@+id/iv_feature_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    app:tint="@color/md_theme_light_onPrimaryFixedVariant" />
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/tv_feature_name"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:text="@{item.name}"
-                android:textColor="@color/text_primary"
-                android:textSize="18sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+                android:textAppearance="@style/TextAppearance.PianoLab.TitleLarge"
+                android:textColor="?attr/colorOnSurface" />
 
-    </com.google.android.material.card.MaterialCardView>
+            <TextView
+                android:id="@+id/tv_feature_description"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textAppearance="@style/TextAppearance.PianoLab.BodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+        </LinearLayout>
+    </FrameLayout>
 </layout>

@@ -1,9 +1,12 @@
 package com.example.pianolab.utils;
 
 import android.graphics.Color;
+import android.view.View;
 import android.view.Window;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
@@ -21,6 +24,44 @@ public final class ImmersiveUiHelper {
         window.setStatusBarColor(Color.TRANSPARENT);
         window.setNavigationBarColor(Color.TRANSPARENT);
         applyImmersiveSystemUi(window);
+    }
+
+    /**
+     * 标准系统栏：始终显示状态栏/导航栏。targetSdk 35+ 强制 edge-to-edge，
+     * 需配合 {@link #applySystemBarInsets(View)} 为内容区预留安全间距。
+     */
+    public static void enableStandardSystemBars(@NonNull Window window) {
+        WindowCompat.setDecorFitsSystemWindows(window, false);
+        WindowInsetsControllerCompat controller =
+                WindowCompat.getInsetsController(window, window.getDecorView());
+        if (controller == null) {
+            return;
+        }
+        controller.setAppearanceLightStatusBars(true);
+        controller.setAppearanceLightNavigationBars(true);
+        controller.show(WindowInsetsCompat.Type.statusBars());
+        controller.show(WindowInsetsCompat.Type.navigationBars());
+    }
+
+    /** 为内容根布局应用系统栏 insets，避免工具栏被状态栏遮挡。 */
+    public static void applySystemBarInsets(@NonNull View view) {
+        final int initialLeft = view.getPaddingLeft();
+        final int initialTop = view.getPaddingTop();
+        final int initialRight = view.getPaddingRight();
+        final int initialBottom = view.getPaddingBottom();
+
+        ViewCompat.setOnApplyWindowInsetsListener(
+                view,
+                (v, windowInsets) -> {
+                    Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+                    v.setPadding(
+                            initialLeft + insets.left,
+                            initialTop + insets.top,
+                            initialRight + insets.right,
+                            initialBottom + insets.bottom);
+                    return windowInsets;
+                });
+        ViewCompat.requestApplyInsets(view);
     }
 
     /**

@@ -52,6 +52,20 @@
     <string name="footer_text">Designed with ❤️ by KhasAlushird\nv1.0.0 Beta</string>
     <string name="title_desc">简单实用的钢琴工具库</string>
 
+    <!-- Home screen -->
+    <string name="home_subtitle">Your Professional Piano Toolkit</string>
+    <string name="home_version_badge">v%1$s Material</string>
+    <string name="home_settings">设置</string>
+    <string name="home_app_logo">PianoLab 标志</string>
+    <string name="home_feature_metronome">节拍器</string>
+    <string name="home_feature_metronome_desc">视觉与听觉节拍提示</string>
+    <string name="home_feature_piano">虚拟钢琴</string>
+    <string name="home_feature_piano_desc">测试音高与和弦</string>
+    <string name="home_feature_tuner">调音器</string>
+    <string name="home_feature_tuner_desc">精准频率分析</string>
+    <string name="home_feature_chord">和弦工具</string>
+    <string name="home_feature_chord_desc">和弦图表与进行</string>
+
     <string name="special_rhy">特殊节奏型</string>
     <string name="equal"> = </string>
     <string name="bpm_equal">BPM = </string>
