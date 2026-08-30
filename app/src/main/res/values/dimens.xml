@@ -13,5 +13,9 @@
     <dimen name="virtual_piano_overview_gap_below">2dp</dimen>
     <dimen name="tuner_content_spacing">12dp</dimen>
     <dimen name="tuner_keyboard_height">120dp</dimen>
-    <dimen name="tuner_meter_ruler_height">52dp</dimen>
+    <dimen name="tuner_meter_ruler_height">56dp</dimen>
+    <dimen name="tuner_meter_header_spacing">8dp</dimen>
+    <dimen name="tuner_meter_stat_column_min_width">72dp</dimen>
+    <dimen name="tuner_note_name_max_size">48sp</dimen>
+    <dimen name="tuner_note_name_min_size">28sp</dimen>
 </resources>

@@ -3,11 +3,8 @@ package com.example.pianolab.feature.tuner.view;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
@@ -50,7 +47,8 @@ public class TunerActivity extends AppCompatActivity {
     private TextView textMeasuredFreqValue;
     private TextView textDeviationValue;
     private TextView textWaveformIdle;
-    private ImageView imgMeterPointer;
+    private DeviationRulerView deviationRuler;
+    private WaveformView waveformView;
 
     private boolean settingsProgrammatic = false;
     private boolean freqProgrammatic = false;
@@ -81,9 +79,9 @@ public class TunerActivity extends AppCompatActivity {
         textMeasuredFreqValue = findViewById(R.id.text_measured_freq_value);
         textDeviationValue = findViewById(R.id.text_deviation_value);
         textWaveformIdle = findViewById(R.id.text_waveform_idle);
-        imgMeterPointer = findViewById(R.id.img_meter_pointer);
+        deviationRuler = findViewById(R.id.deviation_ruler);
+        waveformView = findViewById(R.id.waveform_view);
 
-        setupMeterTicks();
         initPermissionLauncher();
         initSettings();
         initButtons();
@@ -140,22 +138,6 @@ public class TunerActivity extends AppCompatActivity {
                 }
             }
         });
-    }
-
-    private void setupMeterTicks() {
-        LinearLayout ticksRow = findViewById(R.id.meter_ticks_row);
-        String[] ticks = getResources().getStringArray(R.array.tuner_meter_ticks);
-        for (String tick : ticks) {
-            TextView tickView = new TextView(this);
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-            tickView.setLayoutParams(params);
-            tickView.setGravity(Gravity.CENTER);
-            tickView.setText(tick);
-            tickView.setTextAppearance(R.style.TextAppearance_PianoLab_LabelSmall);
-            tickView.setTextColor(ContextCompat.getColor(this, R.color.md_theme_tool_outline));
-            ticksRow.addView(tickView);
-        }
     }
 
     @Override
@@ -261,21 +243,32 @@ public class TunerActivity extends AppCompatActivity {
             updateListeningUi(listening);
             updateSettingsEnabled(!listening);
 
-            String displayNote = listening ? state.getDisplayNote() : getString(R.string.none_symbol);
+            boolean hasResult = state.getMeasuredFrequency() > 0f;
+
+            String displayNote = (listening || hasResult)
+                    ? state.getDisplayNote()
+                    : getString(R.string.none_symbol);
             textNoteName.setText(displayNote);
             textNoteName.setClickable(!state.isAutoDetectEnabled());
             textNoteName.setFocusable(!state.isAutoDetectEnabled());
 
             textRefFreqValue.setText(getString(R.string.tuner_freq_hz_value, state.getDisplayFrequency()));
-            textMeasuredFreqValue.setText(getString(
-                    R.string.tuner_freq_hz_value,
-                    listening ? state.getMeasuredFrequency() : 0f));
+            float measuredFrequency = hasResult ? state.getMeasuredFrequency() : 0f;
+            textMeasuredFreqValue.setText(getString(R.string.tuner_freq_hz_value, measuredFrequency));
 
-            float deviationCents = listening ? state.getDeviationCents() : 0f;
+            float deviationCents = hasResult ? state.getDeviationCents() : 0f;
             textDeviationValue.setText(getString(R.string.tuner_cents_value, deviationCents));
-            int deviationColor = resolveDeviationColor(deviationCents);
-            textDeviationValue.setTextColor(deviationColor);
-            imgMeterPointer.setColorFilter(deviationColor);
+            textDeviationValue.setTextColor(resolveDeviationColor(deviationCents));
+
+            deviationRuler.setActive(listening || hasResult);
+            deviationRuler.setDeviation(deviationCents);
+
+            waveformView.setFrequencyMode(viewModel.isFrequencyMode());
+            if (viewModel.isFrequencyMode()) {
+                waveformView.setWaveform(state.getSpectrumMagnitudes());
+            } else {
+                waveformView.setWaveform(state.getWaveformSamples());
+            }
 
             textWaveformIdle.setVisibility(listening ? View.GONE : View.VISIBLE);
         });

@@ -4,7 +4,13 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.util.TypedValue;
 import android.view.View;
+
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+
+import com.example.pianolab.R;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,31 +18,40 @@ import java.util.List;
 public class WaveformView extends View {
     private final Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint barPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint gridPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final List<Float> samples = new ArrayList<>();
     private boolean frequencyMode = true;
 
     public WaveformView(Context context) {
-        super(context);
-        init();
+        this(context, null);
     }
 
-    public WaveformView(Context context, AttributeSet attrs) {
-        super(context, attrs);
-        init();
+    public WaveformView(Context context, @Nullable AttributeSet attrs) {
+        this(context, attrs, 0);
     }
 
-    public WaveformView(Context context, AttributeSet attrs, int defStyleAttr) {
+    public WaveformView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init();
+        init(context);
     }
 
-    private void init() {
+    private void init(Context context) {
+        int waveColor = resolveThemeColor(context, androidx.appcompat.R.attr.colorPrimary);
+        int gridColor = ContextCompat.getColor(context, R.color.md_theme_tool_outlineVariant);
+
         linePaint.setStyle(Paint.Style.STROKE);
-        linePaint.setStrokeWidth(2f);
-        linePaint.setColor(0xFFFFFFFF);
+        linePaint.setStrokeWidth(dp(2f));
+        linePaint.setColor(waveColor);
 
         barPaint.setStyle(Paint.Style.FILL);
-        barPaint.setColor(0x88FFFFFF);
+        barPaint.setColor(waveColor);
+
+        gridPaint.setStyle(Paint.Style.STROKE);
+        gridPaint.setStrokeWidth(dp(1f));
+        gridPaint.setColor(gridColor);
+        gridPaint.setAlpha(128);
+
+        setContentDescription(context.getString(R.string.tuner_desc_waveform));
     }
 
     public void setWaveform(List<Float> waveform) {
@@ -55,6 +70,7 @@ public class WaveformView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        drawGrid(canvas);
         if (samples.isEmpty()) {
             return;
         }
@@ -65,7 +81,28 @@ public class WaveformView extends View {
         }
     }
 
+    private void drawGrid(Canvas canvas) {
+        float width = getWidth();
+        float height = getHeight();
+        if (width <= 0f || height <= 0f) {
+            return;
+        }
+
+        float centerY = height / 2f;
+        canvas.drawLine(0f, centerY, width, centerY, gridPaint);
+
+        int columns = 5;
+        for (int i = 1; i < columns; i++) {
+            float x = (width / columns) * i;
+            canvas.drawLine(x, 0f, x, height, gridPaint);
+        }
+    }
+
     private void drawWaveform(Canvas canvas) {
+        if (samples.size() < 2) {
+            return;
+        }
+
         float width = getWidth();
         float height = getHeight();
         float centerY = height / 2f;
@@ -96,7 +133,8 @@ public class WaveformView extends View {
         if (max <= 0f) {
             return;
         }
-        float barWidth = Math.max(width / samples.size(), 2f);
+
+        float barWidth = Math.max(width / samples.size(), dp(2f));
         for (int i = 0; i < samples.size(); i++) {
             float norm = samples.get(i) / max;
             float barHeight = norm * height;
@@ -105,5 +143,20 @@ public class WaveformView extends View {
             float top = height - barHeight;
             canvas.drawRect(left, top, right, height, barPaint);
         }
+    }
+
+    private int resolveThemeColor(Context context, int attr) {
+        TypedValue typedValue = new TypedValue();
+        if (context.getTheme().resolveAttribute(attr, typedValue, true)) {
+            return typedValue.data;
+        }
+        return ContextCompat.getColor(context, R.color.md_theme_tool_primary);
+    }
+
+    private float dp(float value) {
+        return TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                value,
+                getResources().getDisplayMetrics());
     }
 }

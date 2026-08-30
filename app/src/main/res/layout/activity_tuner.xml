@@ -63,34 +63,45 @@
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
+                        android:clipChildren="true"
+                        android:clipToPadding="true"
                         android:padding="@dimen/spacing_margin_mobile">
 
                         <LinearLayout
                             android:id="@+id/meter_header"
                             android:layout_width="0dp"
                             android:layout_height="0dp"
-                            android:gravity="center_vertical"
+                            android:layout_marginBottom="@dimen/tuner_meter_header_spacing"
+                            android:gravity="top"
                             android:orientation="horizontal"
-                            app:layout_constraintBottom_toTopOf="@id/meter_ruler"
+                            app:layout_constraintBottom_toTopOf="@id/deviation_ruler"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent">
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintVertical_bias="0">
 
                             <LinearLayout
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:gravity="center_vertical"
+                                android:layout_weight="1"
+                                android:gravity="top"
                                 android:orientation="horizontal">
 
                                 <TextView
                                     android:id="@+id/text_note_name"
-                                    android:layout_width="wrap_content"
+                                    android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
+                                    android:ellipsize="end"
                                     android:fontFamily="serif"
+                                    android:maxLines="1"
                                     android:text="@string/none_symbol"
                                     android:textAppearance="@style/TextAppearance.PianoLab.DisplayLarge"
                                     android:textColor="?attr/colorOnSurface"
                                     android:textStyle="bold"
+                                    app:autoSizeMaxTextSize="@dimen/tuner_note_name_max_size"
+                                    app:autoSizeMinTextSize="@dimen/tuner_note_name_min_size"
+                                    app:autoSizeStepGranularity="2sp"
+                                    app:autoSizeTextType="uniform"
                                     tools:text="A4" />
                             </LinearLayout>
 
@@ -102,78 +113,86 @@
                             <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal">
+                                android:layout_gravity="top"
+                                android:orientation="vertical">
 
                                 <LinearLayout
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_marginStart="12dp"
-                                    android:gravity="center_horizontal"
-                                    android:orientation="vertical">
+                                    android:orientation="horizontal">
 
                                     <TextView
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
+                                        android:layout_marginStart="12dp"
+                                        android:gravity="center_horizontal"
+                                        android:minWidth="@dimen/tuner_meter_stat_column_min_width"
                                         android:text="@string/tuner_label_ref_freq"
                                         android:textAppearance="@style/TextAppearance.PianoLab.LabelSmall"
                                         android:textColor="?attr/colorOnSurfaceVariant" />
 
                                     <TextView
-                                        android:id="@+id/text_ref_freq_value"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
-                                        android:layout_marginTop="2dp"
-                                        android:fontFamily="monospace"
-                                        android:textAppearance="@style/TextAppearance.PianoLab.LabelSmall"
-                                        android:textColor="?attr/colorOnSurface"
-                                        tools:text="440.00 Hz" />
-                                </LinearLayout>
-
-                                <LinearLayout
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginStart="12dp"
-                                    android:gravity="center_horizontal"
-                                    android:orientation="vertical">
-
-                                    <TextView
-                                        android:layout_width="wrap_content"
-                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="12dp"
+                                        android:gravity="center_horizontal"
+                                        android:minWidth="@dimen/tuner_meter_stat_column_min_width"
                                         android:text="@string/tuner_label_measured_freq"
                                         android:textAppearance="@style/TextAppearance.PianoLab.LabelSmall"
                                         android:textColor="?attr/colorOnSurfaceVariant" />
 
                                     <TextView
-                                        android:id="@+id/text_measured_freq_value"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
-                                        android:layout_marginTop="2dp"
-                                        android:fontFamily="monospace"
+                                        android:layout_marginStart="12dp"
+                                        android:gravity="center_horizontal"
+                                        android:minWidth="@dimen/tuner_meter_stat_column_min_width"
+                                        android:text="@string/tuner_label_deviation"
                                         android:textAppearance="@style/TextAppearance.PianoLab.LabelSmall"
-                                        android:textColor="?attr/colorOnSurface"
-                                        tools:text="0.00 Hz" />
+                                        android:textColor="?attr/colorOnSurfaceVariant" />
                                 </LinearLayout>
 
                                 <LinearLayout
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_marginStart="12dp"
-                                    android:gravity="center_horizontal"
-                                    android:orientation="vertical">
+                                    android:layout_marginTop="2dp"
+                                    android:baselineAligned="true"
+                                    android:orientation="horizontal">
 
                                     <TextView
+                                        android:id="@+id/text_ref_freq_value"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
-                                        android:text="@string/tuner_label_deviation"
-                                        android:textAppearance="@style/TextAppearance.PianoLab.LabelSmall"
-                                        android:textColor="?attr/colorOnSurfaceVariant" />
+                                        android:layout_marginStart="12dp"
+                                        android:fontFamily="monospace"
+                                        android:gravity="center_horizontal"
+                                        android:minWidth="@dimen/tuner_meter_stat_column_min_width"
+                                        android:textAppearance="@style/TextAppearance.PianoLab.BodyMedium"
+                                        android:textColor="?attr/colorOnSurface"
+                                        android:textStyle="bold"
+                                        tools:text="440.00 Hz" />
+
+                                    <TextView
+                                        android:id="@+id/text_measured_freq_value"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="12dp"
+                                        android:fontFamily="monospace"
+                                        android:gravity="center_horizontal"
+                                        android:minWidth="@dimen/tuner_meter_stat_column_min_width"
+                                        android:textAppearance="@style/TextAppearance.PianoLab.BodyMedium"
+                                        android:textColor="?attr/colorOnSurface"
+                                        android:textStyle="bold"
+                                        tools:text="0.00 Hz" />
 
                                     <TextView
                                         android:id="@+id/text_deviation_value"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
-                                        android:layout_marginTop="2dp"
+                                        android:layout_marginStart="12dp"
                                         android:fontFamily="monospace"
+                                        android:gravity="center_horizontal"
+                                        android:minWidth="@dimen/tuner_meter_stat_column_min_width"
                                         android:textAppearance="@style/TextAppearance.PianoLab.BodyMedium"
                                         android:textColor="@color/tuner_cursor_green"
                                         android:textStyle="bold"
@@ -182,52 +201,13 @@
                             </LinearLayout>
                         </LinearLayout>
 
-                        <FrameLayout
-                            android:id="@+id/meter_ruler"
+                        <com.example.pianolab.feature.tuner.view.DeviationRulerView
+                            android:id="@+id/deviation_ruler"
                             android:layout_width="0dp"
                             android:layout_height="@dimen/tuner_meter_ruler_height"
-                            android:contentDescription="@string/tuner_desc_meter"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toStartOf="parent">
-
-                            <View
-                                android:layout_width="48dp"
-                                android:layout_height="20dp"
-                                android:layout_gravity="bottom|center_horizontal"
-                                android:layout_marginBottom="14dp"
-                                android:background="@drawable/bg_target_zone" />
-
-                            <View
-                                android:layout_width="2dp"
-                                android:layout_height="24dp"
-                                android:layout_gravity="bottom|center_horizontal"
-                                android:background="@color/tuner_cursor_green" />
-
-                            <ImageView
-                                android:id="@+id/img_meter_pointer"
-                                android:layout_width="12dp"
-                                android:layout_height="10dp"
-                                android:layout_gravity="bottom|center_horizontal"
-                                android:layout_marginBottom="30dp"
-                                android:contentDescription="@string/tuner_desc_meter"
-                                android:importantForAccessibility="no"
-                                android:src="@drawable/ic_pointer_up" />
-
-                            <View
-                                android:layout_width="match_parent"
-                                android:layout_height="2dp"
-                                android:layout_gravity="bottom"
-                                android:layout_marginBottom="12dp"
-                                android:background="?attr/colorOutlineVariant" />
-
-                            <LinearLayout
-                                android:id="@+id/meter_ticks_row"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_gravity="bottom"
-                                android:orientation="horizontal" />
-                        </FrameLayout>
+                            app:layout_constraintStart_toStartOf="parent" />
                     </androidx.constraintlayout.widget.ConstraintLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -245,8 +225,12 @@
                     <FrameLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="@drawable/bg_tuner_oscilloscope"
-                        android:contentDescription="@string/tuner_desc_waveform">
+                        android:background="@drawable/bg_tuner_oscilloscope">
+
+                        <com.example.pianolab.feature.tuner.view.WaveformView
+                            android:id="@+id/waveform_view"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent" />
 
                         <TextView
                             android:id="@+id/text_waveform_idle"

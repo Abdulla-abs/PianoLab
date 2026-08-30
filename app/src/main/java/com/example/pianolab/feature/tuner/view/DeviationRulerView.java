@@ -1,13 +1,15 @@
 package com.example.pianolab.feature.tuner.view;
 
+import android.animation.ValueAnimator;
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.RectF;
 import android.util.AttributeSet;
+import android.util.TypedValue;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
 
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -17,18 +19,35 @@ import com.example.pianolab.R;
 public class DeviationRulerView extends View {
     private static final float MIN_CENTS = -50f;
     private static final float MAX_CENTS = 50f;
-    private static final float GREEN_ZONE = 5f;
-    private static final float YELLOW_ZONE = 20f;
+    private static final float IN_TUNE_CENTS = 3f;
+    private static final float TARGET_ZONE_CENTS = 5f;
+    private static final float SCALE_USABLE_RATIO = 0.9f;
+    private static final long ANIMATION_DURATION_MS = 120L;
 
+    private final Paint trackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint tickPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint centerLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint zonePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint cursorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Path cursorPath = new Path();
+    private final Paint labelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint pointerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint pointerLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Path pointerPath = new Path();
 
-    private float currentCents = 0f;
-    private float viewWidth = 0f;
-    private float viewHeight = 0f;
+    private final String[] tickLabels;
+
+    private float displayedCents;
+    private boolean active;
+    private ValueAnimator centsAnimator;
+
+    private float trackY;
+    private float tickTopY;
+    private float labelBaselineY;
+    private float pointerTipY;
+    private float pointerBaseY;
+    private float pointerHalfWidth;
+    private float centerLineTopY;
+    private float zoneTopY;
+    private float zoneHeight;
 
     public DeviationRulerView(Context context) {
         this(context, null);
@@ -40,153 +59,195 @@ public class DeviationRulerView extends View {
 
     public DeviationRulerView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        initPaints();
+        tickLabels = getResources().getStringArray(R.array.tuner_meter_ticks);
+        initPaints(context);
+        setContentDescription(context.getString(R.string.tuner_desc_meter));
     }
 
-    private void initPaints() {
-        linePaint.setStyle(Paint.Style.STROKE);
-        linePaint.setStrokeWidth(2f);
-        linePaint.setColor(Color.WHITE);
+    private void initPaints(Context context) {
+        int trackColor = ContextCompat.getColor(context, R.color.md_theme_tool_outline);
+        int centerColor = ContextCompat.getColor(context, R.color.tuner_cursor_green);
 
-        textPaint.setTextSize(24f);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextAlign(Paint.Align.CENTER);
+        trackPaint.setStyle(Paint.Style.STROKE);
+        trackPaint.setStrokeWidth(dp(2f));
+        trackPaint.setColor(trackColor);
 
-        cursorPaint.setColor(ContextCompat.getColor(getContext(), R.color.tuner_cursor_green));
-        cursorPaint.setStyle(Paint.Style.FILL);
+        tickPaint.setStyle(Paint.Style.STROKE);
+        tickPaint.setStrokeWidth(dp(1f));
+        tickPaint.setColor(trackColor);
+
+        centerLinePaint.setStyle(Paint.Style.STROKE);
+        centerLinePaint.setStrokeWidth(dp(2f));
+        centerLinePaint.setColor(centerColor);
+
+        zonePaint.setStyle(Paint.Style.FILL);
+        zonePaint.setColor(ContextCompat.getColor(context, R.color.tuner_in_tune_zone));
+
+        labelPaint.setTextAlign(Paint.Align.CENTER);
+        labelPaint.setTextSize(sp(10f));
+        labelPaint.setColor(trackColor);
+
+        pointerPaint.setStyle(Paint.Style.FILL);
+        pointerLinePaint.setStyle(Paint.Style.STROKE);
+        pointerLinePaint.setStrokeWidth(dp(2f));
+    }
+
+    public void setActive(boolean active) {
+        if (this.active == active) {
+            return;
+        }
+        this.active = active;
+        if (!active) {
+            cancelAnimation();
+            displayedCents = 0f;
+        }
+        invalidate();
     }
 
     public void setDeviation(float cents) {
-        this.currentCents = Math.max(MIN_CENTS, Math.min(MAX_CENTS, cents));
-        invalidate();
+        float clamped = Math.max(MIN_CENTS, Math.min(MAX_CENTS, cents));
+        if (!active) {
+            displayedCents = 0f;
+            invalidate();
+            return;
+        }
+        animateTo(clamped);
+    }
+
+    private void animateTo(float targetCents) {
+        cancelAnimation();
+        if (Math.abs(displayedCents - targetCents) < 0.05f) {
+            displayedCents = targetCents;
+            invalidate();
+            return;
+        }
+        centsAnimator = ValueAnimator.ofFloat(displayedCents, targetCents);
+        centsAnimator.setDuration(ANIMATION_DURATION_MS);
+        centsAnimator.setInterpolator(new DecelerateInterpolator());
+        centsAnimator.addUpdateListener(animation -> {
+            displayedCents = (float) animation.getAnimatedValue();
+            invalidate();
+        });
+        centsAnimator.start();
+    }
+
+    private void cancelAnimation() {
+        if (centsAnimator != null) {
+            centsAnimator.cancel();
+            centsAnimator = null;
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        cancelAnimation();
+        super.onDetachedFromWindow();
     }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        viewWidth = w;
-        viewHeight = h;
+        float labelSize = labelPaint.getTextSize();
+        labelBaselineY = h - dp(2f);
+        trackY = labelBaselineY - labelSize - dp(4f);
+        tickTopY = trackY - dp(10f);
+        centerLineTopY = trackY - dp(20f);
+        zoneTopY = centerLineTopY;
+        zoneHeight = trackY - zoneTopY;
+        pointerTipY = trackY - dp(12f);
+        pointerBaseY = trackY - dp(24f);
+        pointerHalfWidth = dp(6f);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (viewWidth == 0 || viewHeight == 0) return;
+        if (getWidth() == 0 || getHeight() == 0) {
+            return;
+        }
 
-        drawColorZones(canvas);
-        drawRulerLines(canvas);
-        drawCursor(canvas);
+        drawTargetZone(canvas);
+        drawTrack(canvas);
+        drawCenterLine(canvas);
+        drawTicks(canvas);
+        drawLabels(canvas);
+        if (active) {
+            drawPointer(canvas, displayedCents);
+        }
     }
 
-    private void drawColorZones(Canvas canvas) {
-        float centerX = viewWidth / 2f;
-        float rulerTop = viewHeight * 0.1f;
-        float rulerBottom = viewHeight * 0.9f;
-
-        // 绿色区 (±5音分)
-        float greenLeft = centerX + centsToPixel(-GREEN_ZONE);
-        float greenRight = centerX + centsToPixel(GREEN_ZONE);
-        zonePaint.setColor(Color.argb(40, 76, 175, 80)); // #4CAF50 半透明
-        canvas.drawRect(greenLeft, rulerTop, greenRight, rulerBottom, zonePaint);
-
-        // 黄色区 (±5~20音分)
-        zonePaint.setColor(Color.argb(40, 255, 193, 7)); // #FFC107 半透明
-        // 左侧黄色区
-        float yellowLeftStart = centerX + centsToPixel(-YELLOW_ZONE);
-        float yellowLeftEnd = centerX + centsToPixel(-GREEN_ZONE);
-        canvas.drawRect(yellowLeftStart, rulerTop, yellowLeftEnd, rulerBottom, zonePaint);
-        // 右侧黄色区
-        float yellowRightStart = centerX + centsToPixel(GREEN_ZONE);
-        float yellowRightEnd = centerX + centsToPixel(YELLOW_ZONE);
-        canvas.drawRect(yellowRightStart, rulerTop, yellowRightEnd, rulerBottom, zonePaint);
-
-        // 红色区 (±20以上)
-        zonePaint.setColor(Color.argb(40, 244, 67, 54)); // #F44336 半透明
-        // 左侧红色区
-        canvas.drawRect(0, rulerTop, yellowLeftStart, rulerBottom, zonePaint);
-        // 右侧红色区
-        canvas.drawRect(yellowRightEnd, rulerTop, viewWidth, rulerBottom, zonePaint);
+    private void drawTargetZone(Canvas canvas) {
+        float left = centsToX(-TARGET_ZONE_CENTS);
+        float right = centsToX(TARGET_ZONE_CENTS);
+        canvas.drawRect(left, zoneTopY, right, zoneTopY + zoneHeight, zonePaint);
     }
 
-    private void drawRulerLines(Canvas canvas) {
-        float centerX = viewWidth / 2f;
-        float rulerTop = viewHeight * 0.1f;
-        float rulerBottom = viewHeight * 0.9f;
-        float labelOffset = viewWidth * 0.02f;
+    private void drawTrack(Canvas canvas) {
+        canvas.drawLine(0f, trackY, getWidth(), trackY, trackPaint);
+    }
 
-        // 主刻度 (每10音分)
-        linePaint.setStrokeWidth(3f);
+    private void drawCenterLine(Canvas canvas) {
+        float centerX = getWidth() / 2f;
+        canvas.drawLine(centerX, centerLineTopY, centerX, trackY, centerLinePaint);
+    }
+
+    private void drawTicks(Canvas canvas) {
         for (int cents = -50; cents <= 50; cents += 10) {
-            float x = centerX + centsToPixel(cents);
-            canvas.drawLine(x, rulerTop, x, rulerBottom, linePaint);
-
-            // 刻度标签
-            String label = String.valueOf(cents);
-            float textX = x;
-            if (cents == -50) {
-                textX += labelOffset; // -50文字向右偏移（靠中心）
-            } else if (cents == 50) {
-                textX -= labelOffset; // 50文字向左偏移（靠中心）
-            }
-            canvas.drawText(label, textX, rulerTop - 10f, textPaint);
+            float x = centsToX(cents);
+            canvas.drawLine(x, tickTopY, x, trackY, tickPaint);
         }
-
-        // 次要刻度 (每5音分)
-        linePaint.setStrokeWidth(2f);
-        for (int cents = -45; cents <= 45; cents += 10) {
-            float x = centerX + centsToPixel(cents + 5);
-            canvas.drawLine(x, rulerTop + 20f, x, rulerBottom - 20f, linePaint);
-        }
-
-        // 绘制-5音分刻度（长度与其他次要刻度一致）+ 数字标签
-        float minus5X = centerX + centsToPixel(-5);
-        canvas.drawLine(minus5X, rulerTop, minus5X, rulerBottom, linePaint);
-        canvas.drawText("-5", minus5X, rulerTop - 10f, textPaint);
-
-        // 绘制+5音分刻度（长度与其他次要刻度一致）+ 数字标签
-        float plus5X = centerX + centsToPixel(5);
-        canvas.drawLine(plus5X, rulerTop, plus5X, rulerBottom, linePaint);
-        canvas.drawText("5", plus5X, rulerTop - 10f, textPaint);
-
-        // 中心线 (0音分)
-        linePaint.setStrokeWidth(4f);
-        linePaint.setColor(Color.argb(180, 255, 255, 255));
-        canvas.drawLine(centerX, rulerTop, centerX, rulerBottom, linePaint);
-        linePaint.setColor(Color.WHITE);
     }
 
-    private void drawCursor(Canvas canvas) {
-        float centerX = viewWidth / 2f;
-        float cursorX = centerX + centsToPixel(currentCents);
-        float cursorY = viewHeight * 0.5f;
-
-        // 根据偏差设置指针颜色
-        if (Math.abs(currentCents) <= GREEN_ZONE) {
-            cursorPaint.setColor(ContextCompat.getColor(getContext(), R.color.tuner_cursor_green));
-        } else if (Math.abs(currentCents) <= YELLOW_ZONE) {
-            cursorPaint.setColor(ContextCompat.getColor(getContext(), R.color.tuner_cursor_yellow));
-        } else {
-            cursorPaint.setColor(ContextCompat.getColor(getContext(), R.color.tuner_cursor_red));
+    private void drawLabels(Canvas canvas) {
+        int[] tickValues = {-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50};
+        int count = Math.min(tickLabels.length, tickValues.length);
+        for (int i = 0; i < count; i++) {
+            canvas.drawText(tickLabels[i], centsToX(tickValues[i]), labelBaselineY, labelPaint);
         }
-
-        // 绘制三角形指针
-        cursorPath.reset();
-        float size = 30f;
-        cursorPath.moveTo(cursorX, cursorY - size);
-        cursorPath.lineTo(cursorX - size * 0.6f, cursorY + size * 0.5f);
-        cursorPath.lineTo(cursorX + size * 0.6f, cursorY + size * 0.5f);
-        cursorPath.close();
-        canvas.drawPath(cursorPath, cursorPaint);
-
-        // 绘制指针下方的竖线
-        Paint linePaint = new Paint(cursorPaint);
-        linePaint.setStyle(Paint.Style.STROKE);
-        linePaint.setStrokeWidth(4f);
-        canvas.drawLine(cursorX, cursorY + size * 0.5f, cursorX, viewHeight * 0.9f, linePaint);
     }
 
-    private float centsToPixel(float cents) {
-        float range = MAX_CENTS - MIN_CENTS;
-        return (cents / range) * viewWidth;
+    private void drawPointer(Canvas canvas, float cents) {
+        float pointerX = centsToX(cents);
+        int pointerColor = resolvePointerColor(cents);
+        pointerPaint.setColor(pointerColor);
+        pointerLinePaint.setColor(pointerColor);
+
+        pointerPath.reset();
+        pointerPath.moveTo(pointerX, pointerTipY);
+        pointerPath.lineTo(pointerX - pointerHalfWidth, pointerBaseY);
+        pointerPath.lineTo(pointerX + pointerHalfWidth, pointerBaseY);
+        pointerPath.close();
+        canvas.drawPath(pointerPath, pointerPaint);
+        canvas.drawLine(pointerX, pointerTipY, pointerX, trackY, pointerLinePaint);
+    }
+
+    private int resolvePointerColor(float cents) {
+        float absCents = Math.abs(cents);
+        if (absCents <= IN_TUNE_CENTS) {
+            return ContextCompat.getColor(getContext(), R.color.tuner_cursor_green);
+        }
+        if (cents < -IN_TUNE_CENTS) {
+            return ContextCompat.getColor(getContext(), R.color.tuner_cursor_yellow);
+        }
+        return ContextCompat.getColor(getContext(), R.color.tuner_cursor_red);
+    }
+
+    private float centsToX(float cents) {
+        float midX = getWidth() / 2f;
+        return midX + (cents / MAX_CENTS) * (getWidth() / 2f) * SCALE_USABLE_RATIO;
+    }
+
+    private float dp(float value) {
+        return TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                value,
+                getResources().getDisplayMetrics());
+    }
+
+    private float sp(float value) {
+        return TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_SP,
+                value,
+                getResources().getDisplayMetrics());
     }
 }

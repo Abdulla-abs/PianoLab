@@ -29,16 +29,17 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
     private static final int STABLE_FRAME_COUNT = 5;
     private static final int DELAY_FRAME_COUNT = 3;
     private static final float STABLE_DEVIATION_CENTS = 10f;
-    private static final float AMPLITUDE_DROP_RATIO = 0.4f;
 
-    private static final int QUICK_STOP_FRAME_COUNT = 3;  // 约 3 帧 ≈ 225ms
-    private int validPitchCount = 0;
+    private static final float SILENCE_RMS_RATIO = 0.2f;
+    private static final float MIN_SILENCE_RMS = 0.008f;
+    private static final int SILENCE_STOP_FRAME_COUNT = 15;
+
+    private int silenceFrameCount = 0;
+    private boolean pitchDetectedInSession = false;
+    private float sessionPeakRms = 0f;
 
     private final List<Float> stableFrequencies = new ArrayList<>();
     private int delayCounter = 0;
-    private float lastRMS = 0f;
-
-
 
     private final MutableLiveData<TunerState> tunerState = new MutableLiveData<>(TunerState.idle());
     private final TarsosAudioEngine audioEngine;
@@ -259,7 +260,7 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
         }
 
         if (current.isAutoStopEnabled()) {
-            processQuickStop();
+            pitchDetectedInSession = true;
         }
     }
 
@@ -295,13 +296,39 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
         tunerState.setValue(safeState().withWaveform(waveform));
 
         if (safeState().isAutoStopEnabled()) {
-            float rms = TunerHelper.calculate_RMS(samples);
-            if (lastRMS > 0f && rms < lastRMS * AMPLITUDE_DROP_RATIO) {
-                Log.d(TAG, "Amplitude drop detected, reset quick-stop");
-                resetAutoStopState();
-            }
-            lastRMS = rms;
+            processSilenceAutoStop(TunerHelper.calculate_RMS(samples));
         }
+    }
+
+    private void processSilenceAutoStop(float rms) {
+        if (!pitchDetectedInSession || !safeState().isListening()) {
+            return;
+        }
+
+        if (rms > sessionPeakRms) {
+            sessionPeakRms = rms;
+        }
+
+        float silenceThreshold = Math.max(MIN_SILENCE_RMS, sessionPeakRms * SILENCE_RMS_RATIO);
+        if (rms < silenceThreshold) {
+            silenceFrameCount++;
+            if (silenceFrameCount >= SILENCE_STOP_FRAME_COUNT) {
+                Log.d(TAG, "Silence auto-stop triggered after " + silenceFrameCount + " frames");
+                stopListeningIfActive();
+            }
+        } else {
+            silenceFrameCount = 0;
+        }
+    }
+
+    private void stopListeningIfActive() {
+        if (!safeState().isListening()) {
+            return;
+        }
+        stopPlayback();
+        listening = false;
+        tunerState.setValue(safeState().withListening(false));
+        audioEngine.stop();
     }
 
     private void processAutoStop(float measured, float targetFreq) {
@@ -321,17 +348,12 @@ public class TunerViewModel extends AndroidViewModel implements TarsosAudioEngin
         }
     }
 
-    private void processQuickStop() {
-        validPitchCount++;
-        if (validPitchCount >= QUICK_STOP_FRAME_COUNT) {
-            Log.d(TAG, "Quick-stop triggered after " + validPitchCount + " frames");
-            toggleListening();
-        }
-    }
-
     private void resetAutoStopState() {
-        validPitchCount = 0;
-        lastRMS = 0f;
+        silenceFrameCount = 0;
+        pitchDetectedInSession = false;
+        sessionPeakRms = 0f;
+        stableFrequencies.clear();
+        delayCounter = 0;
     }
 
     private TunerState safeState() {
