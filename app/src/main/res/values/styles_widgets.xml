@@ -14,4 +14,24 @@
         <item name="android:textColor">?attr/colorOnPrimaryContainer</item>
         <item name="shapeAppearance">@style/ShapeAppearance.PianoLab.SmallComponent</item>
     </style>
+
+    <style name="ThemeOverlay.PianoLab.ChordPickerDialog" parent="ThemeOverlay.Material3.Light">
+        <item name="android:colorBackground">@color/chord_picker_dialog_bg</item>
+        <item name="colorSurface">@color/chord_picker_dialog_bg</item>
+        <item name="colorOnSurface">@color/chord_picker_title</item>
+        <item name="colorOnSurfaceVariant">@color/chord_picker_label</item>
+        <item name="android:textColorPrimary">@color/chord_picker_title</item>
+        <item name="android:textColorSecondary">@color/chord_picker_label</item>
+        <item name="android:textColor">@color/chord_picker_title</item>
+        <item name="colorControlNormal">@color/chord_picker_wheel_unselected</item>
+    </style>
+
+    <style name="ThemeOverlay.PianoLab.ChordPickerWheel" parent="ThemeOverlay.Material3.Light">
+        <item name="android:textColorPrimary">@color/chord_picker_wheel_selected</item>
+        <item name="android:textColorSecondary">@color/chord_picker_wheel_unselected</item>
+        <item name="android:textColor">@color/chord_picker_wheel_selected</item>
+        <item name="android:textColorHint">@color/chord_picker_wheel_unselected</item>
+        <item name="colorControlNormal">@color/chord_picker_wheel_unselected</item>
+        <item name="colorAccent">@color/chord_picker_wheel_selected</item>
+    </style>
 </resources>

@@ -1,74 +1,234 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:gravity="center"
-    android:padding="16dp">
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_dialog_rounded"
+    android:padding="24dp">
+
+    <FrameLayout
+        android:id="@+id/scroll_region"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/layout_actions"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/scroll_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:fillViewport="true"
+            android:overScrollMode="ifContentScrolls"
+            android:paddingEnd="@dimen/chord_picker_scroll_indicator_gap"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingBottom="8dp">
+
+            <TextView
+                android:id="@+id/tv_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/chord_picker_title"
+                android:textAppearance="@style/TextAppearance.PianoLab.TitleLarge"
+                android:textColor="@color/chord_picker_title" />
+
+            <TextView
+                android:id="@+id/tv_accidental_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="@string/chord_section_accidental"
+                android:textAppearance="@style/TextAppearance.PianoLab.BodyMedium"
+                android:textColor="@color/chord_picker_label" />
+
+            <LinearLayout
+                android:id="@+id/layout_accidental_toggle"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_accidental_container"
+                android:orientation="horizontal"
+                android:padding="4dp">
+
+                <TextView
+                    android:id="@+id/btn_accidental_none"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_accidental_selected"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="@string/chord_accidental_none"
+                    android:textColor="@color/chord_picker_title"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btn_accidental_sharp"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="@string/chord_accidental_sharp_symbol"
+                    android:textColor="@color/chord_picker_label"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/btn_accidental_flat"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="@string/chord_accidental_flat_symbol"
+                    android:textColor="@color/chord_picker_label"
+                    android:textSize="15sp" />
+            </LinearLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/layout_picker_container"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/chord_picker_wheel_height"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_picker_container"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="4dp">
+
+                <View
+                    android:id="@+id/view_selection_highlight"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/chord_picker_selection_height"
+                    android:background="@drawable/bg_picker_selection_bar"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <View
+                    android:id="@+id/view_picker_divider"
+                    android:layout_width="1dp"
+                    android:layout_height="0dp"
+                    android:background="@color/chord_picker_divider"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <com.example.pianolab.feature.chord.view.WheelPickerView
+                    android:id="@+id/picker_root_note"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/view_picker_divider"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <com.example.pianolab.feature.chord.view.WheelPickerView
+                    android:id="@+id/picker_chord_type"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/view_picker_divider"
+                    app:layout_constraintTop_toTopOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tv_selected_chord_label"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/chord_picker_selected_label"
+                    android:textAppearance="@style/TextAppearance.PianoLab.BodyMedium"
+                    android:textColor="@color/chord_picker_label" />
+
+                <TextView
+                    android:id="@+id/tv_selected_chord_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/TextAppearance.PianoLab.BodyLarge"
+                    android:textColor="@color/chord_picker_value"
+                    android:textStyle="bold"
+                    tools:text="C maj" />
+            </LinearLayout>
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <View
+            android:id="@+id/scroll_indicator_track"
+            android:layout_width="@dimen/chord_picker_scroll_indicator_width"
+            android:layout_height="match_parent"
+            android:layout_gravity="end"
+            android:background="@drawable/bg_scroll_indicator_track"
+            android:importantForAccessibility="no"
+            android:visibility="gone" />
+
+        <View
+            android:id="@+id/scroll_indicator_thumb"
+            android:layout_width="@dimen/chord_picker_scroll_indicator_width"
+            android:layout_height="@dimen/chord_picker_scroll_indicator_min_thumb"
+            android:layout_gravity="end|top"
+            android:background="@drawable/bg_scroll_indicator_thumb"
+            android:importantForAccessibility="no"
+            android:visibility="gone" />
+    </FrameLayout>
 
     <LinearLayout
+        android:id="@+id/layout_actions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center_horizontal"
-        android:layout_marginEnd="16dp">
+        android:layout_marginTop="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <TextView
+            android:id="@+id/btn_cancel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="升降号"
-            android:textSize="14sp"
-            android:layout_marginBottom="8dp"/>
-
-        <CheckBox
-            android:id="@+id/cb_accidental"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="18sp"
-            android:visibility="invisible" />
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center_horizontal"
-        android:layout_marginEnd="16dp">
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="10dp"
+            android:text="@string/beat_cancel"
+            android:textColor="@color/chord_picker_button_text"
+            android:textSize="15sp"
+            android:textStyle="bold" />
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="根音"
-            android:textSize="14sp"
-            android:layout_marginBottom="8dp"/>
-
-        <NumberPicker
-            android:id="@+id/np_root_note"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-
+            android:id="@+id/btn_ok"
+            android:layout_width="80dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_button_ok"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="@string/beat_ok"
+            android:textColor="@color/white"
+            android:textSize="15sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center_horizontal">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="和弦"
-            android:textSize="14sp"
-            android:layout_marginBottom="8dp"/>
-
-        <NumberPicker
-            android:id="@+id/np_chord_type"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-
-    </LinearLayout>
-
-</LinearLayout>
-
+</androidx.constraintlayout.widget.ConstraintLayout>

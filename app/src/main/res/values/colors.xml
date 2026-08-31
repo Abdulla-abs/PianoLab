@@ -61,6 +61,22 @@
     <color name="text_secondary">@color/md_theme_light_onSurfaceVariant</color>
     <color name="text_on_primary">@color/md_theme_light_onPrimary</color>
 
+    <color name="chord_picker_dialog_bg">#E2E5E9</color>
+    <color name="chord_picker_title">#202124</color>
+    <color name="chord_picker_label">#5F6368</color>
+    <color name="chord_picker_accidental_container">#F4F6F8</color>
+    <color name="chord_picker_accidental_selected">#DCE4ED</color>
+    <color name="chord_picker_picker_container">#FFFFFF</color>
+    <color name="chord_picker_divider">#F0F0F0</color>
+    <color name="chord_picker_selection_bar">#DDE6F3</color>
+    <color name="chord_picker_value">#000000</color>
+    <color name="chord_picker_button_text">#0061D5</color>
+    <color name="chord_picker_button_ok">#0061D5</color>
+    <color name="chord_picker_wheel_selected">#0061D5</color>
+    <color name="chord_picker_wheel_unselected">#5F6368</color>
+    <color name="chord_picker_scroll_track">#33C1C6D6</color>
+    <color name="chord_picker_scroll_thumb">#990061D5</color>
+
     <!-- Functional colors (unchanged) -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>

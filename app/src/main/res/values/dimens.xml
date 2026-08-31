@@ -18,4 +18,10 @@
     <dimen name="tuner_meter_stat_column_min_width">72dp</dimen>
     <dimen name="tuner_note_name_max_size">48sp</dimen>
     <dimen name="tuner_note_name_min_size">28sp</dimen>
+    <dimen name="chord_picker_wheel_height">160dp</dimen>
+    <dimen name="chord_picker_wheel_item_height">40dp</dimen>
+    <dimen name="chord_picker_selection_height">40dp</dimen>
+    <dimen name="chord_picker_scroll_indicator_width">4dp</dimen>
+    <dimen name="chord_picker_scroll_indicator_min_thumb">24dp</dimen>
+    <dimen name="chord_picker_scroll_indicator_gap">8dp</dimen>
 </resources>

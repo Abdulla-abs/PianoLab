@@ -133,6 +133,12 @@
     <string name="virtual_piano_range_overview">键盘音域范围预览</string>
     <string name="detect_chord">检测和弦</string>
     <string name="construct_chord">构造和弦</string>
+    <string name="chord_picker_title">选择和弦</string>
+    <string name="chord_picker_selected_label">已选和弦</string>
+    <string name="chord_accidental_none">无</string>
+    <string name="chord_accidental_sharp_symbol">#</string>
+    <string name="chord_accidental_flat_symbol">b</string>
+    <string name="chord_picker_preview_format">%1$s %2$s</string>
     <string name="accidental_mode">升降模式</string>
     <string name="chord_open_settings">打开设置</string>
     <string name="chord_settings_title">和弦设置</string>
