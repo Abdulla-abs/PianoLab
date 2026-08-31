@@ -7,7 +7,7 @@ import android.widget.ImageButton;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
+import com.example.pianolab.ui.BaseActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.lifecycle.ViewModelProvider;
@@ -19,7 +19,7 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.slider.Slider;
 
-public class VirtualPianoActivity extends AppCompatActivity {
+public class VirtualPianoActivity extends BaseActivity {
     private static final int MIDI_CENTER_DEFAULT = 60;
 
     private SlicePianoKeyboardView pianoView;

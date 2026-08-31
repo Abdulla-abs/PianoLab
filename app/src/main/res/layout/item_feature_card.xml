@@ -34,7 +34,7 @@
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_gravity="center"
-                    app:tint="@color/md_theme_light_onPrimaryFixedVariant" />
+                    app:tint="?attr/colorOnPrimaryFixedVariant" />
             </FrameLayout>
 
             <TextView

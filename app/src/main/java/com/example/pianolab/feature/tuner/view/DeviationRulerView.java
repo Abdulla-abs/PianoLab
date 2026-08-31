@@ -13,6 +13,7 @@ import android.view.animation.DecelerateInterpolator;
 
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import com.example.pianolab.utils.ThemeColors;
 
 import com.example.pianolab.R;
 
@@ -65,7 +66,7 @@ public class DeviationRulerView extends View {
     }
 
     private void initPaints(Context context) {
-        int trackColor = ContextCompat.getColor(context, R.color.md_theme_tool_outline);
+        int trackColor = ThemeColors.get(context, com.google.android.material.R.attr.colorOutline);
         int centerColor = ContextCompat.getColor(context, R.color.tuner_cursor_green);
 
         trackPaint.setStyle(Paint.Style.STROKE);

@@ -1,5 +1,6 @@
 package com.example.pianolab.feature.beat.view;
 
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.text.InputFilter;
@@ -9,8 +10,8 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
+import com.example.pianolab.ui.BaseActivity;
+import com.example.pianolab.utils.ThemeColors;
 import androidx.core.graphics.Insets;
 import androidx.core.widget.NestedScrollView;
 import androidx.core.view.ViewCompat;
@@ -29,7 +30,7 @@ import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.slider.Slider;
 
-public class BeatActivity extends AppCompatActivity {
+public class BeatActivity extends BaseActivity {
 
   private BeatViewModel viewModel;
 
@@ -154,7 +155,8 @@ public class BeatActivity extends AppCompatActivity {
       chip.setText(item);
       chip.setCheckable(true);
       chip.setTag(item);
-      chip.setChipBackgroundColorResource(R.color.md_theme_light_surfaceVariant);
+      chip.setChipBackgroundColor(
+          ColorStateList.valueOf(ThemeColors.get(this, com.google.android.material.R.attr.colorSurfaceVariant)));
       chip.setTextAppearance(R.style.TextAppearance_PianoLab_LabelLarge);
       chip.setOnClickListener(v -> applyTimeSignature(item));
       chipGroupTimeSig.addView(chip);
@@ -194,11 +196,13 @@ public class BeatActivity extends AppCompatActivity {
 
   private void applyChipStyle(Chip chip, boolean selected) {
     if (selected) {
-      chip.setChipBackgroundColorResource(R.color.md_theme_light_primaryContainer);
-      chip.setTextColor(ContextCompat.getColor(this, R.color.md_theme_light_onPrimaryContainer));
+      chip.setChipBackgroundColor(
+          ColorStateList.valueOf(ThemeColors.get(this, com.google.android.material.R.attr.colorPrimaryContainer)));
+      chip.setTextColor(ThemeColors.get(this, com.google.android.material.R.attr.colorOnPrimaryContainer));
     } else {
-      chip.setChipBackgroundColorResource(R.color.md_theme_light_surfaceVariant);
-      chip.setTextColor(ContextCompat.getColor(this, R.color.md_theme_light_onSurfaceVariant));
+      chip.setChipBackgroundColor(
+          ColorStateList.valueOf(ThemeColors.get(this, com.google.android.material.R.attr.colorSurfaceVariant)));
+      chip.setTextColor(ThemeColors.get(this, com.google.android.material.R.attr.colorOnSurfaceVariant));
     }
   }
 
@@ -219,7 +223,9 @@ public class BeatActivity extends AppCompatActivity {
     chip.setText(label);
     chip.setCheckable(true);
     chip.setTag(index);
-    chip.setChipBackgroundColorResource(R.color.md_theme_light_surfaceVariant);
+    chip.setChipBackgroundColor(
+        ColorStateList.valueOf(
+            ThemeColors.get(this, com.google.android.material.R.attr.colorSurfaceVariant)));
     chip.setTextAppearance(R.style.TextAppearance_PianoLab_LabelLarge);
     return chip;
   }
@@ -519,26 +525,24 @@ public class BeatActivity extends AppCompatActivity {
       btnPlay.setText(R.string.beat_stop);
       btnPlay.setIconResource(R.drawable.ic_pause);
       btnPlay.setBackgroundTintList(
-          ContextCompat.getColorStateList(this, R.color.md_theme_light_error));
-      btnPlay.setTextColor(ContextCompat.getColor(this, R.color.md_theme_light_onError));
-      btnPlay.setIconTint(
-          ContextCompat.getColorStateList(this, R.color.md_theme_light_onError));
+          ColorStateList.valueOf(ThemeColors.get(this, com.google.android.material.R.attr.colorError)));
+      btnPlay.setTextColor(ThemeColors.get(this, com.google.android.material.R.attr.colorOnError));
+      btnPlay.setIconTint(ColorStateList.valueOf(ThemeColors.get(this, com.google.android.material.R.attr.colorOnError)));
       btnToolbarPlay.setImageResource(R.drawable.ic_pause);
       btnToolbarPlay.setContentDescription(getString(R.string.beat_stop));
       btnToolbarPlay.setImageTintList(
-          ContextCompat.getColorStateList(this, R.color.md_theme_light_error));
+          ColorStateList.valueOf(ThemeColors.get(this, com.google.android.material.R.attr.colorError)));
     } else {
       btnPlay.setText(R.string.beat_play);
       btnPlay.setIconResource(R.drawable.ic_play_arrow);
       btnPlay.setBackgroundTintList(
-          ContextCompat.getColorStateList(this, R.color.md_theme_light_primary));
-      btnPlay.setTextColor(ContextCompat.getColor(this, R.color.md_theme_light_onPrimary));
-      btnPlay.setIconTint(
-          ContextCompat.getColorStateList(this, R.color.md_theme_light_onPrimary));
+          ColorStateList.valueOf(ThemeColors.get(this, com.google.android.material.R.attr.colorPrimary)));
+      btnPlay.setTextColor(ThemeColors.get(this, com.google.android.material.R.attr.colorOnPrimary));
+      btnPlay.setIconTint(ColorStateList.valueOf(ThemeColors.get(this, com.google.android.material.R.attr.colorOnPrimary)));
       btnToolbarPlay.setImageResource(R.drawable.ic_play_arrow);
       btnToolbarPlay.setContentDescription(getString(R.string.beat_play));
       btnToolbarPlay.setImageTintList(
-          ContextCompat.getColorStateList(this, R.color.md_theme_light_primary));
+          ColorStateList.valueOf(ThemeColors.get(this, com.google.android.material.R.attr.colorPrimary)));
     }
     playStateProgrammatic = false;
   }

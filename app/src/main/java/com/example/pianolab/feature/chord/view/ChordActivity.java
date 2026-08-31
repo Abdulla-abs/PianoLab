@@ -8,7 +8,7 @@ import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
+import com.example.pianolab.ui.BaseActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.lifecycle.ViewModelProvider;
@@ -27,7 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class ChordActivity extends AppCompatActivity {
+public class ChordActivity extends BaseActivity {
     private static final int MIDI_CENTER_DEFAULT = 60;
 
     private ChordViewModel viewModel;

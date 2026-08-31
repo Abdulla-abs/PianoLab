@@ -12,7 +12,8 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
+import com.example.pianolab.ui.BaseActivity;
+import com.example.pianolab.utils.ThemeColors;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -26,7 +27,7 @@ import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.materialswitch.MaterialSwitch;
 
-public class TunerActivity extends AppCompatActivity {
+public class TunerActivity extends BaseActivity {
     private static final String PERMISSION = Manifest.permission.RECORD_AUDIO;
     private static final float IN_TUNE_CENTS = 3f;
 
@@ -278,9 +279,9 @@ public class TunerActivity extends AppCompatActivity {
         textActionStart.setText(listening
                 ? R.string.tuner_stop_listening
                 : R.string.tuner_start_listening);
-        int startTextColor = ContextCompat.getColor(this, listening
-                ? R.color.md_theme_tool_error
-                : R.color.md_theme_tool_onSurface);
+        int startTextColor = ThemeColors.get(this, listening
+                ? com.google.android.material.R.attr.colorError
+                : com.google.android.material.R.attr.colorOnSurface);
         textActionStart.setTextColor(startTextColor);
     }
 

@@ -14,6 +14,12 @@
     <color name="md_theme_tool_onTertiaryContainer">#9fefff</color>
     <color name="md_theme_tool_error">#ffb4ab</color>
     <color name="md_theme_tool_onError">#690005</color>
+    <color name="md_theme_tool_errorContainer">#93000a</color>
+    <color name="md_theme_tool_onErrorContainer">#ffdad6</color>
+    <color name="md_theme_tool_surfaceDim">#141618</color>
+    <color name="md_theme_tool_surfaceBright">#383b3c</color>
+    <color name="md_theme_tool_surfaceContainerLowest">#0f1012</color>
+    <color name="md_theme_tool_surfaceContainerLow">#1a1c1e</color>
     <color name="md_theme_tool_background">#1a1c1e</color>
     <color name="md_theme_tool_onBackground">#f0f1f2</color>
     <color name="md_theme_tool_surface">#1a1c1e</color>

@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
 import com.example.pianolab.R;
+import com.example.pianolab.utils.ThemeColors;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +38,7 @@ public class WaveformView extends View {
 
     private void init(Context context) {
         int waveColor = resolveThemeColor(context, androidx.appcompat.R.attr.colorPrimary);
-        int gridColor = ContextCompat.getColor(context, R.color.md_theme_tool_outlineVariant);
+        int gridColor = ThemeColors.get(context, com.google.android.material.R.attr.colorOutlineVariant);
 
         linePaint.setStyle(Paint.Style.STROKE);
         linePaint.setStrokeWidth(dp(2f));
@@ -150,7 +151,7 @@ public class WaveformView extends View {
         if (context.getTheme().resolveAttribute(attr, typedValue, true)) {
             return typedValue.data;
         }
-        return ContextCompat.getColor(context, R.color.md_theme_tool_primary);
+        return ThemeColors.get(context, com.google.android.material.R.attr.colorPrimary);
     }
 
     private float dp(float value) {

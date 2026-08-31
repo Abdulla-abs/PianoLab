@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Night overrides for legacy aliases -->
+    <color name="piano_background">@color/md_theme_tool_background</color>
+    <color name="piano_surface">@color/md_theme_tool_surfaceContainer</color>
+    <color name="text_primary">@color/md_theme_tool_onSurface</color>
+    <color name="text_secondary">@color/md_theme_tool_onSurfaceVariant</color>
+    <color name="text_on_primary">@color/md_theme_tool_onPrimary</color>
+    <color name="piano_black">@color/md_theme_tool_onSurface</color>
+    <color name="piano_dark_gray">@color/md_theme_tool_surfaceContainer</color>
+    <color name="piano_light_gray">@color/md_theme_tool_background</color>
+    <color name="piano_stage_background">@color/md_theme_tool_surfaceContainerHigh</color>
+    <color name="virtual_piano_overview_white_key_highlight">@color/md_theme_tool_primary</color>
+
+    <!-- Feature card icon tints -->
+    <color name="feature_icon_primary">@color/md_theme_tool_primary</color>
+    <color name="feature_icon_tertiary">@color/md_theme_tool_tertiary</color>
+    <color name="feature_icon_error">@color/md_theme_tool_error</color>
+    <color name="feature_icon_secondary">@color/md_theme_tool_secondary</color>
+
+    <!-- Beat switch colors -->
+    <color name="beat_switch_thumb_checked">@color/md_theme_tool_surfaceContainerHighest</color>
+    <color name="beat_switch_thumb_unchecked">@color/md_theme_tool_outline</color>
+    <color name="beat_switch_track_checked">@color/md_theme_tool_primaryContainer</color>
+    <color name="beat_switch_track_unchecked">@color/md_theme_tool_surfaceVariant</color>
+</resources>

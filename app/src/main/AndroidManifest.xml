@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
+        android:name=".PianoLabApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -36,7 +37,6 @@
         <activity
             android:name="com.example.pianolab.feature.virtual_piano.view.VirtualPianoActivity"
             android:exported="false"
-            android:theme="@style/Theme.PianoLab.Tool"
             android:parentActivityName="com.example.pianolab.feature.home.view.HomeActivity"
             android:screenOrientation="sensorLandscape">
             <meta-data
@@ -47,7 +47,6 @@
         <activity
             android:name="com.example.pianolab.feature.tuner.view.TunerActivity"
             android:exported="false"
-            android:theme="@style/Theme.PianoLab.Tool"
             android:parentActivityName="com.example.pianolab.feature.home.view.HomeActivity"
             android:screenOrientation="sensorLandscape">
             <meta-data
@@ -58,7 +57,6 @@
         <activity
             android:name="com.example.pianolab.feature.chord.view.ChordActivity"
             android:exported="false"
-            android:theme="@style/Theme.PianoLab.Tool"
             android:parentActivityName="com.example.pianolab.feature.home.view.HomeActivity"
             android:screenOrientation="sensorLandscape">
             <meta-data

@@ -31,7 +31,7 @@ public class HomeViewModel extends ViewModel {
             R.string.home_feature_metronome_desc,
             R.drawable.bg_feature_card_primary_ripple,
             R.drawable.bg_feature_icon_circle_primary,
-            R.color.md_theme_light_onPrimaryFixedVariant,
+            R.color.feature_icon_primary,
             BeatActivity.class));
 
     items.add(
@@ -41,7 +41,7 @@ public class HomeViewModel extends ViewModel {
             R.string.home_feature_piano_desc,
             R.drawable.bg_feature_card_tertiary_ripple,
             R.drawable.bg_feature_icon_circle_tertiary,
-            R.color.md_theme_light_tertiary,
+            R.color.feature_icon_tertiary,
             VirtualPianoActivity.class));
 
     items.add(
@@ -51,7 +51,7 @@ public class HomeViewModel extends ViewModel {
             R.string.home_feature_tuner_desc,
             R.drawable.bg_feature_card_error_ripple,
             R.drawable.bg_feature_icon_circle_error,
-            R.color.md_theme_light_error,
+            R.color.feature_icon_error,
             TunerActivity.class));
 
     items.add(
@@ -61,7 +61,7 @@ public class HomeViewModel extends ViewModel {
             R.string.home_feature_chord_desc,
             R.drawable.bg_feature_card_secondary_ripple,
             R.drawable.bg_feature_icon_circle_secondary,
-            R.color.md_theme_light_secondary,
+            R.color.feature_icon_secondary,
             ChordActivity.class));
 
     featureItems.setValue(items);

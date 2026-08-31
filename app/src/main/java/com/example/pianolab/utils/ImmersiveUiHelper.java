@@ -1,5 +1,7 @@
 package com.example.pianolab.utils;
 
+import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.view.View;
 import android.view.Window;
@@ -37,8 +39,9 @@ public final class ImmersiveUiHelper {
         if (controller == null) {
             return;
         }
-        controller.setAppearanceLightStatusBars(true);
-        controller.setAppearanceLightNavigationBars(true);
+        boolean lightBars = !isDarkTheme(window.getContext());
+        controller.setAppearanceLightStatusBars(lightBars);
+        controller.setAppearanceLightNavigationBars(lightBars);
         controller.show(WindowInsetsCompat.Type.statusBars());
         controller.show(WindowInsetsCompat.Type.navigationBars());
     }
@@ -86,5 +89,12 @@ public final class ImmersiveUiHelper {
         controller.setSystemBarsBehavior(
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
         controller.hide(WindowInsetsCompat.Type.statusBars());
+    }
+
+    public static boolean isDarkTheme(@NonNull Context context) {
+        int nightModeFlags =
+                context.getResources().getConfiguration().uiMode
+                        & Configuration.UI_MODE_NIGHT_MASK;
+        return nightModeFlags == Configuration.UI_MODE_NIGHT_YES;
     }
 }

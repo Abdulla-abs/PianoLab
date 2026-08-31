@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Theme-aware semantic aliases (light defaults) -->
+    <color name="feature_icon_primary">@color/md_theme_light_onPrimaryFixedVariant</color>
+    <color name="feature_icon_tertiary">@color/md_theme_light_tertiary</color>
+    <color name="feature_icon_error">@color/md_theme_light_error</color>
+    <color name="feature_icon_secondary">@color/md_theme_light_secondary</color>
+
+    <color name="beat_switch_thumb_checked">@color/md_theme_light_surfaceContainerLowest</color>
+    <color name="beat_switch_thumb_unchecked">@color/md_theme_light_outline</color>
+    <color name="beat_switch_track_checked">@color/md_theme_light_primaryContainer</color>
+    <color name="beat_switch_track_unchecked">@color/md_theme_light_surfaceVariant</color>
+</resources>
