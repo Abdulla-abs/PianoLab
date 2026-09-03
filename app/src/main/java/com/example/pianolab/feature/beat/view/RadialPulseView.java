@@ -14,6 +14,8 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
+import com.example.pianolab.utils.ThemeColors;
+
 import java.util.Random;
 
 
@@ -75,6 +77,11 @@ public class RadialPulseView extends View {
 
     private float centerTextSizeFactor = 0.6f;
 
+    private int centerColor;
+    private int onCenterTextColor;
+    private int countdownTextColor;
+    private int[] idleRingColors;
+
     public RadialPulseView(Context context) {
         this(context, null);
     }
@@ -91,10 +98,8 @@ public class RadialPulseView extends View {
 
         centerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         centerPaint.setStyle(Paint.Style.FILL);
-        centerPaint.setColor(0xFF000000);
 
         textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        textPaint.setColor(0xFFFFFFFF);
         textPaint.setTextSize(dpToPx(18));
         textPaint.setTextAlign(Paint.Align.CENTER);
 
@@ -121,6 +126,35 @@ public class RadialPulseView extends View {
         });
         // 立即启动帧动���（轻量级，只做 invalidate）
         frameAnimator.start();
+
+        resolveThemeColors();
+    }
+
+    private void resolveThemeColors() {
+        centerColor = ThemeColors.get(getContext(),
+                com.google.android.material.R.attr.colorSurfaceContainerHighest);
+        onCenterTextColor = ThemeColors.get(getContext(),
+                com.google.android.material.R.attr.colorOnSurface);
+        countdownTextColor = ThemeColors.get(getContext(),
+                com.google.android.material.R.attr.colorPrimary);
+        idleRingColors = new int[]{
+                ThemeColors.get(getContext(),
+                        com.google.android.material.R.attr.colorOutline),
+                ThemeColors.get(getContext(),
+                        com.google.android.material.R.attr.colorOutlineVariant),
+                ThemeColors.get(getContext(),
+                        com.google.android.material.R.attr.colorOutline),
+                ThemeColors.get(getContext(),
+                        com.google.android.material.R.attr.colorOutline)
+        };
+        centerPaint.setColor(centerColor);
+        textPaint.setColor(onCenterTextColor);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        resolveThemeColors();
     }
 
     private float dpToPx(float dp) {
@@ -138,10 +172,11 @@ public class RadialPulseView extends View {
         // 弱拍颜色：深蓝 -> 青绿 -> 绿色，较深的蓝色系但带有对比
         colorsWeak = new int[]{0xFF0D47A1, 0xFF00796B, 0xFF2E7D32, 0xFF0D47A1};
         // 静止时的灰色色带
-        colorsIdle = new int[]{0xFFDDDDDD, 0xFFBBBBBB, 0xFF888888, 0xFFDDDDDD};
+        if (idleRingColors != null) {
+            shaderIdle = new SweepGradient(cx, cy, idleRingColors, null);
+        }
         shaderStrong = new SweepGradient(cx, cy, colorsStrong, null);
         shaderWeak = new SweepGradient(cx, cy, colorsWeak, null);
-        shaderIdle = new SweepGradient(cx, cy, colorsIdle, null);
 
         // 根据 innerRadius 设置中心文本大小
         textPaint.setTextSize(innerRadius * centerTextSizeFactor);
@@ -175,9 +210,9 @@ public class RadialPulseView extends View {
         }
 
         // 统一先计算中心文本（倒计时/普通文本），确保在倒计时阶段也能显示
-        int textColor = 0xFFFFFFFF;
+        int textColor = onCenterTextColor;
         if (countingDown) {
-            textColor = 0xFF00BFFF; // 浅蓝
+            textColor = countdownTextColor;
             long nowMs = SystemClock.uptimeMillis();
             int remaining = (int) Math.max(0, (long) Math.ceil((countdownDurationMs - (nowMs - countdownStartMs)) / 1000.0));
             centerText = String.valueOf(Math.max(remaining, 0));
